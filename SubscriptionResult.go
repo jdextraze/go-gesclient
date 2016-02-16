@@ -9,7 +9,8 @@ type SubscriptionResult struct {
     conn          *connection
     correlationId uuid.UUID
     Confirmation  *SubscriptionConfirmation
-    Events        chan *StreamEventAppeared
+    Events        <-chan *StreamEventAppeared
+    events        chan *StreamEventAppeared
     unsubscribe   chan *SubscriptionDropped
 }
 
@@ -21,7 +22,7 @@ func (s *SubscriptionResult) Unsubscribe() (*SubscriptionDropped, error) {
     return <-ch, err
 }
 
-func (s *SubscriptionResult) UnsubscribeAsync() (chan *SubscriptionDropped, error) {
+func (s *SubscriptionResult) UnsubscribeAsync() (<-chan *SubscriptionDropped, error) {
     if err := s.conn.assertConnected(); err != nil {
         return nil, err
     }
