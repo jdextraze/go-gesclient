@@ -1,56 +1,72 @@
 package main
 
 import (
-    _ "bitbucket.org/jdextraze/go-gesclient"
-    "bitbucket.org/jdextraze/go-gesclient"
-    "log"
-    "os"
-    "bufio"
-    "encoding/json"
-    "github.com/satori/go.uuid"
+	"bitbucket.org/jdextraze/go-gesclient"
+	"encoding/json"
+	"github.com/satori/go.uuid"
+	"log"
+	"time"
 )
 
 type Tested struct {
-    Test string
+	Test string
 }
 
 func main() {
-    gesclient.Debug()
+	gesclient.Debug()
 
-    c, err := gesclient.NewConnection("192.168.22.10:1113")
-    if err != nil {
-        log.Fatalln(err)
-    }
+	c := gesclient.NewConnection("192.168.22.10:1113")
+	c.WaitForConnection()
 
-    sub, err := c.SubscribeToStream("Test-1")
-    log.Println("SubscribeToStream:", *sub, err)
-    go func() {
-        run := true
-        for run == true {
-            select {
-            case e, ok := <- sub.Events :
-                if !ok {
-                    run = false
-                    break
-                }
-                evtId, _ := uuid.FromBytes(e.Event.Event.EventId)
-                log.Println("StreamEventAppeared:", evtId, string(e.Event.Event.Data))
-            }
-        }
-        log.Println("Subscription ended!")
-    }()
+	streamName := "Test-" + uuid.NewV4().String()
+	log.Println(streamName)
 
-    data, _ := json.Marshal(&Tested{})
-    create, err := c.CreateEvent("Test-1", "Tested", true, data, nil, gesclient.ExpectedVersion_Any)
-    log.Println("CreateEvent:", create, err)
+	sub, err := c.SubscribeToStream(streamName)
+	log.Println("SubscribeToStream:", sub, err)
+	go func() {
+		events := sub.Events()
+		dropped := sub.Dropped()
+		run := true
+		for run == true {
+			select {
+			case e, ok := <-events:
+				if !ok {
+					run = false
+					break
+				}
+				log.Println("StreamEventAppeared:", e.Event().EventId(), string(e.Event().Data()))
+			case <-dropped:
+				log.Println("Subscription dropped")
+				run = false
+			}
+		}
+		log.Println("Subscription ended!")
+	}()
 
-    bufio.NewReader(os.Stdin).ReadString('\n')
+	run := true
+	go func() {
+		for run {
+			data, _ := json.Marshal(&Tested{})
+			evt := gesclient.NewEventData(uuid.NewV4(), "Tested", true, data, nil)
+			create, err := c.AppendToStreamAsync(streamName, gesclient.ExpectedVersion_Any, []*gesclient.EventData{evt}, nil)
+			if err != nil {
+				log.Println("AppendToStream failed", err)
+			} else {
+				log.Println("CreateEvent:", <-create)
+			}
+			time.Sleep(time.Second)
+		}
+	}()
 
-    uns, err := sub.Unsubscribe()
-    log.Println("Unsubscribe:", *uns, err)
+	<-time.After(time.Second * 10)
+	run = false
 
-//    read, err := c.ReadStreamEventsForward("Test-1", 0, 1000)
-//    log.Println("ReadStreamEventsForward:", read, err)
+	err = sub.Unsubscribe()
+	log.Println("Unsubscribe:", err)
 
-    log.Println(c.Close())
+	read, err := c.ReadStreamEventsForward(streamName, 0, 1000)
+	log.Println("ReadStreamEventsForward:", read, err)
+
+	err = c.Close()
+	log.Println(err)
 }
