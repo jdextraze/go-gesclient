@@ -19,10 +19,12 @@ func newAppendToStreamOperation(
 	events []*EventData,
 	expectedVersion int,
 	c chan *WriteResult,
+	userCredentials *UserCredentials,
 ) *appendToStreamOperation {
 	return &appendToStreamOperation{
 		BaseOperation: &BaseOperation{
-			correlationId: uuid.NewV4(),
+			correlationId:   uuid.NewV4(),
+			userCredentials: userCredentials,
 		},
 		stream:          stream,
 		expectedVersion: expectedVersion,
@@ -48,26 +50,35 @@ func (o *appendToStreamOperation) GetRequestMessage() proto.Message {
 	}
 }
 
-func (o *appendToStreamOperation) ParseResponse(cmd tcpCommand, msg proto.Message) {
-	writeEventsCompleted := msg.(*protobuf.WriteEventsCompleted)
+func (o *appendToStreamOperation) ParseResponse(p *tcpPacket) {
+	if p.Command != tcpCommand_WriteEventsCompleted {
+		err := o.HandleError(p, tcpCommand_WriteEventsCompleted)
+		if err != nil {
+			o.Fail(err)
+		}
+		return
+	}
+	msg := &protobuf.WriteEventsCompleted{}
+	err := proto.Unmarshal(p.Payload, msg)
 	var commitPosition int64 = -1
 	var preparePosition int64 = -1
-	if writeEventsCompleted.CommitPosition != nil {
-		commitPosition = *writeEventsCompleted.CommitPosition
+	if msg.CommitPosition != nil {
+		commitPosition = *msg.CommitPosition
 	}
-	if writeEventsCompleted.PreparePosition != nil {
-		preparePosition = *writeEventsCompleted.PreparePosition
+	if msg.PreparePosition != nil {
+		preparePosition = *msg.PreparePosition
 	}
-	position, _ := NewPosition(commitPosition, preparePosition) // TODO handle error
-	o.c <- NewWriteResult(int(*writeEventsCompleted.LastEventNumber), position)
+	position, err := NewPosition(commitPosition, preparePosition)
+	o.c <- NewWriteResult(int(*msg.LastEventNumber), position, err)
 	close(o.c)
 	o.isCompleted = true
 }
 
-func (o *appendToStreamOperation) SetError(err error) error {
+func (o *appendToStreamOperation) Fail(err error) {
 	if o.isCompleted {
-		return err
+		return
 	}
+	o.c <- NewWriteResult(0, nil, err)
 	close(o.c)
-	return err
+	o.isCompleted = true
 }

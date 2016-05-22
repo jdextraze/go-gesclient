@@ -21,7 +21,7 @@ func main() {
 	streamName := "Test-" + uuid.NewV4().String()
 	log.Println(streamName)
 
-	sub, err := c.SubscribeToStream(streamName)
+	sub, err := c.SubscribeToStream(streamName, nil)
 	log.Println("SubscribeToStream:", sub, err)
 	go func() {
 		events := sub.Events()
@@ -64,7 +64,7 @@ func main() {
 	err = sub.Unsubscribe()
 	log.Println("Unsubscribe:", err)
 
-	read, err := c.ReadStreamEventsForward(streamName, 0, 1000)
+	read, err := c.ReadStreamEventsForward(streamName, 0, 1000, nil)
 	log.Println("ReadStreamEventsForward:", read, err)
 
 	err = c.Close()

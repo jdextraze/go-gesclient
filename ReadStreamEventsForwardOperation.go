@@ -19,10 +19,12 @@ func newReadStreamEventsForwardOperation(
 	start int,
 	max int,
 	c chan *StreamEventsSlice,
+	userCredentials *UserCredentials,
 ) *readStreamEventsForwardOperation {
 	return &readStreamEventsForwardOperation{
 		BaseOperation: &BaseOperation{
-			correlationId: uuid.NewV4(),
+			correlationId:   uuid.NewV4(),
+			userCredentials: userCredentials,
 		},
 		stream: stream,
 		start:  start,
@@ -48,28 +50,45 @@ func (o *readStreamEventsForwardOperation) GetRequestMessage() proto.Message {
 	}
 }
 
-func (o *readStreamEventsForwardOperation) ParseResponse(cmd tcpCommand, msg proto.Message) {
-	readStreamEventsCompleted := msg.(*protobuf.ReadStreamEventsCompleted)
-	// TODO handle error
-	streamEventsSlice, _ := newStreamEventsSlice(
-		SliceReadStatus(readStreamEventsCompleted.GetResult()),
+func (o *readStreamEventsForwardOperation) ParseResponse(p *tcpPacket) {
+	if p.Command != tcpCommand_ReadStreamEventsForwardCompleted {
+		err := o.HandleError(p, tcpCommand_ReadStreamEventsForwardCompleted)
+		if err != nil {
+			o.Fail(err)
+		}
+		return
+	}
+	msg := &protobuf.ReadStreamEventsCompleted{}
+	err := proto.Unmarshal(p.Payload, msg)
+	o.c <- newStreamEventsSlice(
+		SliceReadStatus(msg.GetResult()),
 		o.stream,
 		o.start,
 		ReadDirectionForward,
-		readStreamEventsCompleted.Events,
-		int(readStreamEventsCompleted.GetNextEventNumber()),
-		int(readStreamEventsCompleted.GetLastEventNumber()),
-		readStreamEventsCompleted.GetIsEndOfStream(),
+		msg.Events,
+		int(msg.GetNextEventNumber()),
+		int(msg.GetLastEventNumber()),
+		msg.GetIsEndOfStream(),
+		err,
 	)
-	o.c <- streamEventsSlice
 	close(o.c)
 	o.isCompleted = true
 }
 
-func (o *readStreamEventsForwardOperation) SetError(err error) error {
+func (o *readStreamEventsForwardOperation) Fail(err error) {
 	if o.isCompleted {
-		return err
+		return
 	}
+	o.c <- newStreamEventsSlice(
+		SliceReadStatusError,
+		o.stream,
+		o.start,
+		ReadDirectionForward,
+		[]*protobuf.ResolvedIndexedEvent{},
+		0,
+		0,
+		false,
+		err,
+	)
 	close(o.c)
-	return err
 }

@@ -1,10 +1,10 @@
 package gesclient
 
 import (
-	"bitbucket.org/jdextraze/go-gesclient/protobuf"
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/op/go-logging"
 	"github.com/satori/go.uuid"
@@ -36,11 +36,12 @@ type Connection interface {
 		userCredentials *UserCredentials) (*WriteResult, error)
 	AppendToStreamAsync(stream string, expectedVersion int, events []*EventData,
 		userCredentials *UserCredentials) (<-chan *WriteResult, error)
-	ReadStreamEventsForward(stream string, start int, max int) (*StreamEventsSlice, error)
-	ReadStreamEventsForwardAsync(stream string, start int, max int) (
-		<-chan *StreamEventsSlice, error)
-	SubscribeToStream(stream string) (Subscription, error)
-	SubscribeToStreamAsync(stream string) (<-chan Subscription, error)
+	ReadStreamEventsForward(stream string, start int, max int,
+		userCredentials *UserCredentials) (*StreamEventsSlice, error)
+	ReadStreamEventsForwardAsync(stream string, start int, max int,
+		userCredentials *UserCredentials) (<-chan *StreamEventsSlice, error)
+	SubscribeToStream(stream string, userCredentials *UserCredentials) (Subscription, error)
+	SubscribeToStreamAsync(stream string, userCredentials *UserCredentials) (<-chan Subscription, error)
 }
 
 type connection struct {
@@ -203,15 +204,17 @@ func (c *connection) AppendToStreamAsync(
 	}
 
 	res := make(chan *WriteResult)
-	return res, c.sendCommand(newAppendToStreamOperation(stream, events, expectedVersion, res))
+	return res, c.enqueueOperation(
+		newAppendToStreamOperation(stream, events, expectedVersion, res, userCredentials))
 }
 
 func (c *connection) ReadStreamEventsForward(
 	stream string,
 	start int,
 	max int,
+	userCredentials *UserCredentials,
 ) (*StreamEventsSlice, error) {
-	ch, err := c.ReadStreamEventsForwardAsync(stream, start, max)
+	ch, err := c.ReadStreamEventsForwardAsync(stream, start, max, userCredentials)
 	if err != nil {
 		return nil, err
 	}
@@ -222,45 +225,54 @@ func (c *connection) ReadStreamEventsForwardAsync(
 	stream string,
 	start int,
 	max int,
+	userCredentials *UserCredentials,
 ) (<-chan *StreamEventsSlice, error) {
 	if err := c.assertConnected(); err != nil {
 		return nil, err
 	}
 
 	res := make(chan *StreamEventsSlice)
-	return res, c.sendCommand(newReadStreamEventsForwardOperation(stream, start, max, res))
+	return res, c.enqueueOperation(
+		newReadStreamEventsForwardOperation(stream, start, max, res, userCredentials))
 }
 
-func (c *connection) SubscribeToStream(stream string) (Subscription, error) {
-	ch, err := c.SubscribeToStreamAsync(stream)
+func (c *connection) SubscribeToStream(stream string, userCredentials *UserCredentials) (Subscription, error) {
+	ch, err := c.SubscribeToStreamAsync(stream, userCredentials)
 	if err != nil {
 		return nil, err
 	}
 	return <-ch, nil
 }
 
-func (c *connection) SubscribeToStreamAsync(stream string) (<-chan Subscription, error) {
+func (c *connection) SubscribeToStreamAsync(stream string, userCredentials *UserCredentials) (<-chan Subscription, error) {
 	if err := c.assertConnected(); err != nil {
 		return nil, err
 	}
 
 	res := make(chan Subscription)
-	return res, c.sendCommand(newSubscribeToStreamOperation(stream, res, c))
+	return res, c.enqueueOperation(newSubscribeToStreamOperation(stream, res, c, userCredentials))
 }
 
-func (c *connection) sendCommand(operation Operation) error {
+func (c *connection) enqueueOperation(operation Operation) error {
 	payload, err := proto.Marshal(operation.GetRequestMessage())
 	if err != nil {
 		log.Error("Sending command failed: %v", err)
-		return operation.SetError(err)
+		operation.Fail(fmt.Errorf("Sending command failed: %v", err))
+		return err
 	}
 
 	correlationId := operation.GetCorrelationId()
+	userCredentials := operation.UserCredentials()
+	var authFlag byte = 0
+	if userCredentials != nil {
+		authFlag = 1
+	}
 	c.output <- newTcpPacket(
 		operation.GetRequestCommand(),
-		0,
+		authFlag,
 		correlationId,
 		payload,
+		userCredentials,
 	)
 
 	c.addOperation(correlationId, operation)
@@ -272,15 +284,22 @@ func (c *connection) resendCommand(operation Operation) error {
 	payload, err := proto.Marshal(operation.GetRequestMessage())
 	if err != nil {
 		log.Error("Sending command failed: %v", err)
-		return operation.SetError(err)
+		operation.Fail(err)
+		return err
 	}
 
 	correlationId := operation.GetCorrelationId()
+	userCredentials := operation.UserCredentials()
+	var authFlag byte = 0
+	if userCredentials != nil {
+		authFlag = 1
+	}
 	c.output <- newTcpPacket(
 		operation.GetRequestCommand(),
-		0,
+		authFlag,
 		correlationId,
 		payload,
+		userCredentials,
 	)
 
 	return nil
@@ -316,20 +335,20 @@ func (c *connection) process(p *tcpPacket) {
 	log.Info("Received Command: %s | CorrelationId: %s", p.Command, p.CorrelationId)
 
 	operation := c.getOperation(p.CorrelationId)
-	res := parsePayload(p.Command, p.Payload)
+
+	if operation != nil {
+		operation.ParseResponse(p)
+		if operation.IsCompleted() {
+			c.removeOperation(p.CorrelationId)
+		} else if operation.Retry() {
+			c.resendCommand(operation)
+		}
+		return
+	}
 
 	switch p.Command {
 	case tcpCommand_HeartbeatRequestCommand:
-		c.output <- newTcpPacket(tcpCommand_HeartbeatResponseCommand, 0, p.CorrelationId, nil)
-	case tcpCommand_WriteEventsCompleted,
-		tcpCommand_ReadStreamEventsForwardCompleted,
-		tcpCommand_SubscriptionConfirmation,
-		tcpCommand_StreamEventAppeared,
-		tcpCommand_SubscriptionDropped:
-		operation.ParseResponse(p.Command, res)
-		if operation.IsCompleted() {
-			c.removeOperation(p.CorrelationId)
-		}
+		c.output <- newTcpPacket(tcpCommand_HeartbeatResponseCommand, 0, p.CorrelationId, nil, nil)
 	default:
 		log.Debug("Command not supported")
 	}
@@ -365,29 +384,10 @@ func (c *connection) resubscribe() {
 func (c *connection) clearOperations() {
 	c.opMutex.RLock()
 	for id, op := range c.operations {
-		op.SetError(errors.New("Connection closed"))
+		op.Fail(errors.New("Connection closed"))
 		delete(c.operations, id)
 	}
 	c.opMutex.RUnlock()
-}
-
-func parsePayload(tc tcpCommand, payload []byte) (res proto.Message) {
-	switch tc {
-	case tcpCommand_WriteEventsCompleted:
-		res = &protobuf.WriteEventsCompleted{}
-	case tcpCommand_ReadStreamEventsForwardCompleted:
-		res = &protobuf.ReadStreamEventsCompleted{}
-	case tcpCommand_SubscriptionConfirmation:
-		res = &protobuf.SubscriptionConfirmation{}
-	case tcpCommand_StreamEventAppeared:
-		res = &protobuf.StreamEventAppeared{}
-	case tcpCommand_SubscriptionDropped:
-		res = &protobuf.SubscriptionDropped{}
-	}
-	if res != nil {
-		proto.Unmarshal(payload, res)
-	}
-	return
 }
 
 // Copied from http2\server

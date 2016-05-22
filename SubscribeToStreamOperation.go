@@ -6,16 +6,30 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// TODO define content
 type SubscriptionConfirmation struct{}
 
-type SubscriptionDropped struct{}
+type SubscriptionDropReason int
+
+const (
+	SubscriptionDropReasonError                         SubscriptionDropReason = -1
+	SubscriptionDropReasonUnsubscribed                  SubscriptionDropReason = 0
+	SubscriptionDropReasonAccessDenied                  SubscriptionDropReason = 1
+	SubscriptionDropReasonNotFound                      SubscriptionDropReason = 2
+	SubscriptionDropReasonPersistentSubscriptionDeleted SubscriptionDropReason = 3
+	SubscriptionDropReasonSubscriberMaxCountReached     SubscriptionDropReason = 4
+)
+
+type SubscriptionDropped struct {
+	Reason SubscriptionDropReason
+	Error  error
+}
 
 type Subscription interface {
 	Confirmation() *SubscriptionConfirmation
 	Events() chan *ResolvedEvent
 	Unsubscribe() error
 	Dropped() chan *SubscriptionDropped
+	Error() error
 }
 
 type subscribeToStreamOperation struct {
@@ -27,16 +41,19 @@ type subscribeToStreamOperation struct {
 	events       []chan *ResolvedEvent
 	dropped      []chan *SubscriptionDropped
 	confirmed    bool
+	error        error
 }
 
 func newSubscribeToStreamOperation(
 	stream string,
 	c chan Subscription,
 	conn *connection,
+	userCredentials *UserCredentials,
 ) *subscribeToStreamOperation {
 	return &subscribeToStreamOperation{
 		BaseOperation: &BaseOperation{
-			correlationId: uuid.NewV4(),
+			correlationId:   uuid.NewV4(),
+			userCredentials: userCredentials,
 		},
 		stream:  stream,
 		c:       c,
@@ -58,14 +75,14 @@ func (o *subscribeToStreamOperation) GetRequestMessage() proto.Message {
 	}
 }
 
-func (o *subscribeToStreamOperation) ParseResponse(cmd tcpCommand, msg proto.Message) {
-	switch cmd {
+func (o *subscribeToStreamOperation) ParseResponse(p *tcpPacket) {
+	switch p.Command {
 	case tcpCommand_SubscriptionConfirmation:
-		o.subscriptionConfirmation(msg.(*protobuf.SubscriptionConfirmation))
+		o.subscriptionConfirmation(p.Payload)
 	case tcpCommand_StreamEventAppeared:
-		o.streamEventAppeared(msg.(*protobuf.StreamEventAppeared))
+		o.streamEventAppeared(p.Payload)
 	case tcpCommand_SubscriptionDropped:
-		o.subscriptionDropped(msg.(*protobuf.SubscriptionDropped))
+		o.subscriptionDropped(p.Payload)
 	}
 }
 
@@ -89,11 +106,17 @@ func (o *subscribeToStreamOperation) Unsubscribe() error {
 		return err
 	}
 
+	userCredentials := o.UserCredentials()
+	var authFlag byte = 0
+	if userCredentials != nil {
+		authFlag = 1
+	}
 	o.conn.output <- newTcpPacket(
 		tcpCommand_UnsubscribeFromStream,
-		0,
+		authFlag,
 		o.correlationId,
 		payload,
+		userCredentials,
 	)
 
 	return nil
@@ -105,11 +128,18 @@ func (o *subscribeToStreamOperation) Dropped() chan *SubscriptionDropped {
 	return dropped
 }
 
-func (o *subscribeToStreamOperation) SetError(err error) error {
+func (o *subscribeToStreamOperation) Error() error { return o.error }
+
+func (o *subscribeToStreamOperation) Fail(err error) {
 	if !o.confirmed {
+		o.error = err
+		o.c <- o
 		close(o.c)
 	}
-	evt := &SubscriptionDropped{}
+	evt := &SubscriptionDropped{
+		Reason: SubscriptionDropReasonError,
+		Error:  err,
+	}
 	for _, ch := range o.dropped {
 		ch <- evt
 		close(ch)
@@ -117,11 +147,16 @@ func (o *subscribeToStreamOperation) SetError(err error) error {
 	for _, ch := range o.events {
 		close(ch)
 	}
-	return err
+	o.isCompleted = true
 }
 
-func (o *subscribeToStreamOperation) subscriptionConfirmation(msg *protobuf.SubscriptionConfirmation) {
+func (o *subscribeToStreamOperation) subscriptionConfirmation(payload []byte) {
 	if o.confirmed {
+		return
+	}
+	msg := &protobuf.SubscriptionConfirmation{}
+	if err := proto.Unmarshal(payload, msg); err != nil {
+		o.Fail(err)
 		return
 	}
 	o.confirmation = &SubscriptionConfirmation{}
@@ -130,15 +165,27 @@ func (o *subscribeToStreamOperation) subscriptionConfirmation(msg *protobuf.Subs
 	o.confirmed = true
 }
 
-func (o *subscribeToStreamOperation) streamEventAppeared(msg *protobuf.StreamEventAppeared) {
+func (o *subscribeToStreamOperation) streamEventAppeared(payload []byte) {
+	msg := &protobuf.StreamEventAppeared{}
+	if err := proto.Unmarshal(payload, msg); err != nil {
+		o.Fail(err)
+		return
+	}
 	evt := newResolvedEventFrom(msg.Event)
 	for _, ch := range o.events {
 		ch <- evt
 	}
 }
 
-func (o *subscribeToStreamOperation) subscriptionDropped(msg *protobuf.SubscriptionDropped) {
-	evt := &SubscriptionDropped{}
+func (o *subscribeToStreamOperation) subscriptionDropped(payload []byte) {
+	msg := &protobuf.SubscriptionDropped{}
+	if err := proto.Unmarshal(payload, msg); err != nil {
+		o.Fail(err)
+		return
+	}
+	evt := &SubscriptionDropped{
+		Reason: SubscriptionDropReason(msg.GetReason()),
+	}
 	for _, ch := range o.dropped {
 		ch <- evt
 		close(ch)

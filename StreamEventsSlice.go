@@ -2,7 +2,6 @@ package gesclient
 
 import (
 	"bitbucket.org/jdextraze/go-gesclient/protobuf"
-	"errors"
 )
 
 type StreamEventsSlice struct {
@@ -14,6 +13,7 @@ type StreamEventsSlice struct {
 	nextEventNumber int
 	lastEventNumber int
 	isEndOfStream   bool
+	error           error
 }
 
 func newStreamEventsSlice(
@@ -25,10 +25,8 @@ func newStreamEventsSlice(
 	nextEventNumber int,
 	lastEventNumber int,
 	isEndOfStream bool,
-) (*StreamEventsSlice, error) {
-	if stream == "" {
-		return nil, errors.New("Stream cannot be empty")
-	}
+	error error,
+) *StreamEventsSlice {
 	events := make([]*ResolvedEvent, len(resolvedEvents))
 	for i, evt := range resolvedEvents {
 		events[i] = newResolvedEvent(evt)
@@ -42,7 +40,8 @@ func newStreamEventsSlice(
 		nextEventNumber: nextEventNumber,
 		lastEventNumber: lastEventNumber,
 		isEndOfStream:   isEndOfStream,
-	}, nil
+		error:           error,
+	}
 }
 
 func (s *StreamEventsSlice) Status() SliceReadStatus { return s.status }
@@ -60,3 +59,5 @@ func (s *StreamEventsSlice) NextEventNumber() int { return s.nextEventNumber }
 func (s *StreamEventsSlice) LastEventNumber() int { return s.lastEventNumber }
 
 func (s *StreamEventsSlice) IsEndOfStream() bool { return s.isEndOfStream }
+
+func (s *StreamEventsSlice) Error() error { return s.error }
