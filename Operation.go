@@ -9,7 +9,7 @@ import (
 	"reflect"
 )
 
-type Operation interface {
+type operation interface {
 	GetCorrelationId() uuid.UUID
 	GetRequestCommand() tcpCommand
 	GetRequestMessage() proto.Message
@@ -20,22 +20,22 @@ type Operation interface {
 	UserCredentials() *UserCredentials
 }
 
-type BaseOperation struct {
+type baseOperation struct {
 	correlationId   uuid.UUID
 	isCompleted     bool
 	retry           bool
 	userCredentials *UserCredentials
 }
 
-func (o *BaseOperation) GetCorrelationId() uuid.UUID { return o.correlationId }
+func (o *baseOperation) GetCorrelationId() uuid.UUID { return o.correlationId }
 
-func (o *BaseOperation) IsCompleted() bool { return o.isCompleted }
+func (o *baseOperation) IsCompleted() bool { return o.isCompleted }
 
-func (o *BaseOperation) Retry() bool { return o.retry }
+func (o *baseOperation) Retry() bool { return o.retry }
 
-func (o *BaseOperation) UserCredentials() *UserCredentials { return o.userCredentials }
+func (o *baseOperation) UserCredentials() *UserCredentials { return o.userCredentials }
 
-func (o *BaseOperation) HandleError(p *tcpPacket, expectedCommand tcpCommand) error {
+func (o *baseOperation) HandleError(p *tcpPacket, expectedCommand tcpCommand) error {
 	switch p.Command {
 	case tcpCommand_NotAuthenticated:
 		return o.handleNotAuthenticated(p)
@@ -48,7 +48,7 @@ func (o *BaseOperation) HandleError(p *tcpPacket, expectedCommand tcpCommand) er
 	}
 }
 
-func (o *BaseOperation) handleNotAuthenticated(p *tcpPacket) error {
+func (o *baseOperation) handleNotAuthenticated(p *tcpPacket) error {
 	msg := string(p.Payload)
 	if msg == "" {
 		return AuthenticationError
@@ -56,7 +56,7 @@ func (o *BaseOperation) handleNotAuthenticated(p *tcpPacket) error {
 	return errors.New(msg)
 }
 
-func (o *BaseOperation) handleBadRequest(p *tcpPacket) error {
+func (o *baseOperation) handleBadRequest(p *tcpPacket) error {
 	msg := string(p.Payload)
 	if msg == "" {
 		return BadRequest
@@ -64,7 +64,7 @@ func (o *BaseOperation) handleBadRequest(p *tcpPacket) error {
 	return errors.New(msg)
 }
 
-func (o *BaseOperation) handleNotHandled(p *tcpPacket) (err error) {
+func (o *baseOperation) handleNotHandled(p *tcpPacket) (err error) {
 	msg := &protobuf.NotHandled{}
 	if err := proto.Unmarshal(p.Payload, msg); err != nil {
 		return fmt.Errorf("Invalid payload for NotHandled: %v", err)
@@ -84,7 +84,7 @@ func (o *BaseOperation) handleNotHandled(p *tcpPacket) (err error) {
 	return
 }
 
-func (o *BaseOperation) handleUnexpectedCommand(p *tcpPacket, expectedCommand tcpCommand) error {
+func (o *baseOperation) handleUnexpectedCommand(p *tcpPacket, expectedCommand tcpCommand) error {
 	log.Error(`Unexpected TcpCommand received.
 Expected: %v, Actual: %v, CorrelationId: %v
 Operation (%s): %v,

@@ -33,7 +33,7 @@ type Subscription interface {
 }
 
 type subscribeToStreamOperation struct {
-	*BaseOperation
+	*baseOperation
 	stream       string
 	c            chan Subscription
 	confirmation *SubscriptionConfirmation
@@ -51,7 +51,7 @@ func newSubscribeToStreamOperation(
 	userCredentials *UserCredentials,
 ) *subscribeToStreamOperation {
 	return &subscribeToStreamOperation{
-		BaseOperation: &BaseOperation{
+		baseOperation: &baseOperation{
 			correlationId:   uuid.NewV4(),
 			userCredentials: userCredentials,
 		},

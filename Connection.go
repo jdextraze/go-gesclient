@@ -47,7 +47,7 @@ type Connection interface {
 type connection struct {
 	address     string
 	opMutex     sync.RWMutex
-	operations  map[uuid.UUID]Operation
+	operations  map[uuid.UUID]operation
 	leftOver    []byte
 	reconnect   *int32
 	connected   *int32
@@ -62,7 +62,7 @@ func NewConnection(addr string) Connection {
 	connected := int32(0)
 	c := &connection{
 		address:     addr,
-		operations:  make(map[uuid.UUID]Operation),
+		operations:  make(map[uuid.UUID]operation),
 		output:      make(chan *tcpPacket, 100),
 		reconnect:   &reconnect,
 		connected:   &connected,
@@ -253,34 +253,34 @@ func (c *connection) SubscribeToStreamAsync(stream string, userCredentials *User
 	return res, c.enqueueOperation(newSubscribeToStreamOperation(stream, res, c, userCredentials))
 }
 
-func (c *connection) enqueueOperation(operation Operation) error {
-	payload, err := proto.Marshal(operation.GetRequestMessage())
+func (c *connection) enqueueOperation(op operation) error {
+	payload, err := proto.Marshal(op.GetRequestMessage())
 	if err != nil {
 		log.Error("Sending command failed: %v", err)
-		operation.Fail(fmt.Errorf("Sending command failed: %v", err))
+		op.Fail(fmt.Errorf("Sending command failed: %v", err))
 		return err
 	}
 
-	correlationId := operation.GetCorrelationId()
-	userCredentials := operation.UserCredentials()
+	correlationId := op.GetCorrelationId()
+	userCredentials := op.UserCredentials()
 	var authFlag byte = 0
 	if userCredentials != nil {
 		authFlag = 1
 	}
 	c.output <- newTcpPacket(
-		operation.GetRequestCommand(),
+		op.GetRequestCommand(),
 		authFlag,
 		correlationId,
 		payload,
 		userCredentials,
 	)
 
-	c.addOperation(correlationId, operation)
+	c.addOperation(correlationId, op)
 
 	return nil
 }
 
-func (c *connection) resendCommand(operation Operation) error {
+func (c *connection) resendCommand(operation operation) error {
 	payload, err := proto.Marshal(operation.GetRequestMessage())
 	if err != nil {
 		log.Error("Sending command failed: %v", err)
@@ -354,13 +354,13 @@ func (c *connection) process(p *tcpPacket) {
 	}
 }
 
-func (c *connection) addOperation(correlationId uuid.UUID, operation Operation) {
+func (c *connection) addOperation(correlationId uuid.UUID, operation operation) {
 	c.opMutex.Lock()
 	c.operations[correlationId] = operation
 	c.opMutex.Unlock()
 }
 
-func (c *connection) getOperation(correlationId uuid.UUID) Operation {
+func (c *connection) getOperation(correlationId uuid.UUID) operation {
 	c.opMutex.RLock()
 	operation := c.operations[correlationId]
 	c.opMutex.RUnlock()

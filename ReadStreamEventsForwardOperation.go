@@ -7,7 +7,7 @@ import (
 )
 
 type readStreamEventsForwardOperation struct {
-	*BaseOperation
+	*baseOperation
 	stream string
 	start  int
 	max    int
@@ -22,7 +22,7 @@ func newReadStreamEventsForwardOperation(
 	userCredentials *UserCredentials,
 ) *readStreamEventsForwardOperation {
 	return &readStreamEventsForwardOperation{
-		BaseOperation: &BaseOperation{
+		baseOperation: &baseOperation{
 			correlationId:   uuid.NewV4(),
 			userCredentials: userCredentials,
 		},

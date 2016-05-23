@@ -2,13 +2,13 @@ package gesclient
 
 import (
 	"bitbucket.org/jdextraze/go-gesclient/protobuf"
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/satori/go.uuid"
-	"fmt"
 )
 
 type appendToStreamOperation struct {
-	*BaseOperation
+	*baseOperation
 	events          []*EventData
 	stream          string
 	expectedVersion int
@@ -23,7 +23,7 @@ func newAppendToStreamOperation(
 	userCredentials *UserCredentials,
 ) *appendToStreamOperation {
 	return &appendToStreamOperation{
-		BaseOperation: &BaseOperation{
+		baseOperation: &baseOperation{
 			correlationId:   uuid.NewV4(),
 			userCredentials: userCredentials,
 		},
