@@ -43,6 +43,7 @@ type subscribeToStreamOperation struct {
 	dropped      []chan *SubscriptionDropped
 	confirmed    bool
 	error        error
+	unsubscribe  bool
 }
 
 func newSubscribeToStreamOperation(
@@ -65,14 +66,14 @@ func newSubscribeToStreamOperation(
 }
 
 func (o *subscribeToStreamOperation) GetRequestCommand() tcpCommand {
-	if o.confirmed {
+	if o.unsubscribe {
 		return tcpCommand_UnsubscribeFromStream
 	}
 	return tcpCommand_SubscribeToStream
 }
 
 func (o *subscribeToStreamOperation) GetRequestMessage() proto.Message {
-	if o.confirmed {
+	if o.unsubscribe {
 		return &protobuf.UnsubscribeFromStream{}
 	}
 	no := false
@@ -109,6 +110,7 @@ func (o *subscribeToStreamOperation) Unsubscribe() error {
 	if !o.confirmed {
 		return errors.New("Subscription not confirmed")
 	}
+	o.unsubscribe = true
 	return o.conn.enqueueOperation(o, false)
 }
 
