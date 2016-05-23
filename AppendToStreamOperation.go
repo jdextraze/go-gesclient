@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/jdextraze/go-gesclient/protobuf"
 	"github.com/golang/protobuf/proto"
 	"github.com/satori/go.uuid"
+	"fmt"
 )
 
 type appendToStreamOperation struct {
@@ -58,20 +59,42 @@ func (o *appendToStreamOperation) ParseResponse(p *tcpPacket) {
 		}
 		return
 	}
+
 	msg := &protobuf.WriteEventsCompleted{}
-	err := proto.Unmarshal(p.Payload, msg)
-	var commitPosition int64 = -1
-	var preparePosition int64 = -1
-	if msg.CommitPosition != nil {
-		commitPosition = *msg.CommitPosition
+	if err := proto.Unmarshal(p.Payload, msg); err != nil {
+		o.Fail(err)
+		return
 	}
-	if msg.PreparePosition != nil {
-		preparePosition = *msg.PreparePosition
+
+	switch msg.GetResult() {
+	case protobuf.OperationResult_Success:
+		var commitPosition int64 = -1
+		var preparePosition int64 = -1
+		if msg.CommitPosition != nil {
+			commitPosition = *msg.CommitPosition
+		}
+		if msg.PreparePosition != nil {
+			preparePosition = *msg.PreparePosition
+		}
+		position, err := NewPosition(commitPosition, preparePosition)
+		o.c <- NewWriteResult(int(*msg.LastEventNumber), position, err)
+		close(o.c)
+		o.isCompleted = true
+	case protobuf.OperationResult_PrepareTimeout,
+		protobuf.OperationResult_ForwardTimeout,
+		protobuf.OperationResult_CommitTimeout:
+		o.retry = true
+	case protobuf.OperationResult_WrongExpectedVersion:
+		o.Fail(WrongExpectedVersion)
+	case protobuf.OperationResult_StreamDeleted:
+		o.Fail(StreamDeleted)
+	case protobuf.OperationResult_InvalidTransaction:
+		o.Fail(InvalidTransaction)
+	case protobuf.OperationResult_AccessDenied:
+		o.Fail(AccessDenied)
+	default:
+		o.Fail(fmt.Errorf("Unexpected operation result: %v", msg.GetResult()))
 	}
-	position, err := NewPosition(commitPosition, preparePosition)
-	o.c <- NewWriteResult(int(*msg.LastEventNumber), position, err)
-	close(o.c)
-	o.isCompleted = true
 }
 
 func (o *appendToStreamOperation) Fail(err error) {

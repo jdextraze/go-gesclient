@@ -51,7 +51,7 @@ func (o *BaseOperation) HandleError(p *tcpPacket, expectedCommand tcpCommand) er
 func (o *BaseOperation) handleNotAuthenticated(p *tcpPacket) error {
 	msg := string(p.Payload)
 	if msg == "" {
-		msg = "Authentication Error"
+		return AuthenticationError
 	}
 	return errors.New(msg)
 }
@@ -59,7 +59,7 @@ func (o *BaseOperation) handleNotAuthenticated(p *tcpPacket) error {
 func (o *BaseOperation) handleBadRequest(p *tcpPacket) error {
 	msg := string(p.Payload)
 	if msg == "" {
-		msg = "<no message>"
+		return BadRequest
 	}
 	return errors.New(msg)
 }
@@ -75,6 +75,7 @@ func (o *BaseOperation) handleNotHandled(p *tcpPacket) (err error) {
 	case protobuf.NotHandled_TooBusy:
 		o.retry = true
 	case protobuf.NotHandled_NotMaster:
+		// TODO support reconnect
 		err = errors.New("NotHandled - NotMaster not supported")
 	default:
 		log.Error("Unknown NotHandledReason: %s", msg.Reason.String())
