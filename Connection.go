@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/op/go-logging"
 	"github.com/satori/go.uuid"
 	"io"
 	"net"
@@ -18,16 +17,6 @@ import (
 	"sync/atomic"
 	"time"
 )
-
-var log = logging.MustGetLogger("gesclient")
-
-func init() {
-	logging.SetLevel(logging.ERROR, "gesclient")
-}
-
-func Debug() {
-	logging.SetLevel(logging.DEBUG, "gesclient")
-}
 
 type Connection interface {
 	WaitForConnection()
