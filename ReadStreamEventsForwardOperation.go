@@ -2,6 +2,7 @@ package gesclient
 
 import (
 	"bitbucket.org/jdextraze/go-gesclient/protobuf"
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/satori/go.uuid"
 )
@@ -58,8 +59,33 @@ func (o *readStreamEventsForwardOperation) ParseResponse(p *tcpPacket) {
 		}
 		return
 	}
+
 	msg := &protobuf.ReadStreamEventsCompleted{}
 	err := proto.Unmarshal(p.Payload, msg)
+	if err != nil {
+		o.Fail(err)
+		return
+	}
+
+	switch *msg.Result {
+	case protobuf.ReadStreamEventsCompleted_Success:
+		o.succeed(msg)
+	case protobuf.ReadStreamEventsCompleted_StreamDeleted:
+		o.succeed(msg)
+	case protobuf.ReadStreamEventsCompleted_NoStream:
+		o.succeed(msg)
+	case protobuf.ReadStreamEventsCompleted_Error:
+		o.Fail(NewServerError(msg.GetError()))
+	case protobuf.ReadStreamEventsCompleted_NotModified:
+		o.Fail(NewNotModified(o.stream))
+	case protobuf.ReadStreamEventsCompleted_AccessDenied:
+		o.Fail(AccessDenied)
+	default:
+		o.Fail(fmt.Errorf("Unexpected ReadStreamResult: %v", *msg.Result))
+	}
+}
+
+func (o *readStreamEventsForwardOperation) succeed(msg *protobuf.ReadStreamEventsCompleted) {
 	o.c <- newStreamEventsSlice(
 		SliceReadStatus(msg.GetResult()),
 		o.stream,
@@ -69,7 +95,7 @@ func (o *readStreamEventsForwardOperation) ParseResponse(p *tcpPacket) {
 		int(msg.GetNextEventNumber()),
 		int(msg.GetLastEventNumber()),
 		msg.GetIsEndOfStream(),
-		err,
+		nil,
 	)
 	close(o.c)
 	o.isCompleted = true
@@ -91,4 +117,5 @@ func (o *readStreamEventsForwardOperation) Fail(err error) {
 		err,
 	)
 	close(o.c)
+	o.isCompleted = true
 }

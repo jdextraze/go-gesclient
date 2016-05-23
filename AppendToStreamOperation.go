@@ -68,18 +68,7 @@ func (o *appendToStreamOperation) ParseResponse(p *tcpPacket) {
 
 	switch msg.GetResult() {
 	case protobuf.OperationResult_Success:
-		var commitPosition int64 = -1
-		var preparePosition int64 = -1
-		if msg.CommitPosition != nil {
-			commitPosition = *msg.CommitPosition
-		}
-		if msg.PreparePosition != nil {
-			preparePosition = *msg.PreparePosition
-		}
-		position, err := NewPosition(commitPosition, preparePosition)
-		o.c <- NewWriteResult(int(*msg.LastEventNumber), position, err)
-		close(o.c)
-		o.isCompleted = true
+		o.succeed(msg)
 	case protobuf.OperationResult_PrepareTimeout,
 		protobuf.OperationResult_ForwardTimeout,
 		protobuf.OperationResult_CommitTimeout:
@@ -95,6 +84,21 @@ func (o *appendToStreamOperation) ParseResponse(p *tcpPacket) {
 	default:
 		o.Fail(fmt.Errorf("Unexpected operation result: %v", msg.GetResult()))
 	}
+}
+
+func (o *appendToStreamOperation) succeed(msg *protobuf.WriteEventsCompleted) {
+	var commitPosition int64 = -1
+	var preparePosition int64 = -1
+	if msg.CommitPosition != nil {
+		commitPosition = *msg.CommitPosition
+	}
+	if msg.PreparePosition != nil {
+		preparePosition = *msg.PreparePosition
+	}
+	position, err := NewPosition(commitPosition, preparePosition)
+	o.c <- NewWriteResult(int(*msg.LastEventNumber), position, err)
+	close(o.c)
+	o.isCompleted = true
 }
 
 func (o *appendToStreamOperation) Fail(err error) {

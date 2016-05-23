@@ -205,7 +205,7 @@ func (c *connection) AppendToStreamAsync(
 
 	res := make(chan *WriteResult)
 	return res, c.enqueueOperation(
-		newAppendToStreamOperation(stream, events, expectedVersion, res, userCredentials))
+		newAppendToStreamOperation(stream, events, expectedVersion, res, userCredentials), true)
 }
 
 func (c *connection) ReadStreamEventsForward(
@@ -233,7 +233,7 @@ func (c *connection) ReadStreamEventsForwardAsync(
 
 	res := make(chan *StreamEventsSlice)
 	return res, c.enqueueOperation(
-		newReadStreamEventsForwardOperation(stream, start, max, res, userCredentials))
+		newReadStreamEventsForwardOperation(stream, start, max, res, userCredentials), true)
 }
 
 func (c *connection) SubscribeToStream(stream string, userCredentials *UserCredentials) (Subscription, error) {
@@ -250,10 +250,10 @@ func (c *connection) SubscribeToStreamAsync(stream string, userCredentials *User
 	}
 
 	res := make(chan Subscription)
-	return res, c.enqueueOperation(newSubscribeToStreamOperation(stream, res, c, userCredentials))
+	return res, c.enqueueOperation(newSubscribeToStreamOperation(stream, res, c, userCredentials), true)
 }
 
-func (c *connection) enqueueOperation(op operation) error {
+func (c *connection) enqueueOperation(op operation, isNew bool) error {
 	payload, err := proto.Marshal(op.GetRequestMessage())
 	if err != nil {
 		log.Error("Sending command failed: %v", err)
@@ -275,32 +275,9 @@ func (c *connection) enqueueOperation(op operation) error {
 		userCredentials,
 	)
 
-	c.addOperation(correlationId, op)
-
-	return nil
-}
-
-func (c *connection) resendCommand(operation operation) error {
-	payload, err := proto.Marshal(operation.GetRequestMessage())
-	if err != nil {
-		log.Error("Sending command failed: %v", err)
-		operation.Fail(err)
-		return err
+	if isNew {
+		c.addOperation(correlationId, op)
 	}
-
-	correlationId := operation.GetCorrelationId()
-	userCredentials := operation.UserCredentials()
-	var authFlag byte = 0
-	if userCredentials != nil {
-		authFlag = 1
-	}
-	c.output <- newTcpPacket(
-		operation.GetRequestCommand(),
-		authFlag,
-		correlationId,
-		payload,
-		userCredentials,
-	)
 
 	return nil
 }
@@ -341,7 +318,7 @@ func (c *connection) process(p *tcpPacket) {
 		if operation.IsCompleted() {
 			c.removeOperation(p.CorrelationId)
 		} else if operation.Retry() {
-			c.resendCommand(operation)
+			c.enqueueOperation(operation, false)
 		}
 		return
 	}
@@ -376,7 +353,7 @@ func (c *connection) removeOperation(correlationId uuid.UUID) {
 func (c *connection) resubscribe() {
 	c.opMutex.RLock()
 	for _, op := range c.operations {
-		c.resendCommand(op)
+		c.enqueueOperation(op, false)
 	}
 	c.opMutex.RUnlock()
 }

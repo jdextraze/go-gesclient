@@ -2,6 +2,7 @@ package gesclient
 
 import (
 	"bitbucket.org/jdextraze/go-gesclient/protobuf"
+	"errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/satori/go.uuid"
 )
@@ -64,10 +65,16 @@ func newSubscribeToStreamOperation(
 }
 
 func (o *subscribeToStreamOperation) GetRequestCommand() tcpCommand {
+	if o.confirmed {
+		return tcpCommand_UnsubscribeFromStream
+	}
 	return tcpCommand_SubscribeToStream
 }
 
 func (o *subscribeToStreamOperation) GetRequestMessage() proto.Message {
+	if o.confirmed {
+		return &protobuf.UnsubscribeFromStream{}
+	}
 	no := false
 	return &protobuf.SubscribeToStream{
 		EventStreamId:  &o.stream,
@@ -83,6 +90,8 @@ func (o *subscribeToStreamOperation) ParseResponse(p *tcpPacket) {
 		o.streamEventAppeared(p.Payload)
 	case tcpCommand_SubscriptionDropped:
 		o.subscriptionDropped(p.Payload)
+	default:
+		o.HandleError(p, tcpCommand_StreamEventAppeared)
 	}
 }
 
@@ -97,29 +106,10 @@ func (o *subscribeToStreamOperation) Events() chan *ResolvedEvent {
 }
 
 func (o *subscribeToStreamOperation) Unsubscribe() error {
-	if err := o.conn.assertConnected(); err != nil {
-		return err
+	if !o.confirmed {
+		return errors.New("Subscription not confirmed")
 	}
-
-	payload, err := proto.Marshal(&protobuf.UnsubscribeFromStream{})
-	if err != nil {
-		return err
-	}
-
-	userCredentials := o.UserCredentials()
-	var authFlag byte = 0
-	if userCredentials != nil {
-		authFlag = 1
-	}
-	o.conn.output <- newTcpPacket(
-		tcpCommand_UnsubscribeFromStream,
-		authFlag,
-		o.correlationId,
-		payload,
-		userCredentials,
-	)
-
-	return nil
+	return o.conn.enqueueOperation(o, false)
 }
 
 func (o *subscribeToStreamOperation) Dropped() chan *SubscriptionDropped {
@@ -154,11 +144,13 @@ func (o *subscribeToStreamOperation) subscriptionConfirmation(payload []byte) {
 	if o.confirmed {
 		return
 	}
+
 	msg := &protobuf.SubscriptionConfirmation{}
 	if err := proto.Unmarshal(payload, msg); err != nil {
 		o.Fail(err)
 		return
 	}
+
 	o.confirmation = &SubscriptionConfirmation{}
 	o.c <- o
 	close(o.c)
@@ -171,6 +163,7 @@ func (o *subscribeToStreamOperation) streamEventAppeared(payload []byte) {
 		o.Fail(err)
 		return
 	}
+
 	evt := newResolvedEventFrom(msg.Event)
 	for _, ch := range o.events {
 		ch <- evt
@@ -183,15 +176,18 @@ func (o *subscribeToStreamOperation) subscriptionDropped(payload []byte) {
 		o.Fail(err)
 		return
 	}
-	evt := &SubscriptionDropped{
+
+	d := &SubscriptionDropped{
 		Reason: SubscriptionDropReason(msg.GetReason()),
 	}
 	for _, ch := range o.dropped {
-		ch <- evt
+		ch <- d
 		close(ch)
 	}
+
 	for _, ch := range o.events {
 		close(ch)
 	}
+
 	o.isCompleted = true
 }
