@@ -91,7 +91,7 @@ func (c *connection) connect() {
 }
 
 func (c *connection) reader() {
-	log.Debug("Starting reader")
+	log.Info("Starting reader")
 	for {
 		buff := make([]byte, 4096)
 		n, err := c.conn.Read(buff)
@@ -107,11 +107,11 @@ func (c *connection) reader() {
 		}
 	}
 	c.readerEnded <- struct{}{}
-	log.Debug("Reader ended")
+	log.Info("Reader ended")
 }
 
 func (c *connection) writer() {
-	log.Debug("Starting writer")
+	log.Info("Starting writer")
 	var packet *tcpPacket
 	run := true
 	for run {
@@ -132,7 +132,7 @@ func (c *connection) writer() {
 		}
 	}
 	c.writerEnded <- struct{}{}
-	log.Debug("Writer ended")
+	log.Info("Writer ended")
 }
 
 func (c *connection) writeToConnection(conn net.Conn, packet *tcpPacket) error {
@@ -144,7 +144,7 @@ func (c *connection) writeToConnection(conn net.Conn, packet *tcpPacket) error {
 		log.Error("net.Conn.Write failed: %v", err)
 		return err
 	}
-	log.Info("Sent Command: %s | CorrelationId: %s", packet.Command, packet.CorrelationId)
+	log.Debug("Sent Command: %s | CorrelationId: %s", packet.Command, packet.CorrelationId)
 	return nil
 }
 
@@ -298,7 +298,7 @@ func (c *connection) onData(data []byte) {
 }
 
 func (c *connection) process(p *tcpPacket) {
-	log.Info("Received Command: %s | CorrelationId: %s", p.Command, p.CorrelationId)
+	log.Debug("Received Command: %s | CorrelationId: %s", p.Command, p.CorrelationId)
 
 	operation := c.getOperation(p.CorrelationId)
 
@@ -316,7 +316,7 @@ func (c *connection) process(p *tcpPacket) {
 	case tcpCommand_HeartbeatRequestCommand:
 		c.output <- newTcpPacket(tcpCommand_HeartbeatResponseCommand, 0, p.CorrelationId, nil, nil)
 	default:
-		log.Debug("Command not supported")
+		log.Error("Command not supported")
 	}
 }
 
