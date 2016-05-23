@@ -6,6 +6,8 @@ import (
 	"github.com/satori/go.uuid"
 	"log"
 	"time"
+	"os"
+	"fmt"
 )
 
 type Tested struct {
@@ -15,7 +17,13 @@ type Tested struct {
 func main() {
 	gesclient.Debug()
 
-	c := gesclient.NewConnection("192.168.22.10:1113")
+	if len(os.Args) != 2 {
+		fmt.Println("Usage: example [event-store-addr]")
+		fmt.Println("  event-store-addr    Event store address (Ex: 192.168.0.100:1113)")
+		return
+	}
+
+	c := gesclient.NewConnection(os.Args[1])
 	c.WaitForConnection()
 
 	streamName := "Test-" + uuid.NewV4().String()
