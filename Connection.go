@@ -191,10 +191,8 @@ func (c *connection) AppendToStreamAsync(
 	if err := c.assertConnected(); err != nil {
 		return nil, err
 	}
-
-	res := make(chan *WriteResult)
-	return res, c.enqueueOperation(
-		newAppendToStreamOperation(stream, events, expectedVersion, res, userCredentials), true)
+	op := newAppendToStreamOperation(stream, events, expectedVersion, userCredentials)
+	return op.GetResultChannel(), c.enqueueOperation(op, true)
 }
 
 func (c *connection) ReadStreamEventsForward(
@@ -219,10 +217,8 @@ func (c *connection) ReadStreamEventsForwardAsync(
 	if err := c.assertConnected(); err != nil {
 		return nil, err
 	}
-
-	res := make(chan *StreamEventsSlice)
-	return res, c.enqueueOperation(
-		newReadStreamEventsForwardOperation(stream, start, max, res, userCredentials), true)
+	op := newReadStreamEventsForwardOperation(stream, start, max, userCredentials)
+	return op.GetResultChannel(), c.enqueueOperation(op, true)
 }
 
 func (c *connection) SubscribeToStream(stream string, userCredentials *UserCredentials) (Subscription, error) {
@@ -237,9 +233,8 @@ func (c *connection) SubscribeToStreamAsync(stream string, userCredentials *User
 	if err := c.assertConnected(); err != nil {
 		return nil, err
 	}
-
-	res := make(chan Subscription)
-	return res, c.enqueueOperation(newSubscribeToStreamOperation(stream, res, c, userCredentials), true)
+	op := newSubscribeToStreamOperation(stream, c, userCredentials)
+	return op.GetResultChannel(), c.enqueueOperation(op, true)
 }
 
 func (c *connection) enqueueOperation(op operation, isNew bool) error {

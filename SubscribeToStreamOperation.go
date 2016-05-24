@@ -35,20 +35,19 @@ type Subscription interface {
 
 type subscribeToStreamOperation struct {
 	*baseOperation
-	stream       string
-	c            chan Subscription
-	confirmation *SubscriptionConfirmation
-	conn         *connection
-	events       []chan *ResolvedEvent
-	dropped      []chan *SubscriptionDropped
-	confirmed    bool
-	error        error
-	unsubscribe  bool
+	stream        string
+	resultChannel chan Subscription
+	confirmation  *SubscriptionConfirmation
+	conn          *connection
+	events        []chan *ResolvedEvent
+	dropped       []chan *SubscriptionDropped
+	confirmed     bool
+	error         error
+	unsubscribe   bool
 }
 
 func newSubscribeToStreamOperation(
 	stream string,
-	c chan Subscription,
 	conn *connection,
 	userCredentials *UserCredentials,
 ) *subscribeToStreamOperation {
@@ -57,11 +56,11 @@ func newSubscribeToStreamOperation(
 			correlationId:   uuid.NewV4(),
 			userCredentials: userCredentials,
 		},
-		stream:  stream,
-		c:       c,
-		conn:    conn,
-		events:  make([]chan *ResolvedEvent, 0),
-		dropped: make([]chan *SubscriptionDropped, 0),
+		stream:        stream,
+		resultChannel: make(chan Subscription, 1),
+		conn:          conn,
+		events:        make([]chan *ResolvedEvent, 0),
+		dropped:       make([]chan *SubscriptionDropped, 0),
 	}
 }
 
@@ -101,7 +100,7 @@ func (o *subscribeToStreamOperation) Confirmation() *SubscriptionConfirmation {
 }
 
 func (o *subscribeToStreamOperation) Events() chan *ResolvedEvent {
-	events := make(chan *ResolvedEvent)
+	events := make(chan *ResolvedEvent, 100)
 	o.events = append(o.events, events)
 	return events
 }
@@ -115,7 +114,7 @@ func (o *subscribeToStreamOperation) Unsubscribe() error {
 }
 
 func (o *subscribeToStreamOperation) Dropped() chan *SubscriptionDropped {
-	dropped := make(chan *SubscriptionDropped)
+	dropped := make(chan *SubscriptionDropped, 1)
 	o.dropped = append(o.dropped, dropped)
 	return dropped
 }
@@ -125,8 +124,8 @@ func (o *subscribeToStreamOperation) Error() error { return o.error }
 func (o *subscribeToStreamOperation) Fail(err error) {
 	if !o.confirmed {
 		o.error = err
-		o.c <- o
-		close(o.c)
+		o.resultChannel <- o
+		close(o.resultChannel)
 	}
 	evt := &SubscriptionDropped{
 		Reason: SubscriptionDropReasonError,
@@ -154,8 +153,8 @@ func (o *subscribeToStreamOperation) subscriptionConfirmation(payload []byte) {
 	}
 
 	o.confirmation = &SubscriptionConfirmation{}
-	o.c <- o
-	close(o.c)
+	o.resultChannel <- o
+	close(o.resultChannel)
 	o.confirmed = true
 }
 
@@ -192,4 +191,8 @@ func (o *subscribeToStreamOperation) subscriptionDropped(payload []byte) {
 	}
 
 	o.isCompleted = true
+}
+
+func (o *subscribeToStreamOperation) GetResultChannel() <-chan Subscription {
+	return o.resultChannel
 }

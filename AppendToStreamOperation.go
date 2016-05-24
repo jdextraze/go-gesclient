@@ -12,14 +12,13 @@ type appendToStreamOperation struct {
 	events          []*EventData
 	stream          string
 	expectedVersion int
-	c               chan *WriteResult
+	resultChannel   chan *WriteResult
 }
 
 func newAppendToStreamOperation(
 	stream string,
 	events []*EventData,
 	expectedVersion int,
-	c chan *WriteResult,
 	userCredentials *UserCredentials,
 ) *appendToStreamOperation {
 	return &appendToStreamOperation{
@@ -30,11 +29,13 @@ func newAppendToStreamOperation(
 		stream:          stream,
 		expectedVersion: expectedVersion,
 		events:          events,
-		c:               c,
+		resultChannel:   make(chan *WriteResult, 1),
 	}
 }
 
-func (o *appendToStreamOperation) GetRequestCommand() tcpCommand { return tcpCommand_WriteEvents }
+func (o *appendToStreamOperation) GetRequestCommand() tcpCommand {
+	return tcpCommand_WriteEvents
+}
 
 func (o *appendToStreamOperation) GetRequestMessage() proto.Message {
 	requireMaster := false
@@ -96,8 +97,8 @@ func (o *appendToStreamOperation) succeed(msg *protobuf.WriteEventsCompleted) {
 		preparePosition = *msg.PreparePosition
 	}
 	position, err := NewPosition(commitPosition, preparePosition)
-	o.c <- NewWriteResult(int(*msg.LastEventNumber), position, err)
-	close(o.c)
+	o.resultChannel <- NewWriteResult(int(*msg.LastEventNumber), position, err)
+	close(o.resultChannel)
 	o.isCompleted = true
 }
 
@@ -105,7 +106,11 @@ func (o *appendToStreamOperation) Fail(err error) {
 	if o.isCompleted {
 		return
 	}
-	o.c <- NewWriteResult(0, nil, err)
-	close(o.c)
+	o.resultChannel <- NewWriteResult(0, nil, err)
+	close(o.resultChannel)
 	o.isCompleted = true
+}
+
+func (o *appendToStreamOperation) GetResultChannel() <-chan *WriteResult {
+	return o.resultChannel
 }

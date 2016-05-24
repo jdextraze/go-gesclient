@@ -9,17 +9,16 @@ import (
 
 type readStreamEventsForwardOperation struct {
 	*baseOperation
-	stream string
-	start  int
-	max    int
-	c      chan *StreamEventsSlice
+	stream        string
+	start         int
+	max           int
+	resultChannel chan *StreamEventsSlice
 }
 
 func newReadStreamEventsForwardOperation(
 	stream string,
 	start int,
 	max int,
-	c chan *StreamEventsSlice,
 	userCredentials *UserCredentials,
 ) *readStreamEventsForwardOperation {
 	return &readStreamEventsForwardOperation{
@@ -27,10 +26,10 @@ func newReadStreamEventsForwardOperation(
 			correlationId:   uuid.NewV4(),
 			userCredentials: userCredentials,
 		},
-		stream: stream,
-		start:  start,
-		max:    max,
-		c:      c,
+		stream:        stream,
+		start:         start,
+		max:           max,
+		resultChannel: make(chan *StreamEventsSlice, 1),
 	}
 }
 
@@ -86,7 +85,7 @@ func (o *readStreamEventsForwardOperation) ParseResponse(p *tcpPacket) {
 }
 
 func (o *readStreamEventsForwardOperation) succeed(msg *protobuf.ReadStreamEventsCompleted) {
-	o.c <- newStreamEventsSlice(
+	o.resultChannel <- newStreamEventsSlice(
 		SliceReadStatus(msg.GetResult()),
 		o.stream,
 		o.start,
@@ -97,7 +96,7 @@ func (o *readStreamEventsForwardOperation) succeed(msg *protobuf.ReadStreamEvent
 		msg.GetIsEndOfStream(),
 		nil,
 	)
-	close(o.c)
+	close(o.resultChannel)
 	o.isCompleted = true
 }
 
@@ -105,7 +104,7 @@ func (o *readStreamEventsForwardOperation) Fail(err error) {
 	if o.isCompleted {
 		return
 	}
-	o.c <- newStreamEventsSlice(
+	o.resultChannel <- newStreamEventsSlice(
 		SliceReadStatusError,
 		o.stream,
 		o.start,
@@ -116,6 +115,10 @@ func (o *readStreamEventsForwardOperation) Fail(err error) {
 		false,
 		err,
 	)
-	close(o.c)
+	close(o.resultChannel)
 	o.isCompleted = true
+}
+
+func (o *readStreamEventsForwardOperation) GetResultChannel() <-chan *StreamEventsSlice {
+	return o.resultChannel
 }

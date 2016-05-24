@@ -11,4 +11,3 @@ func init() {
 func Debug() {
 	logging.SetLevel(logging.DEBUG, "gesclient")
 }
-
