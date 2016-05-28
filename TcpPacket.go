@@ -13,8 +13,8 @@ const (
 )
 
 const (
-	tcpFlagsNone          = 0x00
-	tcpFlagsAuthenticated = 0x01
+	tcpFlagsNone          byte = 0x00
+	tcpFlagsAuthenticated byte = 0x01
 )
 
 type tcpPacket struct {

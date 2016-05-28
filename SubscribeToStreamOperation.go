@@ -91,7 +91,7 @@ func (o *subscribeToStreamOperation) ParseResponse(p *tcpPacket) {
 	case tcpCommand_SubscriptionDropped:
 		o.subscriptionDropped(p.Payload)
 	default:
-		o.HandleError(p, tcpCommand_StreamEventAppeared)
+		o.handleError(p, tcpCommand_StreamEventAppeared)
 	}
 }
 

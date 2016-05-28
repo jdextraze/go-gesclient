@@ -35,7 +35,7 @@ func (o *baseOperation) Retry() bool { return o.retry }
 
 func (o *baseOperation) UserCredentials() *UserCredentials { return o.userCredentials }
 
-func (o *baseOperation) HandleError(p *tcpPacket, expectedCommand tcpCommand) error {
+func (o *baseOperation) handleError(p *tcpPacket, expectedCommand tcpCommand) error {
 	switch p.Command {
 	case tcpCommand_NotAuthenticated:
 		return o.handleNotAuthenticated(p)

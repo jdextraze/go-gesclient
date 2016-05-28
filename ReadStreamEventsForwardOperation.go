@@ -52,7 +52,7 @@ func (o *readStreamEventsForwardOperation) GetRequestMessage() proto.Message {
 
 func (o *readStreamEventsForwardOperation) ParseResponse(p *tcpPacket) {
 	if p.Command != tcpCommand_ReadStreamEventsForwardCompleted {
-		err := o.HandleError(p, tcpCommand_ReadStreamEventsForwardCompleted)
+		err := o.handleError(p, tcpCommand_ReadStreamEventsForwardCompleted)
 		if err != nil {
 			o.Fail(err)
 		}

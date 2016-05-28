@@ -54,7 +54,7 @@ func (o *appendToStreamOperation) GetRequestMessage() proto.Message {
 
 func (o *appendToStreamOperation) ParseResponse(p *tcpPacket) {
 	if p.Command != tcpCommand_WriteEventsCompleted {
-		err := o.HandleError(p, tcpCommand_WriteEventsCompleted)
+		err := o.handleError(p, tcpCommand_WriteEventsCompleted)
 		if err != nil {
 			o.Fail(err)
 		}
