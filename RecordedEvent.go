@@ -27,8 +27,8 @@ func newRecordedEvent(evt *protobuf.EventRecord) *RecordedEvent {
 		data:          evt.GetData(),
 		metadata:      evt.GetMetadata(),
 		isJson:        evt.GetDataContentType() == 1,
-		created:       time.Time{}.Add(time.Duration(evt.GetCreated())),
-		createdEpoch:  time.Time{}.Add(time.Duration(evt.GetCreatedEpoch())),
+		created:       timeFromTicks(evt.GetCreated()),
+		createdEpoch:  timeFromUnixMilliseconds(evt.GetCreatedEpoch()),
 	}
 }
 
