@@ -19,18 +19,22 @@ import (
 )
 
 type Connection interface {
-	WaitForConnection()
-	Close() error
 	AppendToStream(stream string, expectedVersion int, events []*EventData,
 		userCredentials *UserCredentials) (*WriteResult, error)
 	AppendToStreamAsync(stream string, expectedVersion int, events []*EventData,
 		userCredentials *UserCredentials) (<-chan *WriteResult, error)
+	Close() error
+	DeleteStream(stream string, expectedVersion int, hardDelete bool,
+		userCredentials *UserCredentials) (*DeleteResult, error)
+	DeleteStreamAsync(stream string, expectedVersion int, hardDelete bool,
+		userCredentials *UserCredentials) (<-chan *DeleteResult, error)
 	ReadStreamEventsForward(stream string, start int, max int,
 		userCredentials *UserCredentials) (*StreamEventsSlice, error)
 	ReadStreamEventsForwardAsync(stream string, start int, max int,
 		userCredentials *UserCredentials) (<-chan *StreamEventsSlice, error)
 	SubscribeToStream(stream string, userCredentials *UserCredentials) (Subscription, error)
 	SubscribeToStreamAsync(stream string, userCredentials *UserCredentials) (<-chan Subscription, error)
+	WaitForConnection()
 }
 
 type connection struct {
@@ -192,6 +196,32 @@ func (c *connection) AppendToStreamAsync(
 		return nil, err
 	}
 	op := newAppendToStreamOperation(stream, events, expectedVersion, userCredentials)
+	return op.GetResultChannel(), c.enqueueOperation(op, true)
+}
+
+func (c *connection) DeleteStream(
+	stream string,
+	expectedVersion int,
+	hardDelete bool,
+	userCredentials *UserCredentials,
+) (*DeleteResult, error) {
+	ch, err := c.DeleteStreamAsync(stream, expectedVersion, hardDelete, userCredentials)
+	if err != nil {
+		return nil, err
+	}
+	return <-ch, nil
+}
+
+func (c *connection) DeleteStreamAsync(
+	stream string,
+	expectedVersion int,
+	hardDelete bool,
+	userCredentials *UserCredentials,
+) (<-chan *DeleteResult, error) {
+	if err := c.assertConnected(); err != nil {
+		return nil, err
+	}
+	op := newDeleteStreamOperation(stream, expectedVersion, hardDelete, userCredentials)
 	return op.GetResultChannel(), c.enqueueOperation(op, true)
 }
 
