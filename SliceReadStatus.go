@@ -3,10 +3,10 @@ package gesclient
 type SliceReadStatus int
 
 const (
-	SliceReadStatusSuccess        SliceReadStatus = 0
-	SliceReadStatusStreamNotFound SliceReadStatus = 1
-	SliceReadStatusStreamDeleted  SliceReadStatus = 2
-	SliceReadStatusNotModified    SliceReadStatus = 3
-	SliceReadStatusError          SliceReadStatus = 4
-	SliceReadStatusAccessDenied   SliceReadStatus = 5
+	SliceReadStatus_Success        SliceReadStatus = 0
+	SliceReadStatus_StreamNotFound SliceReadStatus = 1
+	SliceReadStatus_StreamDeleted  SliceReadStatus = 2
+	SliceReadStatus_NotModified    SliceReadStatus = 3
+	SliceReadStatus_Error          SliceReadStatus = 4
+	SliceReadStatus_AccessDenied   SliceReadStatus = 5
 )

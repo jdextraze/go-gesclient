@@ -58,7 +58,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 		var res <-chan *DeleteResult
 
 		BeforeEach(func() {
-			res = sut.GetResultChannel()
+			res = sut.resultChannel
 			sut.Fail(errors.New("error"))
 		})
 
@@ -81,7 +81,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is success", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 
 				zero64 := int64(0)
 				payload, _ := proto.Marshal(&protobuf.DeleteStreamCompleted{
@@ -113,7 +113,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is prepare timeout", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 
 				zero64 := int64(0)
 				payload, _ := proto.Marshal(&protobuf.DeleteStreamCompleted{
@@ -147,7 +147,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is forward timeout", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 
 				zero64 := int64(0)
 				payload, _ := proto.Marshal(&protobuf.DeleteStreamCompleted{
@@ -181,7 +181,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is commit timeout", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 
 				zero64 := int64(0)
 				payload, _ := proto.Marshal(&protobuf.DeleteStreamCompleted{
@@ -215,7 +215,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is wrong expected version", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 
 				zero64 := int64(0)
 				payload, _ := proto.Marshal(&protobuf.DeleteStreamCompleted{
@@ -246,7 +246,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is stream deleted", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 
 				zero64 := int64(0)
 				payload, _ := proto.Marshal(&protobuf.DeleteStreamCompleted{
@@ -277,7 +277,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is invalid transaction", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 
 				zero64 := int64(0)
 				payload, _ := proto.Marshal(&protobuf.DeleteStreamCompleted{
@@ -308,7 +308,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is access denied", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 
 				zero64 := int64(0)
 				payload, _ := proto.Marshal(&protobuf.DeleteStreamCompleted{
@@ -339,7 +339,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response protobuf unmarshal fails", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 				sut.ParseResponse(&tcpPacket{
 					Command: tcpCommand_DeleteStreamCompleted,
 					Payload: []byte{0},
@@ -363,7 +363,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is not authenticated", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 				sut.ParseResponse(&tcpPacket{
 					Command: tcpCommand_NotAuthenticated,
 					Payload: []byte{},
@@ -386,7 +386,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is bad request", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 				sut.ParseResponse(&tcpPacket{
 					Command: tcpCommand_BadRequest,
 					Payload: []byte{},
@@ -409,7 +409,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is not handled - not ready", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 
 				payload, _ := proto.Marshal(&protobuf.NotHandled{
 					Reason: protobuf.NotHandled_NotReady.Enum(),
@@ -440,7 +440,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is not handled - too busy", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 
 				payload, _ := proto.Marshal(&protobuf.NotHandled{
 					Reason: protobuf.NotHandled_TooBusy.Enum(),
@@ -471,7 +471,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is not handled - not master", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 
 				payload, _ := proto.Marshal(&protobuf.NotHandled{
 					Reason: protobuf.NotHandled_NotMaster.Enum(),
@@ -500,7 +500,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is not handled - unknown", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 
 				reason := protobuf.NotHandled_NotHandledReason(-1)
 				payload, _ := proto.Marshal(&protobuf.NotHandled{
@@ -532,7 +532,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 		Context("when response is unexpected command", func() {
 			BeforeEach(func() {
-				res = sut.GetResultChannel()
+				res = sut.resultChannel
 				sut.ParseResponse(&tcpPacket{
 					Command: tcpCommand_SubscriptionConfirmation,
 					Payload: []byte{},

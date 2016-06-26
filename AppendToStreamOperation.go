@@ -110,7 +110,3 @@ func (o *appendToStreamOperation) Fail(err error) {
 	close(o.resultChannel)
 	o.isCompleted = true
 }
-
-func (o *appendToStreamOperation) GetResultChannel() <-chan *WriteResult {
-	return o.resultChannel
-}

@@ -28,6 +28,10 @@ type Connection interface {
 		userCredentials *UserCredentials) (*DeleteResult, error)
 	DeleteStreamAsync(stream string, expectedVersion int, hardDelete bool,
 		userCredentials *UserCredentials) (<-chan *DeleteResult, error)
+	ReadEvent(stream string, eventNumber int, resolveTos bool,
+		userCredentials *UserCredentials) (*EventReadResult, error)
+	ReadEventAsync(stream string, eventNumber int, resolveTos bool,
+		userCredentials *UserCredentials) (<-chan *EventReadResult, error)
 	ReadStreamEventsForward(stream string, start int, max int,
 		userCredentials *UserCredentials) (*StreamEventsSlice, error)
 	ReadStreamEventsForwardAsync(stream string, start int, max int,
@@ -35,32 +39,38 @@ type Connection interface {
 	SubscribeToStream(stream string, userCredentials *UserCredentials) (Subscription, error)
 	SubscribeToStreamAsync(stream string, userCredentials *UserCredentials) (<-chan Subscription, error)
 	WaitForConnection()
+	Connected() <-chan struct{}
+	RemoveConnected(ch <-chan struct{}) error
 }
 
 type connection struct {
-	address     string
-	opMutex     sync.RWMutex
-	operations  map[uuid.UUID]operation
-	leftOver    []byte
-	reconnect   *int32
-	connected   *int32
-	output      chan *tcpPacket
-	conn        net.Conn
-	readerEnded chan struct{}
-	writerEnded chan struct{}
+	address               string
+	opMutex               sync.RWMutex
+	operations            map[uuid.UUID]operation
+	leftOver              []byte
+	reconnect             *int32
+	connected             *int32
+	output                chan *tcpPacket
+	conn                  net.Conn
+	readerEnded           chan struct{}
+	writerEnded           chan struct{}
+	connectedChannels     []chan struct{}
+	connectedChannelsLock *sync.Mutex
 }
 
 func NewConnection(addr string) Connection {
 	reconnect := int32(1)
 	connected := int32(0)
 	c := &connection{
-		address:     addr,
-		operations:  make(map[uuid.UUID]operation),
-		output:      make(chan *tcpPacket, 100),
-		reconnect:   &reconnect,
-		connected:   &connected,
-		readerEnded: make(chan struct{}),
-		writerEnded: make(chan struct{}),
+		address:               addr,
+		operations:            make(map[uuid.UUID]operation),
+		output:                make(chan *tcpPacket, 100),
+		reconnect:             &reconnect,
+		connected:             &connected,
+		readerEnded:           make(chan struct{}),
+		writerEnded:           make(chan struct{}),
+		connectedChannels:     make([]chan struct{}, 0),
+		connectedChannelsLock: &sync.Mutex{},
 	}
 	go c.connect()
 	return c
@@ -76,6 +86,11 @@ func (c *connection) connect() {
 			go c.writer()
 
 			atomic.StoreInt32(c.connected, 1)
+			c.connectedChannelsLock.Lock()
+			for _, ch := range c.connectedChannels {
+				ch <- struct{}{}
+			}
+			c.connectedChannelsLock.Unlock()
 			c.resubscribe()
 
 			<-c.writerEnded
@@ -92,6 +107,12 @@ func (c *connection) connect() {
 	close(c.readerEnded)
 	close(c.writerEnded)
 	c.clearOperations()
+	c.connectedChannelsLock.Lock()
+	for _, ch := range c.connectedChannels {
+		close(ch)
+	}
+	c.connected = nil
+	c.connectedChannelsLock.Unlock()
 }
 
 func (c *connection) reader() {
@@ -159,6 +180,31 @@ func (c *connection) assertConnected() error {
 	return nil
 }
 
+func (c *connection) Connected() <-chan struct{} {
+	ch := make(chan struct{})
+	c.connectedChannelsLock.Lock()
+	c.connectedChannels = append(c.connectedChannels, ch)
+	c.connectedChannelsLock.Unlock()
+	return ch
+}
+
+func (c *connection) RemoveConnected(connectedChannel <-chan struct{}) error {
+	c.connectedChannelsLock.Lock()
+	for i, ch := range c.connectedChannels {
+		if ch == connectedChannel {
+			close(ch)
+			copy(c.connectedChannels[i:], c.connectedChannels[i+1:])
+			last := len(c.connectedChannels) - 1
+			c.connectedChannels[last] = nil
+			c.connectedChannels = c.connectedChannels[:last]
+			c.connectedChannelsLock.Unlock()
+			return nil
+		}
+	}
+	c.connectedChannelsLock.Unlock()
+	return errors.New("Channel not found")
+}
+
 func (c *connection) WaitForConnection() {
 	for atomic.LoadInt32(c.connected) == 0 {
 		time.Sleep(10)
@@ -196,7 +242,7 @@ func (c *connection) AppendToStreamAsync(
 		return nil, err
 	}
 	op := newAppendToStreamOperation(stream, events, expectedVersion, userCredentials)
-	return op.GetResultChannel(), c.enqueueOperation(op, true)
+	return op.resultChannel, c.enqueueOperation(op, true)
 }
 
 func (c *connection) DeleteStream(
@@ -222,7 +268,33 @@ func (c *connection) DeleteStreamAsync(
 		return nil, err
 	}
 	op := newDeleteStreamOperation(stream, expectedVersion, hardDelete, userCredentials)
-	return op.GetResultChannel(), c.enqueueOperation(op, true)
+	return op.resultChannel, c.enqueueOperation(op, true)
+}
+
+func (c *connection) ReadEvent(
+	stream string,
+	eventNumber int,
+	resolveTos bool,
+	userCredentials *UserCredentials,
+) (*EventReadResult, error) {
+	ch, err := c.ReadEventAsync(stream, eventNumber, resolveTos, userCredentials)
+	if err != nil {
+		return nil, err
+	}
+	return <-ch, nil
+}
+
+func (c *connection) ReadEventAsync(
+	stream string,
+	eventNumber int,
+	resolveTos bool,
+	userCredentials *UserCredentials,
+) (<-chan *EventReadResult, error) {
+	if err := c.assertConnected(); err != nil {
+		return nil, err
+	}
+	op := newReadEventOperation(stream, eventNumber, resolveTos, userCredentials)
+	return op.resultChannel, c.enqueueOperation(op, true)
 }
 
 func (c *connection) ReadStreamEventsForward(
@@ -248,7 +320,7 @@ func (c *connection) ReadStreamEventsForwardAsync(
 		return nil, err
 	}
 	op := newReadStreamEventsForwardOperation(stream, start, max, userCredentials)
-	return op.GetResultChannel(), c.enqueueOperation(op, true)
+	return op.resultChannel, c.enqueueOperation(op, true)
 }
 
 func (c *connection) SubscribeToStream(stream string, userCredentials *UserCredentials) (Subscription, error) {
@@ -264,7 +336,7 @@ func (c *connection) SubscribeToStreamAsync(stream string, userCredentials *User
 		return nil, err
 	}
 	op := newSubscribeToStreamOperation(stream, c, userCredentials)
-	return op.GetResultChannel(), c.enqueueOperation(op, true)
+	return op.resultChannel, c.enqueueOperation(op, true)
 }
 
 func (c *connection) enqueueOperation(op operation, isNew bool) error {

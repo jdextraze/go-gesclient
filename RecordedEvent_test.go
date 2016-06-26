@@ -21,7 +21,7 @@ var _ = Describe("RecordedEvent", func() {
 		metadataContentType int32     = 0
 		now                 time.Time = time.Now()
 		created             int64     = now.UnixNano()/tick + ticksSinceEpoch
-		createdEpoch        int64     = now.UnixNano() / int64(time.Millisecond)
+		createdEpoch        int64     = now.Round(time.Millisecond).UnixNano() / int64(time.Millisecond)
 	)
 
 	BeforeEach(func() {

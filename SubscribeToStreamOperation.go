@@ -7,17 +7,33 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-type SubscriptionConfirmation struct{}
+type SubscriptionConfirmation struct {
+	lastCommitPosition int64
+	lastEventNumber    int32
+}
+
+func (c *SubscriptionConfirmation) LastCommitPosition() int64 {
+	return c.lastCommitPosition
+}
+
+func (c *SubscriptionConfirmation) LastEventNumber() int32 {
+	return c.lastEventNumber
+}
 
 type SubscriptionDropReason int
 
+// TODO review this
 const (
-	SubscriptionDropReasonError                         SubscriptionDropReason = -1
-	SubscriptionDropReasonUnsubscribed                  SubscriptionDropReason = 0
-	SubscriptionDropReasonAccessDenied                  SubscriptionDropReason = 1
-	SubscriptionDropReasonNotFound                      SubscriptionDropReason = 2
-	SubscriptionDropReasonPersistentSubscriptionDeleted SubscriptionDropReason = 3
-	SubscriptionDropReasonSubscriberMaxCountReached     SubscriptionDropReason = 4
+	SubscriptionDropReason_Error                         SubscriptionDropReason = -1
+	SubscriptionDropReason_Unsubscribed                  SubscriptionDropReason = 0
+	SubscriptionDropReason_AccessDenied                  SubscriptionDropReason = 1
+	SubscriptionDropReason_NotFound                      SubscriptionDropReason = 2
+	SubscriptionDropReason_PersistentSubscriptionDeleted SubscriptionDropReason = 3
+	SubscriptionDropReason_SubscriberMaxCountReached     SubscriptionDropReason = 4
+
+	SubscriptionDropReason_UserInitiated           SubscriptionDropReason = 5
+	SubscriptionDropReason_CatchUpError            SubscriptionDropReason = 6
+	SubscriptionDropReason_ProcessingQueueOverflow SubscriptionDropReason = 7
 )
 
 type SubscriptionDropped struct {
@@ -27,9 +43,9 @@ type SubscriptionDropped struct {
 
 type Subscription interface {
 	Confirmation() *SubscriptionConfirmation
-	Events() chan *ResolvedEvent
+	Events() <-chan *ResolvedEvent
 	Unsubscribe() error
-	Dropped() chan *SubscriptionDropped
+	Dropped() <-chan *SubscriptionDropped
 	Error() error
 }
 
@@ -39,8 +55,8 @@ type subscribeToStreamOperation struct {
 	resultChannel chan Subscription
 	confirmation  *SubscriptionConfirmation
 	conn          *connection
-	events        []chan *ResolvedEvent
-	dropped       []chan *SubscriptionDropped
+	events        chan *ResolvedEvent
+	dropped       chan *SubscriptionDropped
 	confirmed     bool
 	error         error
 	unsubscribe   bool
@@ -59,8 +75,8 @@ func newSubscribeToStreamOperation(
 		stream:        stream,
 		resultChannel: make(chan Subscription, 1),
 		conn:          conn,
-		events:        make([]chan *ResolvedEvent, 0),
-		dropped:       make([]chan *SubscriptionDropped, 0),
+		events:        make(chan *ResolvedEvent, 1000),
+		dropped:       make(chan *SubscriptionDropped, 1),
 	}
 }
 
@@ -99,10 +115,8 @@ func (o *subscribeToStreamOperation) Confirmation() *SubscriptionConfirmation {
 	return o.confirmation
 }
 
-func (o *subscribeToStreamOperation) Events() chan *ResolvedEvent {
-	events := make(chan *ResolvedEvent, 100)
-	o.events = append(o.events, events)
-	return events
+func (o *subscribeToStreamOperation) Events() <-chan *ResolvedEvent {
+	return o.events
 }
 
 func (o *subscribeToStreamOperation) Unsubscribe() error {
@@ -113,10 +127,8 @@ func (o *subscribeToStreamOperation) Unsubscribe() error {
 	return o.conn.enqueueOperation(o, false)
 }
 
-func (o *subscribeToStreamOperation) Dropped() chan *SubscriptionDropped {
-	dropped := make(chan *SubscriptionDropped, 1)
-	o.dropped = append(o.dropped, dropped)
-	return dropped
+func (o *subscribeToStreamOperation) Dropped() <-chan *SubscriptionDropped {
+	return o.dropped
 }
 
 func (o *subscribeToStreamOperation) Error() error { return o.error }
@@ -128,16 +140,12 @@ func (o *subscribeToStreamOperation) Fail(err error) {
 		close(o.resultChannel)
 	}
 	evt := &SubscriptionDropped{
-		Reason: SubscriptionDropReasonError,
+		Reason: SubscriptionDropReason_Error,
 		Error:  err,
 	}
-	for _, ch := range o.dropped {
-		ch <- evt
-		close(ch)
-	}
-	for _, ch := range o.events {
-		close(ch)
-	}
+	o.dropped <- evt
+	close(o.dropped)
+	close(o.events)
 	o.isCompleted = true
 }
 
@@ -152,7 +160,7 @@ func (o *subscribeToStreamOperation) subscriptionConfirmation(payload []byte) {
 		return
 	}
 
-	o.confirmation = &SubscriptionConfirmation{}
+	o.confirmation = &SubscriptionConfirmation{msg.GetLastCommitPosition(), msg.GetLastEventNumber()}
 	o.resultChannel <- o
 	close(o.resultChannel)
 	o.confirmed = true
@@ -165,10 +173,7 @@ func (o *subscribeToStreamOperation) streamEventAppeared(payload []byte) {
 		return
 	}
 
-	evt := newResolvedEventFrom(msg.Event)
-	for _, ch := range o.events {
-		ch <- evt
-	}
+	o.events <- newResolvedEventFrom(msg.Event)
 }
 
 func (o *subscribeToStreamOperation) subscriptionDropped(payload []byte) {
@@ -181,18 +186,8 @@ func (o *subscribeToStreamOperation) subscriptionDropped(payload []byte) {
 	d := &SubscriptionDropped{
 		Reason: SubscriptionDropReason(msg.GetReason()),
 	}
-	for _, ch := range o.dropped {
-		ch <- d
-		close(ch)
-	}
-
-	for _, ch := range o.events {
-		close(ch)
-	}
-
+	o.dropped <- d
+	close(o.dropped)
+	close(o.events)
 	o.isCompleted = true
-}
-
-func (o *subscribeToStreamOperation) GetResultChannel() <-chan Subscription {
-	return o.resultChannel
 }

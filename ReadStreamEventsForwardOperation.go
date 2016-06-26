@@ -105,7 +105,7 @@ func (o *readStreamEventsForwardOperation) Fail(err error) {
 		return
 	}
 	o.resultChannel <- newStreamEventsSlice(
-		SliceReadStatusError,
+		SliceReadStatus_Error,
 		o.stream,
 		o.start,
 		ReadDirectionForward,
@@ -117,8 +117,4 @@ func (o *readStreamEventsForwardOperation) Fail(err error) {
 	)
 	close(o.resultChannel)
 	o.isCompleted = true
-}
-
-func (o *readStreamEventsForwardOperation) GetResultChannel() <-chan *StreamEventsSlice {
-	return o.resultChannel
 }

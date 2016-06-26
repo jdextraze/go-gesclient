@@ -14,6 +14,7 @@ I suggest using [Docker](https://docker.com/) with [Event Store Docker Container
 ## Implemented
 
 * Writing to a stream
+* Reading a single event
 * Reading a stream forwards
 * Volatile subscriptions
 * Deleting stream
@@ -22,7 +23,6 @@ I suggest using [Docker](https://docker.com/) with [Event Store Docker Container
 
 * Complete unit and integration tests
 * Transaction
-* Reading a single event
 * Reading a stream backwards
 * Reading all events forwards
 * Reading all events backwards

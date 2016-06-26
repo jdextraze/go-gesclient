@@ -106,7 +106,3 @@ func (o *deleteStreamOperation) Fail(err error) {
 	close(o.resultChannel)
 	o.isCompleted = true
 }
-
-func (o *deleteStreamOperation) GetResultChannel() <-chan *DeleteResult {
-	return o.resultChannel
-}

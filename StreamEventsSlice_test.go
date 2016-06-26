@@ -11,7 +11,7 @@ var _ = Describe("StreamEventsSlice", func() {
 
 	BeforeEach(func() {
 		streamEventsSlice = newStreamEventsSlice(
-			SliceReadStatusSuccess,
+			SliceReadStatus_Success,
 			"Test",
 			1,
 			ReadDirectionForward,
@@ -27,7 +27,7 @@ var _ = Describe("StreamEventsSlice", func() {
 
 	Describe("getting status", func() {
 		It("should return provided value", func() {
-			Expect(streamEventsSlice.Status()).To(Equal(SliceReadStatusSuccess))
+			Expect(streamEventsSlice.Status()).To(Equal(SliceReadStatus_Success))
 		})
 	})
 
