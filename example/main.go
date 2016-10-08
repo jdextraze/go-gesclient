@@ -66,7 +66,7 @@ func main() {
 		}
 	}()
 
-	<-time.After(time.Second * 10)
+	<-time.After(time.Second * 5)
 	run = false
 
 	err = sub.Unsubscribe()
@@ -74,6 +74,10 @@ func main() {
 
 	read, err := c.ReadStreamEventsForward(streamName, 0, 1000, nil)
 	log.Println("ReadStreamEventsForward:", read, err)
+
+	pos, _ := gesclient.NewPosition(0, 0)
+	all, err := c.ReadAllEventsForward(pos, 1000, false, gesclient.NewUserCredentials("admin", "changeit"))
+	log.Println("ReadAllEventsForward:", all, err, all.Error())
 
 	err = c.Close()
 	log.Println(err)

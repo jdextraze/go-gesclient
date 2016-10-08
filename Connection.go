@@ -36,6 +36,18 @@ type Connection interface {
 		userCredentials *UserCredentials) (*StreamEventsSlice, error)
 	ReadStreamEventsForwardAsync(stream string, start int, max int,
 		userCredentials *UserCredentials) (<-chan *StreamEventsSlice, error)
+	ReadStreamEventsBackward(stream string, start int, max int,
+		userCredentials *UserCredentials) (*StreamEventsSlice, error)
+	ReadStreamEventsBackwardAsync(stream string, start int, max int,
+		userCredentials *UserCredentials) (<-chan *StreamEventsSlice, error)
+	ReadAllEventsForward(pos *Position, max int, resolveTos bool,
+		userCredentials *UserCredentials) (*AllEventsSlice, error)
+	ReadAllEventsForwardAsync(pos *Position, max int, resolveTos bool,
+		userCredentials *UserCredentials) (<-chan *AllEventsSlice, error)
+	ReadAllEventsBackward(pos *Position, max int, resolveTos bool,
+		userCredentials *UserCredentials) (*AllEventsSlice, error)
+	ReadAllEventsBackwardAsync(pos *Position, max int, resolveTos bool,
+		userCredentials *UserCredentials) (<-chan *AllEventsSlice, error)
 	SubscribeToStream(stream string, userCredentials *UserCredentials) (Subscription, error)
 	SubscribeToStreamAsync(stream string, userCredentials *UserCredentials) (<-chan Subscription, error)
 	WaitForConnection()
@@ -320,6 +332,84 @@ func (c *connection) ReadStreamEventsForwardAsync(
 		return nil, err
 	}
 	op := newReadStreamEventsForwardOperation(stream, start, max, userCredentials)
+	return op.resultChannel, c.enqueueOperation(op, true)
+}
+
+func (c *connection) ReadStreamEventsBackward(
+	stream string,
+	start int,
+	max int,
+	userCredentials *UserCredentials,
+) (*StreamEventsSlice, error) {
+	ch, err := c.ReadStreamEventsBackwardAsync(stream, start, max, userCredentials)
+	if err != nil {
+		return nil, err
+	}
+	return <-ch, nil
+}
+
+func (c *connection) ReadStreamEventsBackwardAsync(
+	stream string,
+	start int,
+	max int,
+	userCredentials *UserCredentials,
+) (<-chan *StreamEventsSlice, error) {
+	if err := c.assertConnected(); err != nil {
+		return nil, err
+	}
+	op := newReadStreamEventsBackwardOperation(stream, start, max, userCredentials)
+	return op.resultChannel, c.enqueueOperation(op, true)
+}
+
+func (c *connection) ReadAllEventsForward(
+	pos *Position,
+	max int,
+	resolveTos bool,
+	userCredentials *UserCredentials,
+) (*AllEventsSlice, error) {
+	ch, err := c.ReadAllEventsForwardAsync(pos, max, resolveTos, userCredentials)
+	if err != nil {
+		return nil, err
+	}
+	return <-ch, nil
+}
+
+func (c *connection) ReadAllEventsForwardAsync(
+	pos *Position,
+	max int,
+	resolveTos bool,
+	userCredentials *UserCredentials,
+) (<-chan *AllEventsSlice, error) {
+	if err := c.assertConnected(); err != nil {
+		return nil, err
+	}
+	op := newReadAllEventsForwardOperation(pos, max, resolveTos, userCredentials)
+	return op.resultChannel, c.enqueueOperation(op, true)
+}
+
+func (c *connection) ReadAllEventsBackward(
+	pos *Position,
+	max int,
+	resolveTos bool,
+	userCredentials *UserCredentials,
+) (*AllEventsSlice, error) {
+	ch, err := c.ReadAllEventsBackwardAsync(pos, max, resolveTos, userCredentials)
+	if err != nil {
+		return nil, err
+	}
+	return <-ch, nil
+}
+
+func (c *connection) ReadAllEventsBackwardAsync(
+	pos *Position,
+	max int,
+	resolveTos bool,
+	userCredentials *UserCredentials,
+) (<-chan *AllEventsSlice, error) {
+	if err := c.assertConnected(); err != nil {
+		return nil, err
+	}
+	op := newReadAllEventsBackwardOperation(pos, max, resolveTos, userCredentials)
 	return op.resultChannel, c.enqueueOperation(op, true)
 }
 

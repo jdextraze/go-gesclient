@@ -16,6 +16,9 @@ I suggest using [Docker](https://docker.com/) with [Event Store Docker Container
 * Writing to a stream
 * Reading a single event
 * Reading a stream forwards
+* Reading a stream backwards
+* Reading all events forwards
+* Reading all events backwards
 * Volatile subscriptions
 * Deleting stream
 
@@ -23,9 +26,7 @@ I suggest using [Docker](https://docker.com/) with [Event Store Docker Container
 
 * Complete unit and integration tests
 * Transaction
-* Reading a stream backwards
-* Reading all events forwards
-* Reading all events backwards
 * Persistent subscription
 * Scavenging database
 * Global authentication
+* Cluster connection
