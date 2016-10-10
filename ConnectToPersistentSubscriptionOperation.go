@@ -30,21 +30,22 @@ type PersistentSubscription interface {
 
 type connectToPersistentSubscriptionOperation struct {
 	*baseOperation
-	stream        string
-	groupName     string
-	resultChannel chan PersistentSubscription
-	confirmation  *SubscriptionConfirmation
-	conn          *connection
-	events        chan *ResolvedEvent
-	dropped       chan *SubscriptionDropped
-	confirmed     bool
-	error         error
-	unsubscribe   bool
-	autoAck       bool
-	ackEvents     []*ResolvedEvent
-	nakEvents     []*ResolvedEvent
-	nakAction     PersistentSubscriptionNakEventAction
-	nakMessage    string
+	stream         string
+	groupName      string
+	resultChannel  chan PersistentSubscription
+	confirmation   *SubscriptionConfirmation
+	conn           *connection
+	events         chan *ResolvedEvent
+	dropped        chan *SubscriptionDropped
+	confirmed      bool
+	error          error
+	unsubscribe    bool
+	autoAck        bool
+	ackEvents      []*ResolvedEvent
+	nakEvents      []*ResolvedEvent
+	nakAction      PersistentSubscriptionNakEventAction
+	nakMessage     string
+	subscriptionId string
 }
 
 func newConnectToPersistentSubscriptionOperation(
@@ -88,21 +89,21 @@ func (o *connectToPersistentSubscriptionOperation) GetRequestMessage() proto.Mes
 	if len(o.ackEvents) > 0 {
 		eventIds := make([][]byte, len(o.ackEvents))
 		for i, evt := range o.ackEvents {
-			eventIds[i] = evt.Event().eventId.Bytes()
+			eventIds[i] = evt.OriginalEvent().EventId().Bytes()
 		}
 		return &protobuf.PersistentSubscriptionAckEvents{
-			SubscriptionId:    &o.groupName,
+			SubscriptionId:    &o.subscriptionId,
 			ProcessedEventIds: eventIds,
 		}
 	}
 	if len(o.nakEvents) > 0 {
 		eventIds := make([][]byte, len(o.nakEvents))
 		for i, evt := range o.nakEvents {
-			eventIds[i] = evt.Event().eventId.Bytes()
+			eventIds[i] = evt.OriginalEvent().EventId().Bytes()
 		}
 		action := protobuf.PersistentSubscriptionNakEvents_NakAction(o.nakAction)
 		return &protobuf.PersistentSubscriptionNakEvents{
-			SubscriptionId:    &o.groupName,
+			SubscriptionId:    &o.subscriptionId,
 			ProcessedEventIds: eventIds,
 			Message:           &o.nakMessage,
 			Action:            &action,
@@ -197,6 +198,7 @@ func (o *connectToPersistentSubscriptionOperation) subscriptionConfirmation(payl
 		return
 	}
 
+	o.subscriptionId = msg.GetSubscriptionId()
 	o.confirmation = &SubscriptionConfirmation{msg.GetLastCommitPosition(), msg.GetLastEventNumber()}
 	o.resultChannel <- o
 	close(o.resultChannel)
