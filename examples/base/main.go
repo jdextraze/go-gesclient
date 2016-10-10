@@ -3,11 +3,11 @@ package main
 import (
 	"bitbucket.org/jdextraze/go-gesclient"
 	"encoding/json"
+	"fmt"
 	"github.com/satori/go.uuid"
 	"log"
-	"time"
 	"os"
-	"fmt"
+	"time"
 )
 
 type Tested struct {

@@ -20,13 +20,13 @@ I suggest using [Docker](https://docker.com/) with [Event Store Docker Container
 * Reading all events forwards
 * Reading all events backwards
 * Volatile subscriptions
+* Persistent subscription
 * Deleting stream
 
 ## TODO
 
 * Complete unit and integration tests
 * Transaction
-* Persistent subscription
 * Scavenging database
 * Global authentication
 * Cluster connection

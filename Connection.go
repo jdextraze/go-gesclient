@@ -50,6 +50,14 @@ type Connection interface {
 		userCredentials *UserCredentials) (<-chan *AllEventsSlice, error)
 	SubscribeToStream(stream string, userCredentials *UserCredentials) (Subscription, error)
 	SubscribeToStreamAsync(stream string, userCredentials *UserCredentials) (<-chan Subscription, error)
+	CreatePersistentSubscriptionAsync(stream string, groupName string, settings PersistentSubscriptionSettings,
+		userCredentials *UserCredentials) (<-chan *PersistentSubscriptionCreateResult, error)
+	UpdatePersistentSubscriptionAsync(stream string, groupName string, settings PersistentSubscriptionSettings,
+		userCredentials *UserCredentials) (<-chan *PersistentSubscriptionUpdateResult, error)
+	DeletePersistentSubscriptionAsync(stream string, groupName string,
+		userCredentials *UserCredentials) (<-chan *PersistentSubscriptionDeleteResult, error)
+	ConnectToPersistentSubscriptionAsync(stream string, groupName string,
+		userCredentails *UserCredentials) (<-chan PersistentSubscription, error)
 	WaitForConnection()
 	Connected() <-chan struct{}
 	RemoveConnected(ch <-chan struct{}) error
@@ -426,6 +434,56 @@ func (c *connection) SubscribeToStreamAsync(stream string, userCredentials *User
 		return nil, err
 	}
 	op := newSubscribeToStreamOperation(stream, c, userCredentials)
+	return op.resultChannel, c.enqueueOperation(op, true)
+}
+
+func (c *connection) CreatePersistentSubscriptionAsync(
+	stream string,
+	groupName string,
+	settings PersistentSubscriptionSettings,
+	userCredentials *UserCredentials,
+) (<-chan *PersistentSubscriptionCreateResult, error) {
+	if err := c.assertConnected(); err != nil {
+		return nil, err
+	}
+	op := newCreatePersistentSubscriptionOperation(stream, groupName, settings, userCredentials)
+	return op.resultChannel, c.enqueueOperation(op, true)
+}
+
+func (c *connection) UpdatePersistentSubscriptionAsync(
+	stream string,
+	groupName string,
+	settings PersistentSubscriptionSettings,
+	userCredentials *UserCredentials,
+) (<-chan *PersistentSubscriptionUpdateResult, error) {
+	if err := c.assertConnected(); err != nil {
+		return nil, err
+	}
+	op := newUpdatePersistentSubscriptionOperation(stream, groupName, settings, userCredentials)
+	return op.resultChannel, c.enqueueOperation(op, true)
+}
+
+func (c *connection) DeletePersistentSubscriptionAsync(
+	stream string,
+	groupName string,
+	userCredentials *UserCredentials,
+) (<-chan *PersistentSubscriptionDeleteResult, error) {
+	if err := c.assertConnected(); err != nil {
+		return nil, err
+	}
+	op := newDeletePersistentSubscriptionOperation(stream, groupName, userCredentials)
+	return op.resultChannel, c.enqueueOperation(op, true)
+}
+
+func (c *connection) ConnectToPersistentSubscriptionAsync(
+	stream string,
+	groupName string,
+	userCredentials *UserCredentials,
+) (<-chan PersistentSubscription, error) {
+	if err := c.assertConnected(); err != nil {
+		return nil, err
+	}
+	op := newConnectToPersistentSubscriptionOperation(stream, groupName, true, c, userCredentials)
 	return op.resultChannel, c.enqueueOperation(op, true)
 }
 
