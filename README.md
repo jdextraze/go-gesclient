@@ -6,6 +6,10 @@ A [Go](https://golang.org/) client for [Event Store](https://geteventstore.com/)
 
 This project is considered at an alpha stage and shouldn't be used in production.
 
+## License
+
+MIT. See [LICENSE](https://github.com/jdextraze/go-gesclient/blob/master/LICENSE).
+
 ## Example
 
 For an example, look into `example`. You will need an instance of event store to be running to try it.
