@@ -167,6 +167,7 @@ func (c *connection) writer() {
 				run = false
 				continue
 			default:
+				time.Sleep(1 * time.Millisecond)
 				continue
 			}
 		}

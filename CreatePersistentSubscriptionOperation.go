@@ -1,7 +1,7 @@
 package gesclient
 
 import (
-	"bitbucket.org/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/protobuf"
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/satori/go.uuid"
