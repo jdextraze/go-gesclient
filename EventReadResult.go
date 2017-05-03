@@ -1,6 +1,6 @@
 package gesclient
 
-import "bitbucket.org/jdextraze/go-gesclient/protobuf"
+import "github.com/jdextraze/go-gesclient/protobuf"
 
 type EventReadResult struct {
 	status      EventReadStatus
