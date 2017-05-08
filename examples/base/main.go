@@ -1,13 +1,15 @@
 package main
 
 import (
-	"bitbucket.org/jdextraze/go-gesclient"
+	"github.com/jdextraze/go-gesclient"
 	"encoding/json"
 	"fmt"
 	"github.com/satori/go.uuid"
 	"log"
 	"os"
 	"time"
+	"net/url"
+	"github.com/jdextraze/go-gesclient/models"
 )
 
 type Tested struct {
@@ -23,7 +25,12 @@ func main() {
 		return
 	}
 
-	c := gesclient.NewConnection(os.Args[1])
+	u, _ := url.Parse(fmt.Sprintf("tcp://admin:changeit@%s", os.Args[1]))
+	c, err := gesclient.Create(
+		models.DefaultConnectionSettings,
+		u,
+		"",
+	)
 	c.WaitForConnection()
 
 	streamName := "Test-" + uuid.NewV4().String()
@@ -55,8 +62,8 @@ func main() {
 	go func() {
 		for run {
 			data, _ := json.Marshal(&Tested{})
-			evt := gesclient.NewEventData(uuid.NewV4(), "Tested", true, data, nil)
-			create, err := c.AppendToStreamAsync(streamName, gesclient.ExpectedVersion_Any, []*gesclient.EventData{evt}, nil)
+			evt := models.NewEventData(uuid.NewV4(), "Tested", true, data, nil)
+			create, err := c.AppendToStreamAsync(streamName, models.ExpectedVersion_Any, []*models.EventData{evt}, nil)
 			if err != nil {
 				log.Println("AppendToStream failed", err)
 			} else {
@@ -75,8 +82,8 @@ func main() {
 	read, err := c.ReadStreamEventsForward(streamName, 0, 1000, nil)
 	log.Println("ReadStreamEventsForward:", read, err)
 
-	pos, _ := gesclient.NewPosition(0, 0)
-	all, err := c.ReadAllEventsForward(pos, 1000, false, gesclient.NewUserCredentials("admin", "changeit"))
+	pos, _ := models.NewPosition(0, 0)
+	all, err := c.ReadAllEventsForward(pos, 1000, false, models.NewUserCredentials("admin", "changeit"))
 	log.Println("ReadAllEventsForward:", all, err, all.Error())
 
 	err = c.Close()

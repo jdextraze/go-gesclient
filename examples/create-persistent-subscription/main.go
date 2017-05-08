@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 	"fmt"
-	"bitbucket.org/jdextraze/go-gesclient"
+	"github.com/jdextraze/go-gesclient"
 	"encoding/json"
 	"time"
 	"github.com/satori/go.uuid"
