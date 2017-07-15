@@ -4,77 +4,60 @@ import (
 	"github.com/jdextraze/go-gesclient/protobuf"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/satori/go.uuid"
 	"github.com/jdextraze/go-gesclient/models"
+	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type readStreamEventsForward struct {
 	*baseOperation
-	stream        string
-	start         int
-	max           int
-	resultChannel chan *models.StreamEventsSlice
+	stream         string
+	start          int
+	max            int
+	resolveLinkTos bool
+	requireMaster  bool
 }
 
 func NewReadStreamEventsForward(
+	source *tasks.CompletionSource,
 	stream string,
 	start int,
 	max int,
+	resolveLinkTos bool,
+	requireMaster bool,
 	userCredentials *models.UserCredentials,
-	resultChannel chan *models.StreamEventsSlice,
 ) *readStreamEventsForward {
-	return &readStreamEventsForward{
-		baseOperation: &baseOperation{
-			correlationId:   uuid.NewV4(),
-			userCredentials: userCredentials,
-		},
-		stream:        stream,
-		start:         start,
-		max:           max,
-		resultChannel: resultChannel,
+	obj := &readStreamEventsForward{
+		stream:         stream,
+		start:          start,
+		max:            max,
+		resolveLinkTos: resolveLinkTos,
+		requireMaster:  requireMaster,
 	}
+	obj.baseOperation = newBaseOperation(models.Command_ReadStreamEventsForward,
+		models.Command_ReadStreamEventsForwardCompleted, userCredentials, source, obj.createRequestDto,
+		obj.inspectResponse, obj.transformResponse, obj.createResponse)
+	return obj
 }
 
-func (o *readStreamEventsForward) GetRequestCommand() models.Command {
-	return models.Command_ReadStreamEventsForward
-}
-
-func (o *readStreamEventsForward) GetRequestMessage() proto.Message {
-	no := false
+func (o *readStreamEventsForward) createRequestDto() proto.Message {
 	start := int32(o.start)
 	max := int32(o.max)
 	return &protobuf.ReadStreamEvents{
 		EventStreamId:   &o.stream,
 		FromEventNumber: &start,
 		MaxCount:        &max,
-		ResolveLinkTos:  &no,
-		RequireMaster:   &no,
+		ResolveLinkTos:  &o.resolveLinkTos,
+		RequireMaster:   &o.requireMaster,
 	}
 }
 
-func (o *readStreamEventsForward) ParseResponse(p *models.Package) {
-	if p.Command != models.Command_ReadStreamEventsForwardCompleted {
-		err := o.handleError(p, models.Command_ReadStreamEventsForwardCompleted)
-		if err != nil {
-			o.Fail(err)
-		}
-		return
-	}
-
-	msg := &protobuf.ReadStreamEventsCompleted{}
-	err := proto.Unmarshal(p.Data, msg)
-	if err != nil {
-		o.Fail(err)
-		return
-	}
-
-	switch *msg.Result {
-	case protobuf.ReadStreamEventsCompleted_Success:
-		o.succeed(msg)
-	case protobuf.ReadStreamEventsCompleted_StreamDeleted:
-		o.succeed(msg)
-	case protobuf.ReadStreamEventsCompleted_NoStream:
-		o.succeed(msg)
+func (o *readStreamEventsForward) inspectResponse(message proto.Message) (*models.InspectionResult, error) {
+	msg := message.(*protobuf.ReadStreamEventsCompleted)
+	switch msg.GetResult() {
+	case protobuf.ReadStreamEventsCompleted_Success,
+		protobuf.ReadStreamEventsCompleted_StreamDeleted,
+		protobuf.ReadStreamEventsCompleted_NoStream:
+		o.succeed()
 	case protobuf.ReadStreamEventsCompleted_Error:
 		o.Fail(models.NewServerError(msg.GetError()))
 	case protobuf.ReadStreamEventsCompleted_NotModified:
@@ -82,41 +65,25 @@ func (o *readStreamEventsForward) ParseResponse(p *models.Package) {
 	case protobuf.ReadStreamEventsCompleted_AccessDenied:
 		o.Fail(models.AccessDenied)
 	default:
-		o.Fail(fmt.Errorf("Unexpected ReadStreamResult: %v", *msg.Result))
+		return nil, fmt.Errorf("Unexpected ReadStreamResult: %v", *msg.Result)
 	}
+	return models.NewInspectionResult(models.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
 }
 
-func (o *readStreamEventsForward) succeed(msg *protobuf.ReadStreamEventsCompleted) {
-	o.resultChannel <- models.NewStreamEventsSlice(
-		models.SliceReadStatus(msg.GetResult()),
-		o.stream,
-		o.start,
-		models.ReadDirectionForward,
-		msg.Events,
-		int(msg.GetNextEventNumber()),
-		int(msg.GetLastEventNumber()),
-		msg.GetIsEndOfStream(),
-		nil,
-	)
-	close(o.resultChannel)
-	o.isCompleted = true
+func (o *readStreamEventsForward) transformResponse(message proto.Message) (interface{}, error) {
+	msg := message.(*protobuf.ReadStreamEventsCompleted)
+	status, err := convertStatusCode(msg.GetResult())
+	if err != nil {
+		return nil, err
+	}
+	return models.NewStreamEventsSlice(status, o.stream, o.start, models.ReadDirectionForward, msg.GetEvents(),
+		int(msg.GetNextEventNumber()), int(msg.GetLastEventNumber()), msg.GetIsEndOfStream()), nil
 }
 
-func (o *readStreamEventsForward) Fail(err error) {
-	if o.isCompleted {
-		return
-	}
-	o.resultChannel <- models.NewStreamEventsSlice(
-		models.SliceReadStatus_Error,
-		o.stream,
-		o.start,
-		models.ReadDirectionForward,
-		[]*protobuf.ResolvedIndexedEvent{},
-		0,
-		0,
-		false,
-		err,
-	)
-	close(o.resultChannel)
-	o.isCompleted = true
+func (o *readStreamEventsForward) createResponse() proto.Message {
+	return &protobuf.ReadStreamEventsCompleted{}
+}
+
+func (o *readStreamEventsForward) String() string {
+	return fmt.Sprintf("ReadStreamEventsForward from stream '%s'", o.stream)
 }

@@ -4,8 +4,8 @@ import (
 	"github.com/jdextraze/go-gesclient/protobuf"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/satori/go.uuid"
 	"github.com/jdextraze/go-gesclient/models"
+	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type ReadEvent struct {
@@ -13,33 +13,26 @@ type ReadEvent struct {
 	stream        string
 	eventNumber   int
 	resolveTos    bool
-	resultChannel chan *models.EventReadResult
 }
 
 func NewReadEvent(
+	source *tasks.CompletionSource,
 	stream string,
 	eventNumber int,
 	resolveTos bool,
 	userCredentials *models.UserCredentials,
-	resultChannel chan *models.EventReadResult,
 ) *ReadEvent {
-	return &ReadEvent{
-		baseOperation: &baseOperation{
-			correlationId:   uuid.NewV4(),
-			userCredentials: userCredentials,
-		},
+	obj := &ReadEvent{
 		stream:        stream,
 		eventNumber:   eventNumber,
 		resolveTos:    resolveTos,
-		resultChannel: resultChannel,
 	}
+	obj.baseOperation = newBaseOperation(models.Command_ReadEvent, models.Command_ReadEventCompleted, userCredentials,
+		source, obj.createRequestDto, obj.inspectResponse, obj.transformResponse, obj.createResponse)
+	return obj
 }
 
-func (o *ReadEvent) GetRequestCommand() models.Command {
-	return models.Command_ReadEvent
-}
-
-func (o *ReadEvent) GetRequestMessage() proto.Message {
+func (o *ReadEvent) createRequestDto() proto.Message {
 	eventNumber := int32(o.eventNumber)
 	requireMaster := false
 	return &protobuf.ReadEvent{
@@ -50,55 +43,52 @@ func (o *ReadEvent) GetRequestMessage() proto.Message {
 	}
 }
 
-func (o *ReadEvent) ParseResponse(p *models.Package) {
-	if p.Command != models.Command_ReadEventCompleted {
-		if err := o.handleError(p, models.Command_ReadEventCompleted); err != nil {
-			o.Fail(err)
+func (o *ReadEvent) inspectResponse(message proto.Message) (*models.InspectionResult, error) {
+	msg := message.(*protobuf.ReadEventCompleted)
+	switch msg.GetResult() {
+	case protobuf.ReadEventCompleted_Success, protobuf.ReadEventCompleted_NotFound,
+		protobuf.ReadEventCompleted_StreamDeleted, protobuf.ReadEventCompleted_NoStream:
+		if err := o.succeed(); err != nil {
+			return nil, err
 		}
-		return
-	}
-
-	msg := &protobuf.ReadEventCompleted{}
-	if err := proto.Unmarshal(p.Data, msg); err != nil {
-		o.Fail(err)
-		return
-	}
-
-	switch *msg.Result {
-	case protobuf.ReadEventCompleted_Success:
-		o.succeed(msg)
-	case protobuf.ReadEventCompleted_NotFound:
-		o.succeed(msg)
-	case protobuf.ReadEventCompleted_StreamDeleted:
-		o.succeed(msg)
-	case protobuf.ReadEventCompleted_NoStream:
-		o.succeed(msg)
 	case protobuf.ReadEventCompleted_Error:
 		o.Fail(models.NewServerError(msg.GetError()))
 	case protobuf.ReadEventCompleted_AccessDenied:
 		o.Fail(models.AccessDenied)
 	default:
-		o.Fail(fmt.Errorf("Unexpected ReadStreamResult: %v", *msg.Result))
+		return nil, fmt.Errorf("Unexpected ReadStreamResult: %v", *msg.Result)
+	}
+	return models.NewInspectionResult(models.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
+}
+
+func (o *ReadEvent) transformResponse(message proto.Message) (interface{}, error) {
+	msg := message.(*protobuf.ReadEventCompleted)
+	status, err := o.convert(msg.GetResult())
+	if err != nil {
+		return nil, err
+	}
+	return models.NewEventReadResult(status, o.stream, o.eventNumber, msg.Event), nil
+}
+
+func (o *ReadEvent) convert(result protobuf.ReadEventCompleted_ReadEventResult) (models.EventReadStatus, error) {
+	switch result {
+	case protobuf.ReadEventCompleted_Success:
+		return models.EventReadStatus_Success, nil
+	case protobuf.ReadEventCompleted_NotFound:
+		return models.EventReadStatus_NotFound, nil
+	case protobuf.ReadEventCompleted_NoStream:
+		return models.EventReadStatus_NoStream, nil
+	case protobuf.ReadEventCompleted_StreamDeleted:
+		return models.EventReadStatus_StreamDeleted, nil
+	default:
+		return models.EventReadStatus_Error, fmt.Errorf("Unexpected ReadEventResult: %s", result)
 	}
 }
 
-func (o *ReadEvent) succeed(msg *protobuf.ReadEventCompleted) {
-	o.resultChannel <- models.NewEventReadResult(
-		models.EventReadStatus(msg.GetResult()),
-		o.stream,
-		o.eventNumber,
-		msg.Event,
-		nil,
-	)
-	close(o.resultChannel)
-	o.isCompleted = true
+func (o *ReadEvent) createResponse() proto.Message {
+	return &protobuf.ReadEventCompleted{}
 }
 
-func (o *ReadEvent) Fail(err error) {
-	if o.isCompleted {
-		return
-	}
-	o.resultChannel <- models.NewEventReadResult(models.EventReadStatus_Success, "", -1, nil, err)
-	close(o.resultChannel)
-	o.isCompleted = true
+func (o *ReadEvent) String() string {
+	return fmt.Sprintf("ReadEvent from stream '%s'", o.stream)
 }

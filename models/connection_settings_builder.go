@@ -1,13 +1,11 @@
 package models
 
 import (
-	"github.com/op/go-logging"
 	"time"
 	"net"
 )
 
 type ConnectionSettingsBuilder struct {
-	log                         *logging.Logger
 	verboseLogging              bool
 	maxQueueSize                int
 	maxConcurrentItem           int
@@ -33,9 +31,7 @@ type ConnectionSettingsBuilder struct {
 }
 
 func CreateConnectionSettings() *ConnectionSettingsBuilder {
-	logger := logging.MustGetLogger("gesclient")
 	return &ConnectionSettingsBuilder{
-		log:                         logger,
 		verboseLogging:              false,
 		maxQueueSize:                DefaultMaxQueueSize,
 		maxConcurrentItem:           DefaultMaxConcurrentItems,
@@ -57,14 +53,8 @@ func CreateConnectionSettings() *ConnectionSettingsBuilder {
 		externalGossipPort:          DefaultClusterManagerExternalHttpPort,
 		gossipSeeds:                 nil,
 		gossipTimeout:               1 * time.Second,
-		clientConnectionTimeout:     1 * time.Second,
+		clientConnectionTimeout:     5 * time.Second,
 	}
-}
-
-// TODO figure out logger
-func (csb *ConnectionSettingsBuilder) UseCustomLogger(logger *logging.Logger) *ConnectionSettingsBuilder {
-	csb.log = logger
-	return csb
 }
 
 func (csb *ConnectionSettingsBuilder) EnableVerboseLogging() *ConnectionSettingsBuilder {
@@ -198,9 +188,8 @@ func (csb *ConnectionSettingsBuilder) SetGossipSeeds(gossipSeeds []*GossipSeed) 
 	return csb
 }
 
-func (csb *ConnectionSettingsBuilder) Build() (*ConnectionSettings, error) {
+func (csb *ConnectionSettingsBuilder) Build() *ConnectionSettings {
 	return newConnectionSettings(
-		csb.log,
 		csb.verboseLogging,
 		csb.maxQueueSize,
 		csb.maxConcurrentItem,

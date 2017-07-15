@@ -19,8 +19,7 @@ func NewResolvedEventFrom(evt *protobuf.ResolvedEvent) *ResolvedEvent {
 	if evt.Link != nil {
 		link = newRecordedEvent(evt.Link)
 	}
-	// TODO handle error
-	position, _ := NewPosition(evt.GetCommitPosition(), evt.GetPreparePosition())
+	position := NewPosition(evt.GetCommitPosition(), evt.GetPreparePosition())
 	return &ResolvedEvent{
 		event:            event,
 		link:             link,
@@ -30,11 +29,11 @@ func NewResolvedEventFrom(evt *protobuf.ResolvedEvent) *ResolvedEvent {
 
 func NewResolvedEvent(evt *protobuf.ResolvedIndexedEvent) *ResolvedEvent {
 	var event *RecordedEvent
-	if evt.Event != nil {
+	if evt != nil && evt.Event != nil {
 		event = newRecordedEvent(evt.Event)
 	}
 	var link *RecordedEvent
-	if evt.Link != nil {
+	if evt != nil && evt.Link != nil {
 		link = newRecordedEvent(evt.Link)
 	}
 	return &ResolvedEvent{

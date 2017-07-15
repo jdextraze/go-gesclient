@@ -15,8 +15,8 @@ const (
 )
 
 const (
-	flagsNone          byte = 0x00
-	flagsAuthenticated byte = 0x01
+	FlagsNone          byte = 0x00
+	FlagsAuthenticated byte = 0x01
 )
 
 type Package struct {
@@ -39,7 +39,7 @@ func NewTcpPackage(
 		username string
 		password string
 	)
-	if flags&flagsAuthenticated != 0 {
+	if flags&FlagsAuthenticated != 0 {
 		if userCredentials == nil {
 			panic("userCredentials are missing")
 		}
@@ -73,7 +73,7 @@ func TcpPacketFromBytes(data []byte) (*Package, error) {
 		username   string
 		password   string
 	)
-	if flags&flagsAuthenticated != 0 {
+	if flags&FlagsAuthenticated != 0 {
 		usernameLength := int(data[PackageAuthOffset])
 		usernameStartOffset := PackageAuthOffset + 1
 		usernameEndOffset := usernameStartOffset + usernameLength
@@ -103,7 +103,7 @@ func (p *Package) Bytes() []byte {
 	bytes[PackageFlagsOffset] = byte(p.flags)
 	copy(bytes[PackageCorrelationOffset:], p.correlationId.Bytes())
 	pos := PackageAuthOffset
-	if p.flags&flagsAuthenticated != 0 {
+	if p.flags&FlagsAuthenticated != 0 {
 		bytes[pos] = byte(len(p.username))
 		pos++
 		copy(bytes[pos:], p.username)
@@ -119,7 +119,7 @@ func (p *Package) Bytes() []byte {
 
 func (p *Package) Size() int32 {
 	authLen := 0
-	if p.flags&flagsAuthenticated != 0 {
+	if p.flags&FlagsAuthenticated != 0 {
 		authLen = 1 + len(p.username) + 1 + len(p.password)
 	}
 	return int32(PackageMandatorySize + authLen + len(p.data))

@@ -6,11 +6,12 @@ import (
 	"net"
 	"github.com/jdextraze/go-gesclient/internal"
 	"github.com/jdextraze/go-gesclient/models"
+	"strconv"
 )
 
 func Create(settings *models.ConnectionSettings, uri *url.URL, name string) (models.Connection, error) {
 	var scheme string
-	var connectionSettings models.ConnectionSettings
+	var connectionSettings *models.ConnectionSettings
 
 	if uri == nil {
 		scheme = ""
@@ -19,9 +20,9 @@ func Create(settings *models.ConnectionSettings, uri *url.URL, name string) (mod
 	}
 
 	if settings == nil {
-		connectionSettings = *models.DefaultConnectionSettings
+		connectionSettings = models.DefaultConnectionSettings
 	} else {
-		connectionSettings = *settings
+		connectionSettings = settings
 	}
 
 	credentials := getCredentialsFromUri(uri)
@@ -29,28 +30,38 @@ func Create(settings *models.ConnectionSettings, uri *url.URL, name string) (mod
 		connectionSettings.DefaultUserCredentials = credentials
 	}
 
-	//if scheme == "discover" {
-	//	// TODO handle errors
-	//	port, _ := strconv.Atoi(uri.Port())
-	//	clusterSettings, _ := newClusterSettings(uri.Host, connectionSettings.maxDiscoverAttempts, port,
-	//		nil, connectionSettings.GossipTimeout())
-	//
-	//	endPointDiscoverer := newClusterDnsEndPointDiscoverer(connectionSettings.Log,
-	//		clusterSettings.ClusterDns(),
-	//		clusterSettings.MaxDiscoverAttempts(),
-	//		clusterSettings.ExternalGossipPort(),
-	//		clusterSettings.GossipSeeds(),
-	//		clusterSettings.GossipTimeout())
-	//}
+	var endPointDiscoverer internal.EndpointDiscoverer
+	if scheme == "discover" {
+		port, _ := strconv.Atoi(uri.Port())
+		clusterSettings := models.NewClusterSettings(uri.Host, connectionSettings.MaxDiscoverAttempts(), port,
+			nil, connectionSettings.GossipTimeout())
 
-	if scheme == "internal" {
-		// TODO handle error
-		tcpEndpoint, _ := net.ResolveTCPAddr("internal", uri.Host)
-		discoverer, _ := internal.NewStaticEndpointDiscoverer(tcpEndpoint, connectionSettings.UseSslConnection())
-		return internal.NewConnection(connectionSettings, nil, discoverer, name), nil
+		endPointDiscoverer = internal.NewClusterDnsEndPointDiscoverer(
+			clusterSettings.ClusterDns(),
+			clusterSettings.MaxDiscoverAttempts(),
+			clusterSettings.ExternalGossipPort(),
+			clusterSettings.GossipSeeds(),
+			clusterSettings.GossipTimeout())
+	} else if scheme == "tcp" {
+		tcpEndpoint, err := net.ResolveTCPAddr("tcp", uri.Host)
+		if err != nil {
+			return nil, err
+		}
+		endPointDiscoverer = internal.NewStaticEndpointDiscoverer(tcpEndpoint, connectionSettings.UseSslConnection())
+	} else if connectionSettings.GossipSeeds() != nil && len(connectionSettings.GossipSeeds()) > 0 {
+		clusterSettings := models.NewClusterSettings("", connectionSettings.MaxDiscoverAttempts(), 0,
+			connectionSettings.GossipSeeds(), connectionSettings.GossipTimeout())
+
+		endPointDiscoverer = internal.NewClusterDnsEndPointDiscoverer(
+			clusterSettings.ClusterDns(),
+			clusterSettings.MaxDiscoverAttempts(),
+			clusterSettings.ExternalGossipPort(),
+			clusterSettings.GossipSeeds(),
+			clusterSettings.GossipTimeout())
 	} else {
 		return nil, fmt.Errorf("Invalid scheme for connection '%s'", scheme)
 	}
+	return internal.NewConnection(connectionSettings, nil, endPointDiscoverer, name), nil
 }
 
 func getCredentialsFromUri(uri *url.URL) *models.UserCredentials {

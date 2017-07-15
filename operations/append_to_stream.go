@@ -4,43 +4,39 @@ import (
 	"github.com/jdextraze/go-gesclient/protobuf"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/satori/go.uuid"
 	"github.com/jdextraze/go-gesclient/models"
+	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type appendToStream struct {
 	*baseOperation
-	events          []*models.EventData
-	stream          string
-	expectedVersion int
-	resultChannel   chan *models.WriteResult
+	requireMaster    bool
+	events           []*models.EventData
+	stream           string
+	expectedVersion  int
+	wasCommitTimeout bool
 }
 
 func NewAppendToStream(
+	source *tasks.CompletionSource,
+	requireMaster bool,
 	stream string,
-	events []*models.EventData,
 	expectedVersion int,
+	events []*models.EventData,
 	userCredentials *models.UserCredentials,
-	resultChannel chan *models.WriteResult,
 ) *appendToStream {
-	return &appendToStream{
-		baseOperation: &baseOperation{
-			correlationId:   uuid.NewV4(),
-			userCredentials: userCredentials,
-		},
+	obj := &appendToStream{
+		requireMaster:   requireMaster,
 		stream:          stream,
 		expectedVersion: expectedVersion,
 		events:          events,
-		resultChannel:   resultChannel,
 	}
+	obj.baseOperation = newBaseOperation(models.Command_WriteEvents, models.Command_WriteEventsCompleted,
+		userCredentials, source, obj.createRequestDto, obj.inspectResponse, obj.transformResponse, obj.createResponse)
+	return obj
 }
 
-func (o *appendToStream) GetRequestCommand() models.Command {
-	return models.Command_WriteEvents
-}
-
-func (o *appendToStream) GetRequestMessage() proto.Message {
-	requireMaster := false
+func (o *appendToStream) createRequestDto() proto.Message {
 	newEvents := make([]*protobuf.NewEvent, len(o.events))
 	for i, evt := range o.events {
 		newEvents[i] = evt.ToNewEvent()
@@ -50,32 +46,25 @@ func (o *appendToStream) GetRequestMessage() proto.Message {
 		EventStreamId:   &o.stream,
 		ExpectedVersion: &expectedVersion,
 		Events:          newEvents,
-		RequireMaster:   &requireMaster,
+		RequireMaster:   &o.requireMaster,
 	}
 }
 
-func (o *appendToStream) ParseResponse(p *models.Package) {
-	if p.Command != models.Command_WriteEventsCompleted {
-		err := o.handleError(p, models.Command_WriteEventsCompleted)
-		if err != nil {
-			o.Fail(err)
-		}
-		return
-	}
-
-	msg := &protobuf.WriteEventsCompleted{}
-	if err := proto.Unmarshal(p.Data, msg); err != nil {
-		o.Fail(err)
-		return
-	}
-
+func (o *appendToStream) inspectResponse(message proto.Message) (*models.InspectionResult, error) {
+	msg := message.(*protobuf.WriteEventsCompleted)
 	switch msg.GetResult() {
 	case protobuf.OperationResult_Success:
-		o.succeed(msg)
-	case protobuf.OperationResult_PrepareTimeout,
-		protobuf.OperationResult_ForwardTimeout,
-		protobuf.OperationResult_CommitTimeout:
-		o.retry = true
+		if o.wasCommitTimeout {
+			log.Debugf("IDEMPOTENT WRITE SUCCEEDED FOR %s.", o)
+		}
+		if err := o.succeed(); err != nil {
+			return nil, err
+		}
+	case protobuf.OperationResult_PrepareTimeout, protobuf.OperationResult_ForwardTimeout:
+		return models.NewInspectionResult(models.InspectionDecision_Retry, msg.GetResult().String(), nil, nil), nil
+	case protobuf.OperationResult_CommitTimeout:
+		o.wasCommitTimeout = true
+		return models.NewInspectionResult(models.InspectionDecision_Retry, msg.GetResult().String(), nil, nil), nil
 	case protobuf.OperationResult_WrongExpectedVersion:
 		o.Fail(models.WrongExpectedVersion)
 	case protobuf.OperationResult_StreamDeleted:
@@ -85,30 +74,21 @@ func (o *appendToStream) ParseResponse(p *models.Package) {
 	case protobuf.OperationResult_AccessDenied:
 		o.Fail(models.AccessDenied)
 	default:
-		o.Fail(fmt.Errorf("Unexpected Operation result: %v", msg.GetResult()))
+		return nil, fmt.Errorf("Unexpected OperationResult: %s", msg.GetResult())
 	}
+	return models.NewInspectionResult(models.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
 }
 
-func (o *appendToStream) succeed(msg *protobuf.WriteEventsCompleted) {
-	var commitPosition int64 = -1
-	var preparePosition int64 = -1
-	if msg.CommitPosition != nil {
-		commitPosition = *msg.CommitPosition
-	}
-	if msg.PreparePosition != nil {
-		preparePosition = *msg.PreparePosition
-	}
-	position, err := models.NewPosition(commitPosition, preparePosition)
-	o.resultChannel <- models.NewWriteResult(int(*msg.LastEventNumber), position, err)
-	close(o.resultChannel)
-	o.isCompleted = true
+func (o *appendToStream) transformResponse(message proto.Message) (interface{}, error) {
+	msg := message.(*protobuf.WriteEventsCompleted)
+	pos := models.NewPosition(msg.GetCommitPosition(), msg.GetPreparePosition())
+	return models.NewWriteResult(int(msg.GetLastEventNumber()), pos), nil
 }
 
-func (o *appendToStream) Fail(err error) {
-	if o.isCompleted {
-		return
-	}
-	o.resultChannel <- models.NewWriteResult(0, nil, err)
-	close(o.resultChannel)
-	o.isCompleted = true
+func (o *appendToStream) createResponse() proto.Message {
+	return &protobuf.WriteEventsCompleted{}
+}
+
+func (o *appendToStream) String() string {
+	return fmt.Sprintf("AppendToStream '%s'", o.stream)
 }

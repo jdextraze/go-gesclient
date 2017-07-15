@@ -5,62 +5,43 @@ import (
 	"github.com/jdextraze/go-gesclient/models"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/satori/go.uuid"
+	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type deletePersistentSubscription struct {
 	*baseOperation
 	stream        string
 	groupName     string
-	resultChannel chan *models.PersistentSubscriptionDeleteResult
 }
 
 func NewDeletePersistentSubscription(
+	source *tasks.CompletionSource,
 	stream string,
 	groupName string,
 	userCredentials *models.UserCredentials,
-	resultChannel chan *models.PersistentSubscriptionDeleteResult,
 ) *deletePersistentSubscription {
-	return &deletePersistentSubscription{
-		baseOperation: &baseOperation{
-			correlationId:   uuid.NewV4(),
-			userCredentials: userCredentials,
-		},
+	obj := &deletePersistentSubscription{
 		stream:        stream,
 		groupName:     groupName,
-		resultChannel: resultChannel,
 	}
+	obj.baseOperation = newBaseOperation(models.Command_DeletePersistentSubscription,
+		models.Command_DeletePersistentSubscriptionCompleted, userCredentials, source, obj.createRequestDto,
+		obj.inspectResponse, obj.transformResponse, obj.createResponse)
+	return obj
 }
 
-func (o *deletePersistentSubscription) GetRequestCommand() models.Command {
-	return models.Command_DeletePersistentSubscription
-}
-
-func (o *deletePersistentSubscription) GetRequestMessage() proto.Message {
+func (o *deletePersistentSubscription) createRequestDto() proto.Message {
 	return &protobuf.DeletePersistentSubscription{
 		EventStreamId:         &o.stream,
 		SubscriptionGroupName: &o.groupName,
 	}
 }
 
-func (o *deletePersistentSubscription) ParseResponse(p *models.Package) {
-	if p.Command != models.Command_DeletePersistentSubscriptionCompleted {
-		err := o.handleError(p, models.Command_DeletePersistentSubscriptionCompleted)
-		if err != nil {
-			o.Fail(err)
-		}
-		return
-	}
-
-	msg := &protobuf.DeletePersistentSubscriptionCompleted{}
-	if err := proto.Unmarshal(p.Data, msg); err != nil {
-		o.Fail(err)
-		return
-	}
-
+func (o *deletePersistentSubscription) inspectResponse(message proto.Message) (*models.InspectionResult, error) {
+	msg := message.(*protobuf.DeletePersistentSubscriptionCompleted)
 	switch msg.GetResult() {
 	case protobuf.DeletePersistentSubscriptionCompleted_Success:
-		o.succeed(msg)
+		o.succeed()
 	case protobuf.DeletePersistentSubscriptionCompleted_Fail:
 		o.Fail(fmt.Errorf("Subscription group %s on stream %s failed '%s'", o.groupName, o.stream, *msg.Reason))
 	case protobuf.DeletePersistentSubscriptionCompleted_AccessDenied:
@@ -68,21 +49,19 @@ func (o *deletePersistentSubscription) ParseResponse(p *models.Package) {
 	case protobuf.DeletePersistentSubscriptionCompleted_DoesNotExist:
 		o.Fail(fmt.Errorf("Subscription group %s on stream %s doesn't exists", o.groupName, o.stream))
 	default:
-		o.Fail(fmt.Errorf("Unexpected Operation result: %v", msg.GetResult()))
+		return nil, fmt.Errorf("Unexpected Operation result: %v", msg.GetResult())
 	}
+	return models.NewInspectionResult(models.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
 }
 
-func (o *deletePersistentSubscription) succeed(msg *protobuf.DeletePersistentSubscriptionCompleted) {
-	o.resultChannel <- models.NewPersistentSubscriptionDeleteResult(models.PersistentSubscriptionCreateStatus_Success, nil)
-	close(o.resultChannel)
-	o.isCompleted = true
+func (o *deletePersistentSubscription) transformResponse(message proto.Message) (interface{}, error) {
+	return models.NewPersistentSubscriptionDeleteResult(models.PersistentSubscriptionDeleteStatus_Success), nil
 }
 
-func (o *deletePersistentSubscription) Fail(err error) {
-	if o.isCompleted {
-		return
-	}
-	o.resultChannel <- models.NewPersistentSubscriptionDeleteResult(models.PersistentSubscriptionDeleteStatus_Failure, err)
-	close(o.resultChannel)
-	o.isCompleted = true
+func (o *deletePersistentSubscription) createResponse() proto.Message {
+	return &protobuf.DeletePersistentSubscriptionCompleted{}
+}
+
+func (o *deletePersistentSubscription) String() string {
+	return fmt.Sprintf("DeletePersistentSubscription Stream: %s, Group Name: %s", o.stream, o.groupName)
 }

@@ -7,12 +7,15 @@ type Position struct {
 	preparePosition int64
 }
 
-func NewPosition(commitPosition int64, preparePosition int64) (*Position, error) {
+var Position_Start = &Position{0,0}
+var Position_End = &Position{-1,-1}
+
+func NewPosition(commitPosition int64, preparePosition int64) *Position {
 	if commitPosition < preparePosition {
-		return nil, fmt.Errorf("The commit position cannot be less than the prepare position (%d < %d)",
-			commitPosition, preparePosition)
+		panic(fmt.Sprintf("The commit position cannot be less than the prepare position (%d < %d)", commitPosition,
+			preparePosition))
 	}
-	return &Position{commitPosition, preparePosition}, nil
+	return &Position{commitPosition, preparePosition}
 }
 
 func (p *Position) CommitPosition() int64 {
@@ -21,6 +24,19 @@ func (p *Position) CommitPosition() int64 {
 
 func (p *Position) PreparePosition() int64 {
 	return p.preparePosition
+}
+
+func (p *Position) Equals(p2 *Position) bool {
+	return p.commitPosition == p2.commitPosition && p.preparePosition == p2.preparePosition
+}
+
+func (p *Position) GreaterThan(p2 *Position) bool {
+	return p.commitPosition > p2.commitPosition ||
+		(p.commitPosition == p2.commitPosition && p.preparePosition > p2.preparePosition)
+}
+
+func (p *Position) GreaterThanOrEquals(p2 *Position) bool {
+	return p.GreaterThan(p2) || p.Equals(p2)
 }
 
 // Implements fmt.Stringer

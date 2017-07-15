@@ -1,15 +1,12 @@
 package models
 
 import (
-	"github.com/op/go-logging"
 	"time"
-	"errors"
 )
 
-var DefaultConnectionSettings, _ = CreateConnectionSettings().Build()
+var DefaultConnectionSettings = CreateConnectionSettings().Build()
 
 type ConnectionSettings struct {
-	log                         logging.Logger
 	verboseLogging              bool
 	maxQueueSize                int
 	maxConcurrentItem           int
@@ -35,7 +32,6 @@ type ConnectionSettings struct {
 }
 
 func newConnectionSettings(
-	log *logging.Logger,
 	verboseLogging bool,
 	maxQueueSize int,
 	maxConcurrentItem int,
@@ -58,27 +54,23 @@ func newConnectionSettings(
 	gossipSeeds []*GossipSeed,
 	gossipTimeout time.Duration,
 	clientConnectionTimeout time.Duration,
-) (*ConnectionSettings, error) {
-	if log == nil {
-		return nil, errors.New("Logger should not be nil")
-	}
+) *ConnectionSettings {
 	if maxQueueSize <= 0 {
-		return nil, errors.New("maxQueueSize should be positive")
+		panic("maxQueueSize should be positive")
 	}
 	if maxConcurrentItem <= 0 {
-		return nil, errors.New("maxConcurrentItem should be positive")
+		panic("maxConcurrentItem should be positive")
 	}
 	if maxRetries < -1 {
-		return nil, errors.New("maxRetries is out of range. Allowed range: [-1, infinity]")
+		panic("maxRetries is out of range. Allowed range: [-1, infinity]")
 	}
 	if maxReconnections < -1 {
-		return nil, errors.New("maxReconnections is out of range. Allowed range: [-1, infinity]")
+		panic("maxReconnections is out of range. Allowed range: [-1, infinity]")
 	}
 	if useSslConnection && targetHost == "" {
-		return nil, errors.New("targetHost must be present")
+		panic("targetHost must be present")
 	}
 	return &ConnectionSettings{
-		log:                         *log,
 		verboseLogging:              verboseLogging,
 		maxQueueSize:                maxQueueSize,
 		maxConcurrentItem:           maxConcurrentItem,
@@ -101,11 +93,7 @@ func newConnectionSettings(
 		gossipSeeds:                 gossipSeeds,
 		gossipTimeout:               gossipTimeout,
 		clientConnectionTimeout:     clientConnectionTimeout,
-	}, nil
-}
-
-func (cs *ConnectionSettings) Log() logging.Logger {
-	return cs.log
+	}
 }
 
 func (cs *ConnectionSettings) VerboseLogging() bool {

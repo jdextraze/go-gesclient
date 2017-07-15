@@ -2,7 +2,6 @@ package internal
 
 import (
 	"net"
-	"errors"
 )
 
 type EndpointDiscovererResult struct {
@@ -11,37 +10,36 @@ type EndpointDiscovererResult struct {
 }
 
 type EndpointDiscoverer interface {
-	DiscoverAsync(ipEndpoint *net.TCPAddr) chan *EndpointDiscovererResult
+	DiscoverAsync(ipEndpoint net.Addr) chan *EndpointDiscovererResult
 }
 
 type staticEndpointDiscoverer struct {
 	result chan *EndpointDiscovererResult
 }
 
-func NewStaticEndpointDiscoverer(ipEndpoint *net.TCPAddr, isSsl bool) (discoverer *staticEndpointDiscoverer, err error) {
+func NewStaticEndpointDiscoverer(ipEndpoint net.Addr, isSsl bool) *staticEndpointDiscoverer {
 	if ipEndpoint == nil {
-		err = errors.New("ipEndpoint is nil")
-		return
+		panic("ipEndpoint is nil")
 	}
 	ch := make(chan *EndpointDiscovererResult, 1)
 	var nodeEndpoints *NodeEndpoints
 	if isSsl {
-		nodeEndpoints, err = NewNodeEndpoints(nil, ipEndpoint)
+		nodeEndpoints = NewNodeEndpoints(nil, ipEndpoint)
 	} else {
-		nodeEndpoints, err = NewNodeEndpoints(ipEndpoint, nil)
+		nodeEndpoints = NewNodeEndpoints(ipEndpoint, nil)
 	}
-	if err != nil {
-		return
-	}
-	ch <- &EndpointDiscovererResult{
-		nodeEndpoints: nodeEndpoints,
-	}
-	discoverer = &staticEndpointDiscoverer{
+	go func() {
+		for {
+			ch <- &EndpointDiscovererResult{
+				nodeEndpoints: nodeEndpoints,
+			}
+		}
+	}()
+	return &staticEndpointDiscoverer{
 		result: ch,
 	}
-	return
 }
 
-func (d *staticEndpointDiscoverer) DiscoverAsync(ipEndpoint *net.TCPAddr) chan *EndpointDiscovererResult {
+func (d *staticEndpointDiscoverer) DiscoverAsync(ipEndpoint net.Addr) chan *EndpointDiscovererResult {
 	return d.result
 }

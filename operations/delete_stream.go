@@ -5,7 +5,7 @@ import (
 	"github.com/jdextraze/go-gesclient/models"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/satori/go.uuid"
+	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type deleteStream struct {
@@ -13,33 +13,26 @@ type deleteStream struct {
 	stream          string
 	expectedVersion int
 	hardDelete      bool
-	resultChannel   chan *models.DeleteResult
 }
 
 func NewDeleteStream(
+	source *tasks.CompletionSource,
 	stream string,
 	expectedVersion int,
 	hardDelete bool,
 	userCredentials *models.UserCredentials,
-	resultChannel chan *models.DeleteResult,
 ) *deleteStream {
-	return &deleteStream{
-		baseOperation: &baseOperation{
-			correlationId:   uuid.NewV4(),
-			userCredentials: userCredentials,
-		},
+	obj := &deleteStream{
 		stream:          stream,
 		expectedVersion: expectedVersion,
 		hardDelete:      hardDelete,
-		resultChannel:   resultChannel,
 	}
+	obj.baseOperation = newBaseOperation(models.Command_DeleteStream, models.Command_DeleteStreamCompleted,
+		userCredentials, source, obj.createRequestDto, obj.inspectResponse, obj.transformResponse, obj.createResponse)
+	return obj
 }
 
-func (o *deleteStream) GetRequestCommand() models.Command {
-	return models.Command_DeleteStream
-}
-
-func (o *deleteStream) GetRequestMessage() proto.Message {
+func (o *deleteStream) createRequestDto() proto.Message {
 	expectedVersion := int32(o.expectedVersion)
 	requireMaster := false
 	return &protobuf.DeleteStream{
@@ -50,28 +43,17 @@ func (o *deleteStream) GetRequestMessage() proto.Message {
 	}
 }
 
-func (o *deleteStream) ParseResponse(p *models.Package) {
-	if p.Command != models.Command_DeleteStreamCompleted {
-		err := o.handleError(p, models.Command_DeleteStreamCompleted)
-		if err != nil {
-			o.Fail(err)
-		}
-		return
-	}
-
-	msg := &protobuf.DeleteStreamCompleted{}
-	if err := proto.Unmarshal(p.Data, msg); err != nil {
-		o.Fail(err)
-		return
-	}
-
+func (o *deleteStream) inspectResponse(message proto.Message) (*models.InspectionResult, error) {
+	msg := message.(*protobuf.DeleteStreamCompleted)
 	switch msg.GetResult() {
 	case protobuf.OperationResult_Success:
-		o.succeed(msg)
+		if err := o.succeed(); err != nil {
+			return nil, err
+		}
 	case protobuf.OperationResult_PrepareTimeout,
 		protobuf.OperationResult_ForwardTimeout,
 		protobuf.OperationResult_CommitTimeout:
-		o.retry = true
+		return models.NewInspectionResult(models.InspectionDecision_Retry, msg.GetResult().String(), nil, nil), nil
 	case protobuf.OperationResult_WrongExpectedVersion:
 		o.Fail(models.WrongExpectedVersion)
 	case protobuf.OperationResult_StreamDeleted:
@@ -83,28 +65,18 @@ func (o *deleteStream) ParseResponse(p *models.Package) {
 	default:
 		o.Fail(fmt.Errorf("Unexpected Operation result: %v", msg.GetResult()))
 	}
+	return models.NewInspectionResult(models.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
 }
 
-func (o *deleteStream) succeed(msg *protobuf.DeleteStreamCompleted) {
-	var commitPosition int64 = -1
-	var preparePosition int64 = -1
-	if msg.CommitPosition != nil {
-		commitPosition = *msg.CommitPosition
-	}
-	if msg.PreparePosition != nil {
-		preparePosition = *msg.PreparePosition
-	}
-	position, err := models.NewPosition(commitPosition, preparePosition)
-	o.resultChannel <- models.NewDeleteResult(position, err)
-	close(o.resultChannel)
-	o.isCompleted = true
+func (o *deleteStream) transformResponse(message proto.Message) (interface{}, error) {
+	response := message.(*protobuf.DeleteStreamCompleted)
+	return models.NewDeleteResult(models.NewPosition(response.GetCommitPosition(), response.GetPreparePosition())), nil
 }
 
-func (o *deleteStream) Fail(err error) {
-	if o.isCompleted {
-		return
-	}
-	o.resultChannel <- models.NewDeleteResult(nil, err)
-	close(o.resultChannel)
-	o.isCompleted = true
+func (o *deleteStream) createResponse() proto.Message {
+	return &protobuf.DeleteStreamCompleted{}
+}
+
+func (o *deleteStream) String() string {
+	return fmt.Sprintf("DeleteStream '%s'", o.stream)
 }

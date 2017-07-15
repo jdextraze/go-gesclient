@@ -4,6 +4,7 @@ import (
 	"github.com/jdextraze/go-gesclient/models"
 	"fmt"
 	"errors"
+	"reflect"
 )
 
 type eventHandlers struct {
@@ -36,11 +37,12 @@ func (h *eventHandlers) Remove(handler models.EventHandler) error {
 	return nil
 }
 
-func (h *eventHandlers) Raise(evt models.Event) error {
-	for _, h := range h.handlers {
-		if err := h(evt); err != nil {
-			return err
+func (h *eventHandlers) Raise(evt models.Event) {
+	go func() {
+		for _, h := range h.handlers {
+			if err := h(evt); err != nil {
+				log.Errorf("Error occurred while raising event %s: %v", reflect.TypeOf(evt), err)
+			}
 		}
-	}
-	return nil
+	}()
 }

@@ -9,7 +9,6 @@ type AllEventsSlice struct {
 	fromPosition  *Position
 	nextPosition  *Position
 	events        []*ResolvedEvent
-	error         error
 }
 
 func NewAllEventsSlice(
@@ -17,7 +16,6 @@ func NewAllEventsSlice(
 	fromPosition *Position,
 	nextPosition *Position,
 	resolvedEvents []*protobuf.ResolvedEvent,
-	error error,
 ) *AllEventsSlice {
 	events := make([]*ResolvedEvent, len(resolvedEvents))
 	for i, evt := range resolvedEvents {
@@ -28,7 +26,6 @@ func NewAllEventsSlice(
 		fromPosition:  fromPosition,
 		nextPosition:  nextPosition,
 		events:        events,
-		error:         error,
 	}
 }
 
@@ -41,5 +38,3 @@ func (s *AllEventsSlice) GetNextPosition() *Position { return s.nextPosition }
 func (s *AllEventsSlice) GetEvents() []*ResolvedEvent { return s.events }
 
 func (s *AllEventsSlice) IsEndOfStream() bool { return len(s.events) == 0 }
-
-func (s *AllEventsSlice) Error() error { return s.error }

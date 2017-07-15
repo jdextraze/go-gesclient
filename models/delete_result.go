@@ -2,16 +2,12 @@ package models
 
 type DeleteResult struct {
 	logPosition *Position
-	error       error
 }
 
-func NewDeleteResult(logPosition *Position, err error) *DeleteResult {
+func NewDeleteResult(logPosition *Position) *DeleteResult {
 	return &DeleteResult{
 		logPosition: logPosition,
-		error:       err,
 	}
 }
 
 func (r *DeleteResult) LogPosition() *Position { return r.logPosition }
-
-func (r *DeleteResult) Error() error { return r.error }

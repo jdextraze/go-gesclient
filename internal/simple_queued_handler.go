@@ -41,9 +41,11 @@ func (h *simpleQueuedHandler) processQueue() {
 			msgType := reflect.TypeOf(msg)
 			msgHandler, found := h.handlers[msgType]
 			if !found {
-				panic(fmt.Errorf("No handler registered for message %s", msgType.Name()))
+				panic(fmt.Errorf("No handler registered for message %s", msgType))
 			}
-			msgHandler(msg)
+			if err := msgHandler(msg); err != nil {
+				log.Errorf("Error handling %v: %v", msgType, err) // TODO panic?
+			}
 		}
 		atomic.SwapInt32(&h.isProcessing, 0)
 		if len(h.messageQueue) > 0 && atomic.CompareAndSwapInt32(&h.isProcessing, 0, 1) {

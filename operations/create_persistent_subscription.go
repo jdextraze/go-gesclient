@@ -4,91 +4,93 @@ import (
 	"github.com/jdextraze/go-gesclient/protobuf"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/satori/go.uuid"
 	"time"
 	"github.com/jdextraze/go-gesclient/models"
+	"github.com/jdextraze/go-gesclient/common"
+	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type createPersistentSubscription struct {
 	*baseOperation
-	stream        string
-	groupName     string
-	settings      models.PersistentSubscriptionSettings
-	resultChannel chan *models.PersistentSubscriptionCreateResult
+	stream                     string
+	groupName                  string
+	resolveLinkTos             bool
+	startFromBeginning         int32
+	messageTimeoutMilliseconds int32
+	recordStatistics           bool
+	maxRetryCount              int32
+	liveBufferSize             int32
+	readBatchSize              int32
+	bufferSize                 int32
+	checkPointAfter            int32
+	minCheckPointCount         int32
+	maxCheckPointCount         int32
+	maxSubscriberCount         int32
+	namedConsumerStrategy      string
 }
 
 func NewCreatePersistentSubscription(
+	source *tasks.CompletionSource,
 	stream string,
 	groupName string,
-	settings models.PersistentSubscriptionSettings,
+	settings *models.PersistentSubscriptionSettings,
 	userCredentials *models.UserCredentials,
-	resultChannel chan *models.PersistentSubscriptionCreateResult,
 ) *createPersistentSubscription {
-	return &createPersistentSubscription{
-		baseOperation: &baseOperation{
-			correlationId:   uuid.NewV4(),
-			userCredentials: userCredentials,
-		},
-		stream:        stream,
-		groupName:     groupName,
-		settings:      settings,
-		resultChannel: resultChannel,
+	if settings == nil {
+		panic("settings is nil")
 	}
+	obj := &createPersistentSubscription{
+		stream:                     stream,
+		groupName:                  groupName,
+		resolveLinkTos:             settings.ResolveLinkTos(),
+		startFromBeginning:         settings.StartFrom(),
+		maxRetryCount:              settings.MaxRetryCount,
+		liveBufferSize:             settings.LiveBufferSize,
+		readBatchSize:              settings.ReadBatchSize,
+		bufferSize:                 settings.HistoryBufferSize,
+		recordStatistics:           settings.ExtraStatistics(),
+		messageTimeoutMilliseconds: int32(settings.MessageTimeout().Nanoseconds() / int64(time.Millisecond)),
+		checkPointAfter:            int32(settings.CheckPointAfter().Nanoseconds() / int64(time.Millisecond)),
+		minCheckPointCount:         settings.MinCheckPointCount(),
+		maxCheckPointCount:         settings.MaxCheckPointCount(),
+		maxSubscriberCount:         settings.MaxSubscriberCount(),
+		namedConsumerStrategy:      settings.NamedConsumerStrategy.ToString(),
+	}
+	obj.baseOperation = newBaseOperation(models.Command_CreatePersistentSubscription,
+		models.Command_CreatePersistentSubscriptionCompleted, userCredentials, source, obj.createRequestDto,
+		obj.inspectResponse, obj.transformResponse, obj.createResponse)
+	return obj
 }
 
-func (o *createPersistentSubscription) GetRequestCommand() models.Command {
-	return models.Command_CreatePersistentSubscription
-}
-
-func (o *createPersistentSubscription) GetRequestMessage() proto.Message {
-	messageTimeoutMs := int32(o.settings.MessageTimeout().Nanoseconds() / int64(time.Millisecond))
-	checkpointAfterMs := int32(o.settings.CheckPointAfter().Nanoseconds() / int64(time.Millisecond))
-	isRoundRobin := o.settings.NamedConsumerStrategy.IsRoundRobin()
-	namedConsumerStrategy := o.settings.NamedConsumerStrategy.ToString()
-	resolvedLinkTos := o.settings.ResolveLinkTos()
-	startFrom := o.settings.StartFrom()
-	extraStatistics := o.settings.ExtraStatistics()
-	maxCheckpointCount := o.settings.MaxCheckPointCount()
-	minCheckpointCount := o.settings.MinCheckPointCount()
-	maxSubscriberCount := o.settings.MaxSubscriberCount()
+func (o *createPersistentSubscription) createRequestDto() proto.Message {
+	preferRoundRobin := o.namedConsumerStrategy == common.SystemConsumerStrategies_RoundRobin.ToString()
 	return &protobuf.CreatePersistentSubscription{
 		EventStreamId:              &o.stream,
 		SubscriptionGroupName:      &o.groupName,
-		ResolveLinkTos:             &resolvedLinkTos,
-		StartFrom:                  &startFrom,
-		MessageTimeoutMilliseconds: &messageTimeoutMs,
-		RecordStatistics:           &extraStatistics,
-		LiveBufferSize:             &o.settings.LiveBufferSize,
-		ReadBatchSize:              &o.settings.ReadBatchSize,
-		BufferSize:                 &o.settings.LiveBufferSize,
-		MaxRetryCount:              &o.settings.MaxRetryCount,
-		PreferRoundRobin:           &isRoundRobin,
-		CheckpointAfterTime:        &checkpointAfterMs,
-		CheckpointMaxCount:         &maxCheckpointCount,
-		CheckpointMinCount:         &minCheckpointCount,
-		SubscriberMaxCount:         &maxSubscriberCount,
-		NamedConsumerStrategy:      &namedConsumerStrategy,
+		ResolveLinkTos:             &o.resolveLinkTos,
+		StartFrom:                  &o.startFromBeginning,
+		MessageTimeoutMilliseconds: &o.messageTimeoutMilliseconds,
+		RecordStatistics:           &o.recordStatistics,
+		LiveBufferSize:             &o.liveBufferSize,
+		ReadBatchSize:              &o.readBatchSize,
+		BufferSize:                 &o.bufferSize,
+		MaxRetryCount:              &o.maxRetryCount,
+		PreferRoundRobin:           &preferRoundRobin,
+		CheckpointAfterTime:        &o.checkPointAfter,
+		CheckpointMaxCount:         &o.maxCheckPointCount,
+		CheckpointMinCount:         &o.minCheckPointCount,
+		SubscriberMaxCount:         &o.maxSubscriberCount,
+		NamedConsumerStrategy:      &o.namedConsumerStrategy,
 	}
 }
 
-func (o *createPersistentSubscription) ParseResponse(p *models.Package) {
-	if p.Command != models.Command_CreatePersistentSubscriptionCompleted {
-		err := o.handleError(p, models.Command_CreatePersistentSubscriptionCompleted)
-		if err != nil {
-			o.Fail(err)
-		}
-		return
-	}
-
-	msg := &protobuf.CreatePersistentSubscriptionCompleted{}
-	if err := proto.Unmarshal(p.Data, msg); err != nil {
-		o.Fail(err)
-		return
-	}
-
+func (o *createPersistentSubscription) inspectResponse(message proto.Message) (*models.InspectionResult, error) {
+	msg := message.(*protobuf.CreatePersistentSubscriptionCompleted)
 	switch msg.GetResult() {
 	case protobuf.CreatePersistentSubscriptionCompleted_Success:
-		o.succeed(msg)
+		if err := o.succeed(); err != nil {
+			return nil, err
+		}
 	case protobuf.CreatePersistentSubscriptionCompleted_Fail:
 		o.Fail(fmt.Errorf("Subscription group %s on stream %s failed '%s'", o.groupName, o.stream, *msg.Reason))
 	case protobuf.CreatePersistentSubscriptionCompleted_AccessDenied:
@@ -96,21 +98,19 @@ func (o *createPersistentSubscription) ParseResponse(p *models.Package) {
 	case protobuf.CreatePersistentSubscriptionCompleted_AlreadyExists:
 		o.Fail(fmt.Errorf("Subscription group %s on stream %s already exists", o.groupName, o.stream))
 	default:
-		o.Fail(fmt.Errorf("Unexpected Operation result: %v", msg.GetResult()))
+		return nil, fmt.Errorf("Unexpected Operation result: %v", msg.GetResult())
 	}
+	return models.NewInspectionResult(models.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
 }
 
-func (o *createPersistentSubscription) succeed(msg *protobuf.CreatePersistentSubscriptionCompleted) {
-	o.resultChannel <- models.NewPersistentSubscriptionCreateResult(models.PersistentSubscriptionCreateStatus_Success, nil)
-	close(o.resultChannel)
-	o.isCompleted = true
+func (o *createPersistentSubscription) transformResponse(message proto.Message) (interface{}, error) {
+	return models.NewPersistentSubscriptionCreateResult(models.PersistentSubscriptionCreateStatus_Success), nil
 }
 
-func (o *createPersistentSubscription) Fail(err error) {
-	if o.isCompleted {
-		return
-	}
-	o.resultChannel <- models.NewPersistentSubscriptionCreateResult(models.PersistentSubscriptionCreateStatus_Failure, err)
-	close(o.resultChannel)
-	o.isCompleted = true
+func (o *createPersistentSubscription) createResponse() proto.Message {
+	return &protobuf.CreatePersistentSubscriptionCompleted{}
+}
+
+func (o *createPersistentSubscription) String() string {
+	return fmt.Sprintf("CreatePersistentSubscription Stream: %s, Group Name: %s", o.stream, o.groupName)
 }

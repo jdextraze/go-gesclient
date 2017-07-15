@@ -1,8 +1,7 @@
-package internal
+package models
 
 import (
 	"net"
-	"github.com/jdextraze/go-gesclient/models"
 	"github.com/satori/go.uuid"
 	"time"
 	"crypto/tls"
@@ -18,36 +17,38 @@ import (
 )
 
 type PackageConnection struct {
-	logger                models.Logger
-	ipEndpoint            *net.TCPAddr
+	logger                Logger
+	ipEndpoint            net.Addr
 	connectionId          uuid.UUID
 	ssl                   bool
 	targetHost            string
 	validateService       bool
 	timeout               time.Duration
-	packageHandler        func(*PackageConnection, packet *models.Package)
-	errorHandler          func(*PackageConnection, err error)
-	connectionEstablished func(*PackageConnection)
-	connectionClosed      func(*PackageConnection, err error)
+	packageHandler        func(conn *PackageConnection, packet *Package)
+	errorHandler          func(conn *PackageConnection, err error)
+	connectionEstablished func(conn *PackageConnection)
+	connectionClosed      func(conn *PackageConnection, err error)
 	conn                  net.Conn
 
 	leftOver  []byte
-	sendQueue chan *models.Package
-	isClosed int32
+	sendQueue chan *Package
+	isClosed  int32
+
+	localEndpoint net.Addr
 }
 
-func newPackageConnection(
-	logger models.Logger,
-	ipEndpoint *net.TCPAddr,
+func NewPackageConnection(
+	logger Logger,
+	ipEndpoint net.Addr,
 	connectionId uuid.UUID,
 	ssl bool,
 	targetHost string,
 	validateService bool,
 	timeout time.Duration,
-	packageHandler func(*PackageConnection, packet *models.Package),
-	errorHandler func(*PackageConnection, err error),
-	connectionEstablished func(*PackageConnection),
-	connectionClosed func(*PackageConnection, err error),
+	packageHandler func(conn *PackageConnection, packet *Package),
+	errorHandler func(conn *PackageConnection, err error),
+	connectionEstablished func(conn *PackageConnection),
+	connectionClosed func(conn *PackageConnection, err error),
 ) *PackageConnection {
 	c := &PackageConnection{
 		logger:                logger,
@@ -61,11 +62,13 @@ func newPackageConnection(
 		errorHandler:          errorHandler,
 		connectionEstablished: connectionEstablished,
 		connectionClosed:      connectionClosed,
-		sendQueue:             make(chan *models.Package, 4096),
+		sendQueue:             make(chan *Package, 4096),
 	}
-	go c.connect()
+	c.connect()
 	return c
 }
+
+func (c *PackageConnection) ConnectionId() uuid.UUID { return c.connectionId }
 
 func (c *PackageConnection) connect() {
 	var conn net.Conn
@@ -79,18 +82,20 @@ func (c *PackageConnection) connect() {
 	}
 
 	if err != nil {
-		c.logger.Debug("Connection to %s failed. Error: %v", c.ipEndpoint, err)
-		if c.errorHandler != nil {
-			c.errorHandler(c, err)
+		log.Debugf("Connection to %s failed. Error: %v", c.ipEndpoint, err)
+		if c.connectionClosed != nil {
+			c.connectionClosed(c, err)
 		}
 	} else {
+		c.localEndpoint = conn.LocalAddr()
+		log.Debugf("Connection to %s succeeded.", c.ipEndpoint)
 		c.conn = conn
 		if c.connectionEstablished != nil {
 			c.connectionEstablished(c)
 		}
 	}
 
-	c.sender()
+	go c.sender()
 }
 
 func (c *PackageConnection) receiver() {
@@ -106,7 +111,7 @@ func (c *PackageConnection) receiver() {
 			if isClosedConnError(err) {
 				break
 			}
-			c.logger.Error("conn.Read: %v", err)
+			log.Errorf("conn.Read: %v", err)
 		}
 	}
 	c.closeInternal("Socket receive error", err)
@@ -115,30 +120,29 @@ func (c *PackageConnection) receiver() {
 func (c *PackageConnection) sender() {
 	var err error
 	for {
-		p, ok := <- c.sendQueue
+		p, ok := <-c.sendQueue
 		if !ok {
 			return
 		}
 		if err = binary.Write(c.conn, binary.LittleEndian, p.Size()); err != nil {
-			c.logger.Error("binary.Write failed: %v", err)
+			log.Errorf("binary.Write failed: %v", err)
 			break
 		}
 		if _, err = c.conn.Write(p.Bytes()); err != nil {
-			c.logger.Error("net.Conn.Write failed: %v", err)
+			log.Errorf("net.Conn.Write failed: %v", err)
 			break
 		}
-		c.logger.Debug("Sent Command: %s | CorrelationId: %s", p.Command, p.CorrelationId)
+		log.Debugf("Sent Command: %s | CorrelationId: %s", p.Command(), p.CorrelationId())
 	}
 	c.closeInternal("Socket send error.", err)
 }
 
 func (c *PackageConnection) closeInternal(reason string, socketError error) {
-	close(c.sendQueue)
-	err := c.conn.Close()
-	c.logger.Debug("%s. %v", reason, err)
-	if err != nil {
+	if atomic.LoadInt32(&c.isClosed) == 1 {
 		return
 	}
+	close(c.sendQueue)
+	log.Debugf("PackageConnection.closeInternal: %s. %v", reason, c.conn.Close())
 	atomic.StoreInt32(&c.isClosed, 1)
 	if c.connectionClosed != nil {
 		c.connectionClosed(c, socketError)
@@ -164,8 +168,9 @@ func (c *PackageConnection) onData(data []byte) {
 
 	packetSize := contentLength + tcpPacketContentLengthSize
 	if dataLength == packetSize {
-		p, _ := models.TcpPacketFromBytes(data[tcpPacketContentLengthSize:])
+		p, _ := TcpPacketFromBytes(data[tcpPacketContentLengthSize:])
 		c.packageHandler(c, p)
+		//c.errorHandler(c, err)
 	} else if dataLength > packetSize {
 		c.onData(data[:packetSize])
 		c.onData(data[packetSize:])
@@ -174,7 +179,9 @@ func (c *PackageConnection) onData(data []byte) {
 	}
 }
 
-func (c *PackageConnection) RemoteEndpoint() *net.TCPAddr { return c.ipEndpoint }
+func (c *PackageConnection) RemoteEndpoint() net.Addr { return c.ipEndpoint }
+
+func (c *PackageConnection) LocalEndpoint() net.Addr { return c.localEndpoint }
 
 func (c *PackageConnection) StartReceiving() error {
 	if c.conn == nil {
@@ -184,7 +191,7 @@ func (c *PackageConnection) StartReceiving() error {
 	return nil
 }
 
-func (c *PackageConnection) EnqueueSend(p *models.Package) error {
+func (c *PackageConnection) EnqueueSend(p *Package) error {
 	if c.conn == nil {
 		return errors.New("Failed connection")
 	}

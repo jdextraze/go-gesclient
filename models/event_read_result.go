@@ -7,7 +7,6 @@ type EventReadResult struct {
 	stream      string
 	eventNumber int
 	event       *ResolvedEvent
-	error       error
 }
 
 func NewEventReadResult(
@@ -15,7 +14,6 @@ func NewEventReadResult(
 	stream string,
 	eventNumber int,
 	event *protobuf.ResolvedIndexedEvent,
-	err error,
 ) *EventReadResult {
 	resolvedEvent := NewResolvedEvent(event)
 	return &EventReadResult{
@@ -23,7 +21,6 @@ func NewEventReadResult(
 		stream:      stream,
 		eventNumber: eventNumber,
 		event:       resolvedEvent,
-		error:       err,
 	}
 }
 
@@ -41,8 +38,4 @@ func (r *EventReadResult) EventNumber() int {
 
 func (r *EventReadResult) Event() *ResolvedEvent {
 	return r.event
-}
-
-func (r *EventReadResult) Error() error {
-	return r.error
 }

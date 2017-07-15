@@ -2,7 +2,6 @@ package models
 
 import (
 	"time"
-	"errors"
 )
 
 type ClusterSettings struct {
@@ -19,15 +18,15 @@ func NewClusterSettings(
 	externalGossipPort int,
 	gossipSeeds []*GossipSeed,
 	gossipTimeout time.Duration,
-) (*ClusterSettings, error) {
+) *ClusterSettings {
 	if clusterDns == "" {
-		return nil, errors.New("clusterDns must be present")
+		panic("clusterDns must be present")
 	}
 	if maxDiscoverAttempts < -1 {
-		return nil, errors.New("maxDiscoverAttempts value is out of range. Allowed range: [-1, infinity].")
+		panic("maxDiscoverAttempts value is out of range. Allowed range: [-1, infinity].")
 	}
 	if externalGossipPort <= 0 {
-		return nil, errors.New("externalGossipPort must be positive")
+		panic("externalGossipPort must be positive")
 	}
 
 	return &ClusterSettings{
@@ -36,7 +35,7 @@ func NewClusterSettings(
 		externalGossipPort:  externalGossipPort,
 		gossipSeeds:         gossipSeeds,
 		gossipTimeout:       gossipTimeout,
-	}, nil
+	}
 }
 
 func (cs *ClusterSettings) ClusterDns() string { return cs.clusterDns }

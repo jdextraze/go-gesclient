@@ -2,26 +2,25 @@ package internal
 
 import (
 	"net"
-	"errors"
 )
 
 type NodeEndpoints struct {
-	tcpEndpoint *net.TCPAddr
-	secureTcpEndpoint *net.TCPAddr
+	tcpEndpoint net.Addr
+	secureTcpEndpoint net.Addr
 }
 
 func NewNodeEndpoints(
-	tcpEndpoint *net.TCPAddr,
-	secureTcpEndpoint *net.TCPAddr,
-) (*NodeEndpoints, error) {
+	tcpEndpoint net.Addr,
+	secureTcpEndpoint net.Addr,
+) *NodeEndpoints {
 	if tcpEndpoint == nil && secureTcpEndpoint == nil {
-		return nil, errors.New("Both endpoints are nil")
+		panic("Both endpoints are nil")
 	}
 	return &NodeEndpoints{
 		tcpEndpoint: tcpEndpoint,
 		secureTcpEndpoint: secureTcpEndpoint,
-	}, nil
+	}
 }
 
-func (ne *NodeEndpoints) TcpEndpoint() *net.TCPAddr { return ne.tcpEndpoint }
-func (ne *NodeEndpoints) SecureTcpEndpoint() *net.TCPAddr { return ne.secureTcpEndpoint }
+func (ne *NodeEndpoints) TcpEndpoint() net.Addr { return ne.tcpEndpoint }
+func (ne *NodeEndpoints) SecureTcpEndpoint() net.Addr { return ne.secureTcpEndpoint }

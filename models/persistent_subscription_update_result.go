@@ -11,21 +11,16 @@ const (
 
 type PersistentSubscriptionUpdateResult struct {
 	status PersistentSubscriptionUpdateStatus
-	error  error
 }
 
 func NewPersistentSubscriptionUpdateResult(
 	status PersistentSubscriptionUpdateStatus,
-	error error,
 ) *PersistentSubscriptionUpdateResult {
 	return &PersistentSubscriptionUpdateResult{
 		status: status,
-		error:  error,
 	}
 }
 
 func (r *PersistentSubscriptionUpdateResult) GetStatus() PersistentSubscriptionUpdateStatus {
 	return r.status
 }
-
-func (r *PersistentSubscriptionUpdateResult) GetError() error { return r.error }

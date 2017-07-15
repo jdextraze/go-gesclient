@@ -13,7 +13,6 @@ type StreamEventsSlice struct {
 	nextEventNumber int
 	lastEventNumber int
 	isEndOfStream   bool
-	error           error
 }
 
 func NewStreamEventsSlice(
@@ -25,7 +24,6 @@ func NewStreamEventsSlice(
 	nextEventNumber int,
 	lastEventNumber int,
 	isEndOfStream bool,
-	error error,
 ) *StreamEventsSlice {
 	events := make([]*ResolvedEvent, len(resolvedEvents))
 	for i, evt := range resolvedEvents {
@@ -40,7 +38,6 @@ func NewStreamEventsSlice(
 		nextEventNumber: nextEventNumber,
 		lastEventNumber: lastEventNumber,
 		isEndOfStream:   isEndOfStream,
-		error:           error,
 	}
 }
 
@@ -59,5 +56,3 @@ func (s *StreamEventsSlice) NextEventNumber() int { return s.nextEventNumber }
 func (s *StreamEventsSlice) LastEventNumber() int { return s.lastEventNumber }
 
 func (s *StreamEventsSlice) IsEndOfStream() bool { return s.isEndOfStream }
-
-func (s *StreamEventsSlice) Error() error { return s.error }
