@@ -36,22 +36,21 @@ func (h *simpleQueuedHandler) EnqueueMessage(msg message) error {
 
 func (h *simpleQueuedHandler) processQueue() {
 	for {
-		select {
-		case msg := <-h.messageQueue:
+		for len(h.messageQueue) > 0 {
+			msg := <-h.messageQueue
 			msgType := reflect.TypeOf(msg)
 			msgHandler, found := h.handlers[msgType]
 			if !found {
 				panic(fmt.Errorf("No handler registered for message %s", msgType))
 			}
 			if err := msgHandler(msg); err != nil {
-				log.Errorf("Error handling %v: %v", msgType, err) // TODO panic?
+				log.Errorf("Error handling %s: %v", msgType, err) // TODO panic?
 			}
 		}
 		atomic.SwapInt32(&h.isProcessing, 0)
 		if len(h.messageQueue) > 0 && atomic.CompareAndSwapInt32(&h.isProcessing, 0, 1) {
 			continue
-		} else {
-			break
 		}
+		break
 	}
 }

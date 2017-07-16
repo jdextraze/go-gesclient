@@ -184,6 +184,7 @@ func (s *catchUpSubscription) subscribeToStream() (err error) {
 				return nil
 			})
 		}))
+		return nil
 	}
 	return s.dropSubscription(client.SubscriptionDropReason_UserInitiated, nil)
 }
@@ -205,9 +206,9 @@ func (s *catchUpSubscription) readMissedHistoricEvents() {
 			lastEventNumber).ContinueWith(tasks.ContinueWithCallback(func(t *tasks.Task) error {
 			return s.handleErrorOrContinue(t, s.startLiveProcessing)
 		}))
-	} else {
-		s.dropSubscription(client.SubscriptionDropReason_UserInitiated, nil)
+		return
 	}
+	s.dropSubscription(client.SubscriptionDropReason_UserInitiated, nil)
 }
 
 func (s *catchUpSubscription) startLiveProcessing() error {
@@ -229,10 +230,11 @@ func (s *catchUpSubscription) startLiveProcessing() error {
 	return nil
 }
 
-func (s *catchUpSubscription) enqueueSubscriptionDropNotification(
-	reason client.SubscriptionDropReason,
-	err error,
-) {
+func (s *catchUpSubscription) enqueueSubscriptionDropNotification(reason client.SubscriptionDropReason, err error) {
+	s.liveQueue <- dropSubscriptionEvent
+	if s.allowProcessing {
+		s.ensureProcessingPushQueue()
+	}
 }
 
 func (s *catchUpSubscription) handleErrorOrContinue(t *tasks.Task, continuation func() error) error {
@@ -284,23 +286,24 @@ func (s *catchUpSubscription) ensureProcessingPushQueue() {
 
 func (s *catchUpSubscription) processLiveQueue() {
 	for {
-		e := <-s.liveQueue
-		if e == dropSubscriptionEvent {
-			if s.dropData == nil {
-				s.dropData = &dropData{
-					reason: client.SubscriptionDropReason_Unknown,
-					err:    errors.New("Drop reason not specified"),
+		for len(s.liveQueue) > 0 {
+			e := <-s.liveQueue
+			if e == dropSubscriptionEvent {
+				if s.dropData == nil {
+					s.dropData = &dropData{
+						reason: client.SubscriptionDropReason_Unknown,
+						err:    errors.New("Drop reason not specified"),
+					}
 				}
 				s.dropSubscription(s.dropData.reason, s.dropData.err)
 				atomic.CompareAndSwapInt32(&s.isProcessing, 1, 0)
 				return
 			}
-		}
 
-		if err := s.tryProcess(e); err != nil {
-			s.dropSubscription(client.SubscriptionDropReason_EventHandlerException, err)
+			if err := s.tryProcess(e); err != nil {
+				s.dropSubscription(client.SubscriptionDropReason_EventHandlerException, err)
+			}
 		}
-
 		atomic.CompareAndSwapInt32(&s.isProcessing, 1, 0)
 		if len(s.liveQueue) > 0 && atomic.CompareAndSwapInt32(&s.isProcessing, 0, 1) {
 			continue
