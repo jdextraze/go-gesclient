@@ -1,34 +1,34 @@
 package operations
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
-	"github.com/jdextraze/go-gesclient/models"
 	"errors"
 	"github.com/golang/protobuf/proto"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/protobuf"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("AppendToStreamOperation", func() {
 	var (
-		sut *appendToStream
-		result chan *models.WriteResult
+		sut    *appendToStream
+		result chan *client.WriteResult
 	)
 
 	BeforeEach(func() {
-		result = make(chan *models.WriteResult, 1)
+		result = make(chan *client.WriteResult, 1)
 		sut = NewAppendToStream(
 			"Test",
-			[]*models.EventData{},
-			models.ExpectedVersion_Any,
-			models.NewUserCredentials("test", "!test!"),
+			[]*client.EventData{},
+			client.ExpectedVersion_Any,
+			client.NewUserCredentials("test", "!test!"),
 			result,
 		)
 	})
 
 	Describe("getting request command", func() {
 		It("should return WriteEvents", func() {
-			Expect(sut.GetRequestCommand()).To(BeEquivalentTo(models.Command_WriteEvents))
+			Expect(sut.GetRequestCommand()).To(BeEquivalentTo(client.Command_WriteEvents))
 		})
 	})
 
@@ -47,19 +47,19 @@ var _ = Describe("AppendToStreamOperation", func() {
 			writeEvents := msg.(*protobuf.WriteEvents)
 			Expect(writeEvents.GetEventStreamId()).To(Equal("Test"))
 			Expect(writeEvents.GetEvents()).To(BeEquivalentTo([]*protobuf.NewEvent{}))
-			Expect(writeEvents.GetExpectedVersion()).To(BeEquivalentTo(models.ExpectedVersion_Any))
+			Expect(writeEvents.GetExpectedVersion()).To(BeEquivalentTo(client.ExpectedVersion_Any))
 			Expect(writeEvents.GetRequireMaster()).To(BeFalse())
 		})
 	})
 
 	Describe("getting user credentials", func() {
 		It("should return provided value", func() {
-			Expect(sut.UserCredentials()).To(Equal(models.NewUserCredentials("test", "!test!")))
+			Expect(sut.UserCredentials()).To(Equal(client.NewUserCredentials("test", "!test!")))
 		})
 	})
 
 	Describe("fail", func() {
-		var res <-chan *models.WriteResult
+		var res <-chan *client.WriteResult
 
 		BeforeEach(func() {
 			res = sut.resultChannel
@@ -67,7 +67,7 @@ var _ = Describe("AppendToStreamOperation", func() {
 		})
 
 		It("should send writeresult on the channel and close it", func() {
-			Expect(res).To(Receive(BeEquivalentTo(models.NewWriteResult(0, nil, errors.New("error")))))
+			Expect(res).To(Receive(BeEquivalentTo(client.NewWriteResult(0, nil, errors.New("error")))))
 			Expect(res).To(BeClosed())
 		})
 
@@ -81,7 +81,7 @@ var _ = Describe("AppendToStreamOperation", func() {
 	})
 
 	Describe("parsing response", func() {
-		var res <-chan *models.WriteResult
+		var res <-chan *client.WriteResult
 
 		Context("when response is success", func() {
 			BeforeEach(func() {
@@ -97,15 +97,15 @@ var _ = Describe("AppendToStreamOperation", func() {
 					FirstEventNumber: &zero32,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_WriteEventsCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_WriteEventsCompleted,
 					Data:    payload,
 				})
 			})
 
 			It("should send writeresult on the channel and close it", func() {
-				pos, _ := models.NewPosition(0, 0)
-				Expect(res).To(Receive(BeEquivalentTo(models.NewWriteResult(0, pos, nil))))
+				pos, _ := client.NewPosition(0, 0)
+				Expect(res).To(Receive(BeEquivalentTo(client.NewWriteResult(0, pos, nil))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -132,8 +132,8 @@ var _ = Describe("AppendToStreamOperation", func() {
 					FirstEventNumber: &zero32,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_WriteEventsCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_WriteEventsCompleted,
 					Data:    payload,
 				})
 			})
@@ -169,8 +169,8 @@ var _ = Describe("AppendToStreamOperation", func() {
 					FirstEventNumber: &zero32,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_WriteEventsCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_WriteEventsCompleted,
 					Data:    payload,
 				})
 			})
@@ -206,8 +206,8 @@ var _ = Describe("AppendToStreamOperation", func() {
 					FirstEventNumber: &zero32,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_WriteEventsCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_WriteEventsCompleted,
 					Data:    payload,
 				})
 			})
@@ -243,14 +243,14 @@ var _ = Describe("AppendToStreamOperation", func() {
 					FirstEventNumber: &zero32,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_WriteEventsCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_WriteEventsCompleted,
 					Data:    payload,
 				})
 			})
 
 			It("should send writeresult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewWriteResult(0, nil, models.WrongExpectedVersion))))
+				Expect(res).To(Receive(BeEquivalentTo(client.NewWriteResult(0, nil, client.WrongExpectedVersion))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -277,14 +277,14 @@ var _ = Describe("AppendToStreamOperation", func() {
 					FirstEventNumber: &zero32,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_WriteEventsCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_WriteEventsCompleted,
 					Data:    payload,
 				})
 			})
 
 			It("should send writeresult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewWriteResult(0, nil, models.StreamDeleted))))
+				Expect(res).To(Receive(BeEquivalentTo(client.NewWriteResult(0, nil, client.StreamDeleted))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -311,14 +311,14 @@ var _ = Describe("AppendToStreamOperation", func() {
 					FirstEventNumber: &zero32,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_WriteEventsCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_WriteEventsCompleted,
 					Data:    payload,
 				})
 			})
 
 			It("should send writeresult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewWriteResult(0, nil, models.InvalidTransaction))))
+				Expect(res).To(Receive(BeEquivalentTo(client.NewWriteResult(0, nil, client.InvalidTransaction))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -345,14 +345,14 @@ var _ = Describe("AppendToStreamOperation", func() {
 					FirstEventNumber: &zero32,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_WriteEventsCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_WriteEventsCompleted,
 					Data:    payload,
 				})
 			})
 
 			It("should send writeresult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewWriteResult(0, nil, models.AccessDenied))))
+				Expect(res).To(Receive(BeEquivalentTo(client.NewWriteResult(0, nil, client.AccessDenied))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -368,14 +368,14 @@ var _ = Describe("AppendToStreamOperation", func() {
 		Context("when response protobuf unmarshal fails", func() {
 			BeforeEach(func() {
 				res = sut.resultChannel
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_WriteEventsCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_WriteEventsCompleted,
 					Data:    []byte{0},
 				})
 			})
 
 			It("should send writeresult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewWriteResult(0, nil,
+				Expect(res).To(Receive(BeEquivalentTo(client.NewWriteResult(0, nil,
 					errors.New("proto: protobuf.WriteEventsCompleted: illegal tag 0 (wire type 0)")))))
 				Expect(res).To(BeClosed())
 			})
@@ -392,14 +392,14 @@ var _ = Describe("AppendToStreamOperation", func() {
 		Context("when response is not authenticated", func() {
 			BeforeEach(func() {
 				res = sut.resultChannel
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_NotAuthenticated,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_NotAuthenticated,
 					Data:    []byte{},
 				})
 			})
 
 			It("should send writeresult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewWriteResult(0, nil, models.AuthenticationError))))
+				Expect(res).To(Receive(BeEquivalentTo(client.NewWriteResult(0, nil, client.AuthenticationError))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -415,14 +415,14 @@ var _ = Describe("AppendToStreamOperation", func() {
 		Context("when response is bad request", func() {
 			BeforeEach(func() {
 				res = sut.resultChannel
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_BadRequest,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_BadRequest,
 					Data:    []byte{},
 				})
 			})
 
 			It("should send writeresult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewWriteResult(0, nil, models.BadRequest))))
+				Expect(res).To(Receive(BeEquivalentTo(client.NewWriteResult(0, nil, client.BadRequest))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -443,8 +443,8 @@ var _ = Describe("AppendToStreamOperation", func() {
 					Reason: protobuf.NotHandled_NotReady.Enum(),
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_NotHandled,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_NotHandled,
 					Data:    payload,
 				})
 			})
@@ -474,8 +474,8 @@ var _ = Describe("AppendToStreamOperation", func() {
 					Reason: protobuf.NotHandled_TooBusy.Enum(),
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_NotHandled,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_NotHandled,
 					Data:    payload,
 				})
 			})
@@ -505,14 +505,14 @@ var _ = Describe("AppendToStreamOperation", func() {
 					Reason: protobuf.NotHandled_NotMaster.Enum(),
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_NotHandled,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_NotHandled,
 					Data:    payload,
 				})
 			})
 
 			It("should send writeresult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewWriteResult(0, nil,
+				Expect(res).To(Receive(BeEquivalentTo(client.NewWriteResult(0, nil,
 					errors.New("NotHandled - NotMaster not supported")))))
 				Expect(res).To(BeClosed())
 			})
@@ -535,8 +535,8 @@ var _ = Describe("AppendToStreamOperation", func() {
 					Reason: &reason,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_NotHandled,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_NotHandled,
 					Data:    payload,
 				})
 			})
@@ -561,14 +561,14 @@ var _ = Describe("AppendToStreamOperation", func() {
 		Context("when response is unexpected command", func() {
 			BeforeEach(func() {
 				res = sut.resultChannel
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_SubscriptionConfirmation,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_SubscriptionConfirmation,
 					Data:    []byte{},
 				})
 			})
 
 			It("should send writeresult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewWriteResult(0, nil, errors.New(
+				Expect(res).To(Receive(BeEquivalentTo(client.NewWriteResult(0, nil, errors.New(
 					"Command not expected. Expected: WriteEventsCompleted, Actual: SubscriptionConfirmation")))))
 				Expect(res).To(BeClosed())
 			})

@@ -6,9 +6,9 @@ import (
 
 type CompletionSource struct {
 	waitGroup *sync.WaitGroup
-	task *Task
-	result interface{}
-	err error
+	task      *Task
+	result    interface{}
+	err       error
 }
 
 func NewCompletionSource() *CompletionSource {

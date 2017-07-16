@@ -1,41 +1,41 @@
 package subscriptions
 
 import (
-	"github.com/jdextraze/go-gesclient/models"
-	"github.com/jdextraze/go-gesclient/tasks"
 	"errors"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/tasks"
 	"time"
 )
 
 type AllCatchUpSubscription struct {
 	*catchUpSubscription
-	nextReadPosition *models.Position
-	lastProcessedPosition *models.Position
-	completion *tasks.CompletionSource
+	nextReadPosition      *client.Position
+	lastProcessedPosition *client.Position
+	completion            *tasks.CompletionSource
 }
 
 func NewAllCatchUpSubscription(
-	connection models.Connection,
-	fromPositionExclusive *models.Position,
-	userCredentials *models.UserCredentials,
-	eventAppeared models.CatchUpEventAppearedHandler,
-	liveProcessingStarted models.LiveProcessingStartedHandler,
-	subscriptionDropped models.CatchUpSubscriptionDroppedHandler,
-	settings *models.CatchUpSubscriptionSettings,
+	connection client.Connection,
+	fromPositionExclusive *client.Position,
+	userCredentials *client.UserCredentials,
+	eventAppeared client.CatchUpEventAppearedHandler,
+	liveProcessingStarted client.LiveProcessingStartedHandler,
+	subscriptionDropped client.CatchUpSubscriptionDroppedHandler,
+	settings *client.CatchUpSubscriptionSettings,
 ) *AllCatchUpSubscription {
 	var (
-		lastProcessedPosition *models.Position
-		nextReadPosition *models.Position
+		lastProcessedPosition *client.Position
+		nextReadPosition      *client.Position
 	)
 	if fromPositionExclusive != nil {
 		lastProcessedPosition = fromPositionExclusive
 		nextReadPosition = fromPositionExclusive
 	} else {
-		lastProcessedPosition = models.Position_End
-		nextReadPosition = models.Position_Start
+		lastProcessedPosition = client.Position_End
+		nextReadPosition = client.Position_Start
 	}
 	obj := &AllCatchUpSubscription{
-		nextReadPosition: nextReadPosition,
+		nextReadPosition:      nextReadPosition,
 		lastProcessedPosition: lastProcessedPosition,
 	}
 	obj.catchUpSubscription = newCatchUpSubscription(connection, "", userCredentials, eventAppeared,
@@ -44,9 +44,9 @@ func NewAllCatchUpSubscription(
 }
 
 func (s *AllCatchUpSubscription) readEventsTillAsync(
-	connection models.Connection,
+	connection client.Connection,
 	resolveLinkTos bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 	lastCommitPosition *int64,
 	lastEventNumber *int32,
 ) *tasks.Task {
@@ -56,9 +56,9 @@ func (s *AllCatchUpSubscription) readEventsTillAsync(
 }
 
 func (s *AllCatchUpSubscription) readEventsInternal(
-	connection models.Connection,
+	connection client.Connection,
 	resolveLinkTos bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 	lastCommitPosition *int64,
 	lastEventNumber *int32,
 ) {
@@ -76,9 +76,9 @@ func (s *AllCatchUpSubscription) readEventsInternal(
 
 func (s *AllCatchUpSubscription) readEventsCallback(
 	task *tasks.Task,
-	connection models.Connection,
+	connection client.Connection,
 	resolveLinkTos bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 	lastCommitPosition *int64,
 	lastEventNumber *int32,
 ) error {
@@ -86,7 +86,7 @@ func (s *AllCatchUpSubscription) readEventsCallback(
 	if task.IsFaulted() {
 		err = task.Wait()
 	} else {
-		result := &models.AllEventsSlice{}
+		result := &client.AllEventsSlice{}
 		if err = task.Result(result); err == nil {
 			if ok, err2 := s.processEvents(lastCommitPosition, result); ok && !s.shouldStop {
 				s.readEventsInternal(connection, resolveLinkTos, userCredentials, lastCommitPosition, lastEventNumber)
@@ -110,7 +110,7 @@ func (s *AllCatchUpSubscription) readEventsCallback(
 
 func (s *AllCatchUpSubscription) processEvents(
 	lastCommitPosition *int64,
-	slice *models.AllEventsSlice,
+	slice *client.AllEventsSlice,
 ) (bool, error) {
 	for _, e := range slice.GetEvents() {
 		if e.OriginalPosition() == nil {
@@ -126,7 +126,7 @@ func (s *AllCatchUpSubscription) processEvents(
 	if lastCommitPosition == nil {
 		done = slice.IsEndOfStream()
 	} else {
-		done = slice.GetNextPosition().GreaterThanOrEquals(models.NewPosition(*lastCommitPosition, *lastCommitPosition))
+		done = slice.GetNextPosition().GreaterThanOrEquals(client.NewPosition(*lastCommitPosition, *lastCommitPosition))
 	}
 
 	if !done && slice.IsEndOfStream() {
@@ -135,7 +135,7 @@ func (s *AllCatchUpSubscription) processEvents(
 	return done, nil
 }
 
-func (s *AllCatchUpSubscription) tryProcess(e *models.ResolvedEvent) error {
+func (s *AllCatchUpSubscription) tryProcess(e *client.ResolvedEvent) error {
 	processed := false
 	if e.OriginalPosition().GreaterThan(s.lastProcessedPosition) {
 		if err := s.eventAppeared(s, e); err != nil {

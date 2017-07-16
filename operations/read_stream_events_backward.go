@@ -1,10 +1,10 @@
 package operations
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/jdextraze/go-gesclient/models"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/protobuf"
 	"github.com/jdextraze/go-gesclient/tasks"
 )
 
@@ -24,7 +24,7 @@ func NewReadStreamEventsBackward(
 	max int,
 	resolveLinkTos bool,
 	requireMaster bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 ) *readStreamEventsBackward {
 	obj := &readStreamEventsBackward{
 		stream:         stream,
@@ -33,8 +33,8 @@ func NewReadStreamEventsBackward(
 		resolveLinkTos: resolveLinkTos,
 		requireMaster:  requireMaster,
 	}
-	obj.baseOperation = newBaseOperation(models.Command_ReadStreamEventsBackward,
-		models.Command_ReadStreamEventsBackwardCompleted, userCredentials, source, obj.createRequestDto,
+	obj.baseOperation = newBaseOperation(client.Command_ReadStreamEventsBackward,
+		client.Command_ReadStreamEventsBackwardCompleted, userCredentials, source, obj.createRequestDto,
 		obj.inspectResponse, obj.transformResponse, obj.createResponse)
 	return obj
 }
@@ -51,7 +51,7 @@ func (o *readStreamEventsBackward) createRequestDto() proto.Message {
 	}
 }
 
-func (o *readStreamEventsBackward) inspectResponse(message proto.Message) (*models.InspectionResult, error) {
+func (o *readStreamEventsBackward) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
 	msg := message.(*protobuf.ReadStreamEventsCompleted)
 	switch msg.GetResult() {
 	case protobuf.ReadStreamEventsCompleted_Success,
@@ -59,15 +59,15 @@ func (o *readStreamEventsBackward) inspectResponse(message proto.Message) (*mode
 		protobuf.ReadStreamEventsCompleted_NoStream:
 		o.succeed()
 	case protobuf.ReadStreamEventsCompleted_Error:
-		o.Fail(models.NewServerError(msg.GetError()))
+		o.Fail(client.NewServerError(msg.GetError()))
 	case protobuf.ReadStreamEventsCompleted_NotModified:
-		o.Fail(models.NewNotModified(o.stream))
+		o.Fail(client.NewNotModified(o.stream))
 	case protobuf.ReadStreamEventsCompleted_AccessDenied:
-		o.Fail(models.AccessDenied)
+		o.Fail(client.AccessDenied)
 	default:
 		o.Fail(fmt.Errorf("Unexpected ReadStreamResult: %v", *msg.Result))
 	}
-	return models.NewInspectionResult(models.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
+	return client.NewInspectionResult(client.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
 }
 
 func (o *readStreamEventsBackward) transformResponse(message proto.Message) (interface{}, error) {
@@ -76,7 +76,7 @@ func (o *readStreamEventsBackward) transformResponse(message proto.Message) (int
 	if err != nil {
 		return nil, err
 	}
-	return models.NewStreamEventsSlice(status, o.stream, o.start, models.ReadDirectionBackward, msg.GetEvents(),
+	return client.NewStreamEventsSlice(status, o.stream, o.start, client.ReadDirectionBackward, msg.GetEvents(),
 		int(msg.GetNextEventNumber()), int(msg.GetLastEventNumber()), msg.GetIsEndOfStream()), nil
 }
 

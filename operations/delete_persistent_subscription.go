@@ -1,31 +1,31 @@
 package operations
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
-	"github.com/jdextraze/go-gesclient/models"
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/protobuf"
 	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type deletePersistentSubscription struct {
 	*baseOperation
-	stream        string
-	groupName     string
+	stream    string
+	groupName string
 }
 
 func NewDeletePersistentSubscription(
 	source *tasks.CompletionSource,
 	stream string,
 	groupName string,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 ) *deletePersistentSubscription {
 	obj := &deletePersistentSubscription{
-		stream:        stream,
-		groupName:     groupName,
+		stream:    stream,
+		groupName: groupName,
 	}
-	obj.baseOperation = newBaseOperation(models.Command_DeletePersistentSubscription,
-		models.Command_DeletePersistentSubscriptionCompleted, userCredentials, source, obj.createRequestDto,
+	obj.baseOperation = newBaseOperation(client.Command_DeletePersistentSubscription,
+		client.Command_DeletePersistentSubscriptionCompleted, userCredentials, source, obj.createRequestDto,
 		obj.inspectResponse, obj.transformResponse, obj.createResponse)
 	return obj
 }
@@ -37,7 +37,7 @@ func (o *deletePersistentSubscription) createRequestDto() proto.Message {
 	}
 }
 
-func (o *deletePersistentSubscription) inspectResponse(message proto.Message) (*models.InspectionResult, error) {
+func (o *deletePersistentSubscription) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
 	msg := message.(*protobuf.DeletePersistentSubscriptionCompleted)
 	switch msg.GetResult() {
 	case protobuf.DeletePersistentSubscriptionCompleted_Success:
@@ -45,17 +45,17 @@ func (o *deletePersistentSubscription) inspectResponse(message proto.Message) (*
 	case protobuf.DeletePersistentSubscriptionCompleted_Fail:
 		o.Fail(fmt.Errorf("Subscription group %s on stream %s failed '%s'", o.groupName, o.stream, *msg.Reason))
 	case protobuf.DeletePersistentSubscriptionCompleted_AccessDenied:
-		o.Fail(models.AccessDenied)
+		o.Fail(client.AccessDenied)
 	case protobuf.DeletePersistentSubscriptionCompleted_DoesNotExist:
 		o.Fail(fmt.Errorf("Subscription group %s on stream %s doesn't exists", o.groupName, o.stream))
 	default:
 		return nil, fmt.Errorf("Unexpected Operation result: %v", msg.GetResult())
 	}
-	return models.NewInspectionResult(models.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
+	return client.NewInspectionResult(client.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
 }
 
 func (o *deletePersistentSubscription) transformResponse(message proto.Message) (interface{}, error) {
-	return models.NewPersistentSubscriptionDeleteResult(models.PersistentSubscriptionDeleteStatus_Success), nil
+	return client.NewPersistentSubscriptionDeleteResult(client.PersistentSubscriptionDeleteStatus_Success), nil
 }
 
 func (o *deletePersistentSubscription) createResponse() proto.Message {

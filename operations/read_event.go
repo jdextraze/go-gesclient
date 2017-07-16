@@ -1,18 +1,18 @@
 package operations
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/jdextraze/go-gesclient/models"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/protobuf"
 	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type ReadEvent struct {
 	*baseOperation
-	stream        string
-	eventNumber   int
-	resolveTos    bool
+	stream      string
+	eventNumber int
+	resolveTos  bool
 }
 
 func NewReadEvent(
@@ -20,14 +20,14 @@ func NewReadEvent(
 	stream string,
 	eventNumber int,
 	resolveTos bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 ) *ReadEvent {
 	obj := &ReadEvent{
-		stream:        stream,
-		eventNumber:   eventNumber,
-		resolveTos:    resolveTos,
+		stream:      stream,
+		eventNumber: eventNumber,
+		resolveTos:  resolveTos,
 	}
-	obj.baseOperation = newBaseOperation(models.Command_ReadEvent, models.Command_ReadEventCompleted, userCredentials,
+	obj.baseOperation = newBaseOperation(client.Command_ReadEvent, client.Command_ReadEventCompleted, userCredentials,
 		source, obj.createRequestDto, obj.inspectResponse, obj.transformResponse, obj.createResponse)
 	return obj
 }
@@ -43,7 +43,7 @@ func (o *ReadEvent) createRequestDto() proto.Message {
 	}
 }
 
-func (o *ReadEvent) inspectResponse(message proto.Message) (*models.InspectionResult, error) {
+func (o *ReadEvent) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
 	msg := message.(*protobuf.ReadEventCompleted)
 	switch msg.GetResult() {
 	case protobuf.ReadEventCompleted_Success, protobuf.ReadEventCompleted_NotFound,
@@ -52,13 +52,13 @@ func (o *ReadEvent) inspectResponse(message proto.Message) (*models.InspectionRe
 			return nil, err
 		}
 	case protobuf.ReadEventCompleted_Error:
-		o.Fail(models.NewServerError(msg.GetError()))
+		o.Fail(client.NewServerError(msg.GetError()))
 	case protobuf.ReadEventCompleted_AccessDenied:
-		o.Fail(models.AccessDenied)
+		o.Fail(client.AccessDenied)
 	default:
 		return nil, fmt.Errorf("Unexpected ReadStreamResult: %v", *msg.Result)
 	}
-	return models.NewInspectionResult(models.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
+	return client.NewInspectionResult(client.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
 }
 
 func (o *ReadEvent) transformResponse(message proto.Message) (interface{}, error) {
@@ -67,21 +67,21 @@ func (o *ReadEvent) transformResponse(message proto.Message) (interface{}, error
 	if err != nil {
 		return nil, err
 	}
-	return models.NewEventReadResult(status, o.stream, o.eventNumber, msg.Event), nil
+	return client.NewEventReadResult(status, o.stream, o.eventNumber, msg.Event), nil
 }
 
-func (o *ReadEvent) convert(result protobuf.ReadEventCompleted_ReadEventResult) (models.EventReadStatus, error) {
+func (o *ReadEvent) convert(result protobuf.ReadEventCompleted_ReadEventResult) (client.EventReadStatus, error) {
 	switch result {
 	case protobuf.ReadEventCompleted_Success:
-		return models.EventReadStatus_Success, nil
+		return client.EventReadStatus_Success, nil
 	case protobuf.ReadEventCompleted_NotFound:
-		return models.EventReadStatus_NotFound, nil
+		return client.EventReadStatus_NotFound, nil
 	case protobuf.ReadEventCompleted_NoStream:
-		return models.EventReadStatus_NoStream, nil
+		return client.EventReadStatus_NoStream, nil
 	case protobuf.ReadEventCompleted_StreamDeleted:
-		return models.EventReadStatus_StreamDeleted, nil
+		return client.EventReadStatus_StreamDeleted, nil
 	default:
-		return models.EventReadStatus_Error, fmt.Errorf("Unexpected ReadEventResult: %s", result)
+		return client.EventReadStatus_Error, fmt.Errorf("Unexpected ReadEventResult: %s", result)
 	}
 }
 

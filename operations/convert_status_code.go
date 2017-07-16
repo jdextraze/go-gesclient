@@ -1,20 +1,20 @@
 package operations
 
 import (
-	"github.com/jdextraze/go-gesclient/models"
-	"github.com/jdextraze/go-gesclient/protobuf"
 	"fmt"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/protobuf"
 )
 
-func convertStatusCode(result protobuf.ReadStreamEventsCompleted_ReadStreamResult) (models.SliceReadStatus, error) {
+func convertStatusCode(result protobuf.ReadStreamEventsCompleted_ReadStreamResult) (client.SliceReadStatus, error) {
 	switch result {
 	case protobuf.ReadStreamEventsCompleted_Success:
-		return models.SliceReadStatus_Success, nil
+		return client.SliceReadStatus_Success, nil
 	case protobuf.ReadStreamEventsCompleted_NoStream:
-		return models.SliceReadStatus_StreamNotFound, nil
+		return client.SliceReadStatus_StreamNotFound, nil
 	case protobuf.ReadStreamEventsCompleted_StreamDeleted:
-		return models.SliceReadStatus_StreamDeleted, nil
+		return client.SliceReadStatus_StreamDeleted, nil
 	default:
-		return models.SliceReadStatus_Error, fmt.Errorf("Invalid status code: %s", result)
+		return client.SliceReadStatus_Error, fmt.Errorf("Invalid status code: %s", result)
 	}
 }

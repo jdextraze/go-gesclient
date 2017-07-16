@@ -1,13 +1,13 @@
 package operations
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"time"
-	"github.com/jdextraze/go-gesclient/models"
+	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/common"
+	"github.com/jdextraze/go-gesclient/protobuf"
 	"github.com/jdextraze/go-gesclient/tasks"
+	"time"
 )
 
 type updatePersistentSubscription struct {
@@ -33,8 +33,8 @@ func NewUpdatePersistentSubscription(
 	source *tasks.CompletionSource,
 	stream string,
 	groupName string,
-	settings *models.PersistentSubscriptionSettings,
-	userCredentials *models.UserCredentials,
+	settings *client.PersistentSubscriptionSettings,
+	userCredentials *client.UserCredentials,
 ) *updatePersistentSubscription {
 	if settings == nil {
 		panic("settings is nil")
@@ -56,8 +56,8 @@ func NewUpdatePersistentSubscription(
 		maxSubscriberCount:         settings.MaxSubscriberCount(),
 		namedConsumerStrategy:      settings.NamedConsumerStrategy.ToString(),
 	}
-	obj.baseOperation = newBaseOperation(models.Command_UpdatePersistentSubscription,
-		models.Command_UpdatePersistentSubscriptionCompleted, userCredentials, source, obj.createRequestDto,
+	obj.baseOperation = newBaseOperation(client.Command_UpdatePersistentSubscription,
+		client.Command_UpdatePersistentSubscriptionCompleted, userCredentials, source, obj.createRequestDto,
 		obj.inspectResponse, obj.transformResponse, obj.createResponse)
 	return obj
 }
@@ -84,7 +84,7 @@ func (o *updatePersistentSubscription) createRequestDto() proto.Message {
 	}
 }
 
-func (o *updatePersistentSubscription) inspectResponse(message proto.Message) (*models.InspectionResult, error) {
+func (o *updatePersistentSubscription) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
 	msg := message.(*protobuf.UpdatePersistentSubscriptionCompleted)
 	switch msg.GetResult() {
 	case protobuf.UpdatePersistentSubscriptionCompleted_Success:
@@ -94,17 +94,17 @@ func (o *updatePersistentSubscription) inspectResponse(message proto.Message) (*
 	case protobuf.UpdatePersistentSubscriptionCompleted_Fail:
 		o.Fail(fmt.Errorf("Subscription group %s on stream %s failed '%s'", o.groupName, o.stream, *msg.Reason))
 	case protobuf.UpdatePersistentSubscriptionCompleted_AccessDenied:
-		o.Fail(models.AccessDenied)
+		o.Fail(client.AccessDenied)
 	case protobuf.UpdatePersistentSubscriptionCompleted_DoesNotExist:
 		o.Fail(fmt.Errorf("Subscription group %s on stream %s does not exists", o.groupName, o.stream))
 	default:
 		return nil, fmt.Errorf("Unexpected Operation result: %v", msg.GetResult())
 	}
-	return models.NewInspectionResult(models.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
+	return client.NewInspectionResult(client.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
 }
 
 func (o *updatePersistentSubscription) transformResponse(message proto.Message) (interface{}, error) {
-	return models.NewPersistentSubscriptionUpdateResult(models.PersistentSubscriptionUpdateStatus_Success), nil
+	return client.NewPersistentSubscriptionUpdateResult(client.PersistentSubscriptionUpdateStatus_Success), nil
 }
 
 func (o *updatePersistentSubscription) createResponse() proto.Message {

@@ -1,17 +1,17 @@
 package gesclient
 
 import (
-	"net/url"
 	"fmt"
-	"net"
+	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/internal"
-	"github.com/jdextraze/go-gesclient/models"
+	"net"
+	"net/url"
 	"strconv"
 )
 
-func Create(settings *models.ConnectionSettings, uri *url.URL, name string) (models.Connection, error) {
+func Create(settings *client.ConnectionSettings, uri *url.URL, name string) (client.Connection, error) {
 	var scheme string
-	var connectionSettings *models.ConnectionSettings
+	var connectionSettings *client.ConnectionSettings
 
 	if uri == nil {
 		scheme = ""
@@ -20,7 +20,7 @@ func Create(settings *models.ConnectionSettings, uri *url.URL, name string) (mod
 	}
 
 	if settings == nil {
-		connectionSettings = models.DefaultConnectionSettings
+		connectionSettings = client.DefaultConnectionSettings
 	} else {
 		connectionSettings = settings
 	}
@@ -33,7 +33,7 @@ func Create(settings *models.ConnectionSettings, uri *url.URL, name string) (mod
 	var endPointDiscoverer internal.EndpointDiscoverer
 	if scheme == "discover" {
 		port, _ := strconv.Atoi(uri.Port())
-		clusterSettings := models.NewClusterSettings(uri.Host, connectionSettings.MaxDiscoverAttempts(), port,
+		clusterSettings := client.NewClusterSettings(uri.Host, connectionSettings.MaxDiscoverAttempts(), port,
 			nil, connectionSettings.GossipTimeout())
 
 		endPointDiscoverer = internal.NewClusterDnsEndPointDiscoverer(
@@ -49,7 +49,7 @@ func Create(settings *models.ConnectionSettings, uri *url.URL, name string) (mod
 		}
 		endPointDiscoverer = internal.NewStaticEndpointDiscoverer(tcpEndpoint, connectionSettings.UseSslConnection())
 	} else if connectionSettings.GossipSeeds() != nil && len(connectionSettings.GossipSeeds()) > 0 {
-		clusterSettings := models.NewClusterSettings("", connectionSettings.MaxDiscoverAttempts(), 0,
+		clusterSettings := client.NewClusterSettings("", connectionSettings.MaxDiscoverAttempts(), 0,
 			connectionSettings.GossipSeeds(), connectionSettings.GossipTimeout())
 
 		endPointDiscoverer = internal.NewClusterDnsEndPointDiscoverer(
@@ -64,10 +64,10 @@ func Create(settings *models.ConnectionSettings, uri *url.URL, name string) (mod
 	return internal.NewConnection(connectionSettings, nil, endPointDiscoverer, name), nil
 }
 
-func getCredentialsFromUri(uri *url.URL) *models.UserCredentials {
+func getCredentialsFromUri(uri *url.URL) *client.UserCredentials {
 	if uri == nil || uri.User == nil {
 		return nil
 	}
 	password, _ := uri.User.Password()
-	return models.NewUserCredentials(uri.User.Username(), password)
+	return client.NewUserCredentials(uri.User.Username(), password)
 }

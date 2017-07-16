@@ -1,11 +1,11 @@
 package subscriptions
 
 import (
-	"github.com/jdextraze/go-gesclient/models"
+	"github.com/jdextraze/go-gesclient/client"
 )
 
 type VolatileEventStoreSubscription struct {
-	*models.EventStoreSubscription
+	*client.EventStoreSubscription
 	subscriptionOperation *VolatileSubscription
 }
 
@@ -18,7 +18,7 @@ func NewVolatileEventStoreSubscription(
 	obj := &VolatileEventStoreSubscription{
 		subscriptionOperation: subscriptionOperation,
 	}
-	obj.EventStoreSubscription = models.NewEventStoreSubscription(streamId, lastCommitPosition, lastEventNumber,
+	obj.EventStoreSubscription = client.NewEventStoreSubscription(streamId, lastCommitPosition, lastEventNumber,
 		obj.unsubscribe)
 	return obj
 }

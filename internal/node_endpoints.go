@@ -5,7 +5,7 @@ import (
 )
 
 type NodeEndpoints struct {
-	tcpEndpoint net.Addr
+	tcpEndpoint       net.Addr
 	secureTcpEndpoint net.Addr
 }
 
@@ -17,10 +17,10 @@ func NewNodeEndpoints(
 		panic("Both endpoints are nil")
 	}
 	return &NodeEndpoints{
-		tcpEndpoint: tcpEndpoint,
+		tcpEndpoint:       tcpEndpoint,
 		secureTcpEndpoint: secureTcpEndpoint,
 	}
 }
 
-func (ne *NodeEndpoints) TcpEndpoint() net.Addr { return ne.tcpEndpoint }
+func (ne *NodeEndpoints) TcpEndpoint() net.Addr       { return ne.tcpEndpoint }
 func (ne *NodeEndpoints) SecureTcpEndpoint() net.Addr { return ne.secureTcpEndpoint }

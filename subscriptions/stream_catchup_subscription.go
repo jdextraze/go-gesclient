@@ -1,28 +1,28 @@
 package subscriptions
 
 import (
-	"github.com/jdextraze/go-gesclient/models"
+	"fmt"
+	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"time"
-	"fmt"
 )
 
 type StreamCatchUpSubscription struct {
 	*catchUpSubscription
-	nextReadEventNumber         int
+	nextReadEventNumber      int
 	lastProcessedEventNumber int
 	completion               *tasks.CompletionSource
 }
 
 func NewStreamCatchUpSubscription(
-	connection models.Connection,
+	connection client.Connection,
 	streamId string,
 	fromEventNumberExclusive *int,
-	userCredentials *models.UserCredentials,
-	eventAppeared models.CatchUpEventAppearedHandler,
-	liveProcessingStarted models.LiveProcessingStartedHandler,
-	subscriptionDropped models.CatchUpSubscriptionDroppedHandler,
-	settings *models.CatchUpSubscriptionSettings,
+	userCredentials *client.UserCredentials,
+	eventAppeared client.CatchUpEventAppearedHandler,
+	liveProcessingStarted client.LiveProcessingStartedHandler,
+	subscriptionDropped client.CatchUpSubscriptionDroppedHandler,
+	settings *client.CatchUpSubscriptionSettings,
 ) *StreamCatchUpSubscription {
 	if streamId == "" {
 		panic("streamId is empty")
@@ -48,9 +48,9 @@ func NewStreamCatchUpSubscription(
 }
 
 func (s *StreamCatchUpSubscription) readEventsTillAsync(
-	connection models.Connection,
+	connection client.Connection,
 	resolveLinkTos bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 	lastCommitPosition *int64,
 	lastEventNumber *int32,
 ) *tasks.Task {
@@ -60,9 +60,9 @@ func (s *StreamCatchUpSubscription) readEventsTillAsync(
 }
 
 func (s *StreamCatchUpSubscription) readEventsInternal(
-	connection models.Connection,
+	connection client.Connection,
 	resolveLinkTos bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 	lastCommitPosition *int64,
 	lastEventNumber *int32,
 ) {
@@ -80,9 +80,9 @@ func (s *StreamCatchUpSubscription) readEventsInternal(
 
 func (s *StreamCatchUpSubscription) readEventsCallback(
 	task *tasks.Task,
-	connection models.Connection,
+	connection client.Connection,
 	resolveLinkTos bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 	lastCommitPosition *int64,
 	lastEventNumber *int32,
 ) error {
@@ -90,7 +90,7 @@ func (s *StreamCatchUpSubscription) readEventsCallback(
 	if task.IsFaulted() {
 		err = task.Wait()
 	} else {
-		result := &models.StreamEventsSlice{}
+		result := &client.StreamEventsSlice{}
 		if err = task.Result(result); err == nil {
 			if ok, err2 := s.processEvents(lastEventNumber, result); ok && !s.shouldStop {
 				s.readEventsInternal(connection, resolveLinkTos, userCredentials, lastCommitPosition, lastEventNumber)
@@ -114,11 +114,11 @@ func (s *StreamCatchUpSubscription) readEventsCallback(
 
 func (s *StreamCatchUpSubscription) processEvents(
 	lastEventNumber *int32,
-	slice *models.StreamEventsSlice,
+	slice *client.StreamEventsSlice,
 ) (bool, error) {
 	var done bool
 	switch slice.Status() {
-	case models.SliceReadStatus_Success:
+	case client.SliceReadStatus_Success:
 		for _, e := range slice.Events() {
 			if err := s.tryProcess(e); err != nil {
 				return false, err
@@ -130,14 +130,14 @@ func (s *StreamCatchUpSubscription) processEvents(
 		} else {
 			done = slice.NextEventNumber() > int(*lastEventNumber)
 		}
-	case models.SliceReadStatus_StreamNotFound:
+	case client.SliceReadStatus_StreamNotFound:
 		if lastEventNumber != nil && *lastEventNumber != -1 {
 			return false, fmt.Errorf("Impossible: stream %s disappeared in the middle of catching up subscription.",
 				s.streamId)
 		}
 		done = true
-	case models.SliceReadStatus_StreamDeleted:
-		return false, models.StreamDeleted
+	case client.SliceReadStatus_StreamDeleted:
+		return false, client.StreamDeleted
 	default:
 		return false, fmt.Errorf("Unexpect StreamEventsSlice.Status: %s", slice.Status())
 	}
@@ -148,7 +148,7 @@ func (s *StreamCatchUpSubscription) processEvents(
 	return done, nil
 }
 
-func (s *StreamCatchUpSubscription) tryProcess(e *models.ResolvedEvent) error {
+func (s *StreamCatchUpSubscription) tryProcess(e *client.ResolvedEvent) error {
 	processed := false
 	if e.OriginalEventNumber() > s.lastProcessedEventNumber {
 		if err := s.eventAppeared(s, e); err != nil {

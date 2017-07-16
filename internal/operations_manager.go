@@ -1,38 +1,38 @@
 package internal
 
 import (
-	"github.com/jdextraze/go-gesclient/models"
-	"github.com/satori/go.uuid"
-	"sync"
 	"fmt"
-	"time"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/satori/go.uuid"
 	"sort"
+	"sync"
+	"time"
 )
 
-type OperationsManager struct{
-	connectionName string
-	settings *models.ConnectionSettings
-	activeOperations map[uuid.UUID]*operationItem
-	waitingOperations chan *operationItem
+type OperationsManager struct {
+	connectionName         string
+	settings               *client.ConnectionSettings
+	activeOperations       map[uuid.UUID]*operationItem
+	waitingOperations      chan *operationItem
 	retryPendingOperations []*operationItem
-	lock sync.Locker
-	totalOperationCount int
+	lock                   sync.Locker
+	totalOperationCount    int
 }
 
 func NewOperationsManager(
 	connectionName string,
-	settings *models.ConnectionSettings,
+	settings *client.ConnectionSettings,
 ) *OperationsManager {
 	if settings == nil {
 		panic("settings is nil")
 	}
 	return &OperationsManager{
-		connectionName: connectionName,
-		settings: settings,
-		activeOperations: map[uuid.UUID]*operationItem{},
-		waitingOperations: make(chan *operationItem, 4096), // TODO buffer size
+		connectionName:         connectionName,
+		settings:               settings,
+		activeOperations:       map[uuid.UUID]*operationItem{},
+		waitingOperations:      make(chan *operationItem, 4096), // TODO buffer size
 		retryPendingOperations: []*operationItem{},
-		lock: &sync.Mutex{},
+		lock:                &sync.Mutex{},
 		totalOperationCount: 0,
 	}
 }
@@ -60,7 +60,7 @@ func (m *OperationsManager) CleanUp() {
 	m.totalOperationCount = 0
 }
 
-func (m *OperationsManager) CheckTimeoutsAndRetry(c *models.PackageConnection) {
+func (m *OperationsManager) CheckTimeoutsAndRetry(c *client.PackageConnection) {
 	if c == nil {
 		panic("connection is nil")
 	}
@@ -106,7 +106,7 @@ func (m *OperationsManager) CheckTimeoutsAndRetry(c *models.PackageConnection) {
 	m.TryScheduleWaitingOperations(c)
 }
 
-func (m *OperationsManager) TryScheduleWaitingOperations(c *models.PackageConnection) {
+func (m *OperationsManager) TryScheduleWaitingOperations(c *client.PackageConnection) {
 	if c == nil {
 		panic("connection is nil")
 	}
@@ -118,7 +118,7 @@ func (m *OperationsManager) TryScheduleWaitingOperations(c *models.PackageConnec
 	m.lock.Unlock()
 }
 
-func (m *OperationsManager) ExecuteOperation(o *operationItem, c *models.PackageConnection) error {
+func (m *OperationsManager) ExecuteOperation(o *operationItem, c *client.PackageConnection) error {
 	o.ConnectionId = c.ConnectionId()
 	o.LastUpdated = time.Now().UTC()
 	m.activeOperations[o.CorrelationId] = o
@@ -165,7 +165,7 @@ func (m *OperationsManager) EnqueueOperation(operation *operationItem) error {
 	return nil
 }
 
-func (m *OperationsManager) ScheduleOperation(operation *operationItem, conn *models.PackageConnection) error {
+func (m *OperationsManager) ScheduleOperation(operation *operationItem, conn *client.PackageConnection) error {
 	m.waitingOperations <- operation
 	m.TryScheduleWaitingOperations(conn)
 	return nil
@@ -179,6 +179,6 @@ func (m *OperationsManager) logDebug(format string, args ...interface{}) {
 
 type BySeqNo []*operationItem
 
-func (a BySeqNo) Len() int { return len(a) }
-func (a BySeqNo) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a BySeqNo) Len() int           { return len(a) }
+func (a BySeqNo) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a BySeqNo) Less(i, j int) bool { return a[i].seqNo < a[j].seqNo }

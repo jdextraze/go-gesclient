@@ -1,16 +1,16 @@
 package internal
 
 import (
-	"github.com/jdextraze/go-gesclient/models"
-	"time"
+	"github.com/jdextraze/go-gesclient/client"
 	"net"
+	"time"
 )
 
 type ClusterDnsEndpointDiscoverer struct {
 	clusterDns              string
 	maxDiscoverAttemps      int
 	managerExternalHttpPort int
-	gossipSeeds             []*models.GossipSeed
+	gossipSeeds             []*client.GossipSeed
 	gossipTimeout           time.Duration
 }
 
@@ -18,16 +18,16 @@ func NewClusterDnsEndPointDiscoverer(
 	clusterDns string,
 	maxDiscoverAttemps int,
 	managerExternalHttpPort int,
-	gossipSeeds []*models.GossipSeed,
+	gossipSeeds []*client.GossipSeed,
 	gossipTimeout time.Duration,
 ) *ClusterDnsEndpointDiscoverer {
 	panic("TODO") // TODO
 	return &ClusterDnsEndpointDiscoverer{
-		clusterDns: clusterDns,
-		maxDiscoverAttemps: maxDiscoverAttemps,
+		clusterDns:              clusterDns,
+		maxDiscoverAttemps:      maxDiscoverAttemps,
 		managerExternalHttpPort: managerExternalHttpPort,
-		gossipSeeds: gossipSeeds,
-		gossipTimeout: gossipTimeout,
+		gossipSeeds:             gossipSeeds,
+		gossipTimeout:           gossipTimeout,
 	}
 }
 

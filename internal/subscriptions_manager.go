@@ -1,21 +1,21 @@
 package internal
 
 import (
-	"github.com/jdextraze/go-gesclient/models"
-	"github.com/satori/go.uuid"
 	"fmt"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/satori/go.uuid"
 	"time"
 )
 
 type SubscriptionsManager struct {
 	connectionName            string
-	settings                  *models.ConnectionSettings
+	settings                  *client.ConnectionSettings
 	activeSubscriptions       map[uuid.UUID]*SubscriptionItem
 	waitingSubscriptions      chan *SubscriptionItem
 	retryPendingSubscriptions []*SubscriptionItem
 }
 
-func NewSubscriptionManager(connectionName string, settings *models.ConnectionSettings) *SubscriptionsManager {
+func NewSubscriptionManager(connectionName string, settings *client.ConnectionSettings) *SubscriptionsManager {
 	if settings == nil {
 		panic("settings is nil")
 	}
@@ -36,15 +36,15 @@ func (m *SubscriptionsManager) TryGetActiveSubscription(correlationId uuid.UUID)
 func (m *SubscriptionsManager) CleanUp() {
 	err := fmt.Errorf("Connection '%s' was closed", m.connectionName)
 	for i, s := range m.activeSubscriptions {
-		s.Operation().DropSubscription(models.SubscriptionDropReason_ConnectionClosed, err, nil)
+		s.Operation().DropSubscription(client.SubscriptionDropReason_ConnectionClosed, err, nil)
 		delete(m.activeSubscriptions, i)
 	}
 	for len(m.waitingSubscriptions) > 0 {
 		s := <-m.waitingSubscriptions
-		s.Operation().DropSubscription(models.SubscriptionDropReason_ConnectionClosed, err, nil)
+		s.Operation().DropSubscription(client.SubscriptionDropReason_ConnectionClosed, err, nil)
 	}
 	for i, s := range m.retryPendingSubscriptions {
-		s.Operation().DropSubscription(models.SubscriptionDropReason_ConnectionClosed, err, nil)
+		s.Operation().DropSubscription(client.SubscriptionDropReason_ConnectionClosed, err, nil)
 		m.retryPendingSubscriptions[i] = nil
 	}
 	m.retryPendingSubscriptions = []*SubscriptionItem{}
@@ -63,7 +63,7 @@ func (m *SubscriptionsManager) PurgeSubscribedAndDroppedSubscriptions(connection
 	}
 }
 
-func (m *SubscriptionsManager) CheckTimeoutsAndRetry(c *models.PackageConnection) {
+func (m *SubscriptionsManager) CheckTimeoutsAndRetry(c *client.PackageConnection) {
 	if c == nil {
 		panic("connection is nil")
 	}
@@ -82,7 +82,7 @@ func (m *SubscriptionsManager) CheckTimeoutsAndRetry(c *models.PackageConnection
 			log.Errorf("%v", err)
 
 			if m.settings.FailOnNoServerResponse() {
-				s.Operation().DropSubscription(models.SubscriptionDropReason_SubscribingError, err, nil)
+				s.Operation().DropSubscription(client.SubscriptionDropReason_SubscribingError, err, nil)
 				removeSubscriptions = append(removeSubscriptions, s)
 			} else {
 				retrySubscriptions = append(retrySubscriptions, s)
@@ -114,7 +114,7 @@ func (m *SubscriptionsManager) EnqueueSubscription(s *SubscriptionItem) {
 	m.waitingSubscriptions <- s
 }
 
-func (m *SubscriptionsManager) StartSubscription(s *SubscriptionItem, c *models.PackageConnection) {
+func (m *SubscriptionsManager) StartSubscription(s *SubscriptionItem, c *client.PackageConnection) {
 	if c == nil {
 		panic("connection is nil")
 	}
@@ -160,7 +160,7 @@ func (m *SubscriptionsManager) ScheduleSubscriptionRetry(s *SubscriptionItem) {
 
 	if s.MaxRetries() >= 0 && s.RetryCount >= s.MaxRetries() {
 		m.logDebug("RETRIES LIMIT REACHED when trying to retry %s", s)
-		s.Operation().DropSubscription(models.SubscriptionDropReason_SubscribingError,
+		s.Operation().DropSubscription(client.SubscriptionDropReason_SubscribingError,
 			fmt.Errorf("Retries limit of %d reached for %s", s.MaxRetries(), s), nil)
 		return
 	}

@@ -1,27 +1,27 @@
 package operations
 
 import (
-	"github.com/jdextraze/go-gesclient/models"
-	"github.com/golang/protobuf/proto"
-	"github.com/satori/go.uuid"
 	"errors"
-	"github.com/jdextraze/go-gesclient/protobuf"
 	"fmt"
+	"github.com/golang/protobuf/proto"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/tasks"
+	"github.com/satori/go.uuid"
+	"net"
 	"reflect"
 	"sync/atomic"
-	"net"
-	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type CreateRequestDtoHandler func() proto.Message
-type InspectResponseHandler func(message proto.Message) (*models.InspectionResult, error)
+type InspectResponseHandler func(message proto.Message) (*client.InspectionResult, error)
 type TransformResponseHandler func(message proto.Message) (interface{}, error)
 type CreateResponseHandler func() proto.Message
 
 type baseOperation struct {
-	requestCommand    models.Command
-	responseCommand   models.Command
-	userCredentials   *models.UserCredentials
+	requestCommand    client.Command
+	responseCommand   client.Command
+	userCredentials   *client.UserCredentials
 	source            *tasks.CompletionSource
 	response          proto.Message
 	completed         int32
@@ -32,9 +32,9 @@ type baseOperation struct {
 }
 
 func newBaseOperation(
-	requestCommand models.Command,
-	responseCommand models.Command,
-	userCredentials *models.UserCredentials,
+	requestCommand client.Command,
+	responseCommand client.Command,
+	userCredentials *client.UserCredentials,
 	source *tasks.CompletionSource,
 	createRequestDto CreateRequestDtoHandler,
 	inspectResponse InspectResponseHandler,
@@ -45,30 +45,30 @@ func newBaseOperation(
 		panic("source is nil")
 	}
 	return &baseOperation{
-		source: source,
-		requestCommand: requestCommand,
-		responseCommand: responseCommand,
-		userCredentials: userCredentials,
-		createRequestDto: createRequestDto,
-		inspectResponse: inspectResponse,
+		source:            source,
+		requestCommand:    requestCommand,
+		responseCommand:   responseCommand,
+		userCredentials:   userCredentials,
+		createRequestDto:  createRequestDto,
+		inspectResponse:   inspectResponse,
 		transformResponse: transformResponse,
-		createResponse: createResponse,
+		createResponse:    createResponse,
 	}
 }
 
-func (o *baseOperation) CreateNetworkPackage(correlationId uuid.UUID) (*models.Package, error) {
+func (o *baseOperation) CreateNetworkPackage(correlationId uuid.UUID) (*client.Package, error) {
 	var flags byte
 	if o.userCredentials != nil {
-		flags = models.FlagsAuthenticated
+		flags = client.FlagsAuthenticated
 	}
 	data, err := proto.Marshal(o.createRequestDto())
 	if err != nil {
 		return nil, err
 	}
-	return models.NewTcpPackage(o.requestCommand, flags, correlationId, data, o.userCredentials), err
+	return client.NewTcpPackage(o.requestCommand, flags, correlationId, data, o.userCredentials), err
 }
 
-func (o *baseOperation) InspectPackage(p *models.Package) (result *models.InspectionResult) {
+func (o *baseOperation) InspectPackage(p *client.Package) (result *client.InspectionResult) {
 	var err error
 	if p.Command() == o.responseCommand {
 		o.response = o.createResponse()
@@ -77,11 +77,11 @@ func (o *baseOperation) InspectPackage(p *models.Package) (result *models.Inspec
 		}
 	} else {
 		switch p.Command() {
-		case models.Command_NotAuthenticated:
+		case client.Command_NotAuthenticated:
 			result = o.inspectNotAuthenticated(p)
-		case models.Command_BadRequest:
+		case client.Command_BadRequest:
 			result = o.inspectBadRequest(p)
-		case models.Command_NotHandled:
+		case client.Command_NotHandled:
 			result, err = o.inspectNotHandled(p)
 		default:
 			result, err = o.inspectUnexpectedCommand(p, o.responseCommand)
@@ -89,7 +89,7 @@ func (o *baseOperation) InspectPackage(p *models.Package) (result *models.Inspec
 	}
 	if err != nil {
 		o.Fail(err)
-		result = models.NewInspectionResult(models.InspectionDecision_EndOperation, err.Error(), nil, nil)
+		result = client.NewInspectionResult(client.InspectionDecision_EndOperation, err.Error(), nil, nil)
 	}
 	return
 }
@@ -115,26 +115,26 @@ func (o *baseOperation) Fail(err error) {
 	}
 }
 
-func (o *baseOperation) inspectNotAuthenticated(p *models.Package) *models.InspectionResult {
+func (o *baseOperation) inspectNotAuthenticated(p *client.Package) *client.InspectionResult {
 	msg := string(p.Data())
 	if msg == "" {
 		msg = "Authentication error"
 	}
 	o.Fail(errors.New(msg))
-	return models.NewInspectionResult(models.InspectionDecision_EndOperation, "NotAuthenticated", nil, nil)
+	return client.NewInspectionResult(client.InspectionDecision_EndOperation, "NotAuthenticated", nil, nil)
 }
 
-func (o *baseOperation) inspectBadRequest(p *models.Package) *models.InspectionResult {
+func (o *baseOperation) inspectBadRequest(p *client.Package) *client.InspectionResult {
 	msg := string(p.Data())
 	if msg == "" {
 		msg = "<no message>"
 	}
 	o.Fail(errors.New(msg))
-	return models.NewInspectionResult(models.InspectionDecision_EndOperation, fmt.Sprintf("BadRequest - %s", msg), nil,
+	return client.NewInspectionResult(client.InspectionDecision_EndOperation, fmt.Sprintf("BadRequest - %s", msg), nil,
 		nil)
 }
 
-func (o *baseOperation) inspectNotHandled(p *models.Package) (*models.InspectionResult, error) {
+func (o *baseOperation) inspectNotHandled(p *client.Package) (*client.InspectionResult, error) {
 	var err error
 	dto := &protobuf.NotHandled{}
 	if err := proto.Unmarshal(p.Data(), dto); err != nil {
@@ -142,9 +142,9 @@ func (o *baseOperation) inspectNotHandled(p *models.Package) (*models.Inspection
 	}
 	switch dto.GetReason() {
 	case protobuf.NotHandled_NotReady:
-		return models.NewInspectionResult(models.InspectionDecision_Retry, "NotHandled - NotReady", nil, nil), nil
+		return client.NewInspectionResult(client.InspectionDecision_Retry, "NotHandled - NotReady", nil, nil), nil
 	case protobuf.NotHandled_TooBusy:
-		return models.NewInspectionResult(models.InspectionDecision_Retry, "NotHandled - TooBusy", nil, nil), nil
+		return client.NewInspectionResult(client.InspectionDecision_Retry, "NotHandled - TooBusy", nil, nil), nil
 	case protobuf.NotHandled_NotMaster:
 		masterInfo := &protobuf.NotHandled_MasterInfo{}
 		if err = proto.Unmarshal(dto.AdditionalInfo, masterInfo); err != nil {
@@ -156,19 +156,19 @@ func (o *baseOperation) inspectNotHandled(p *models.Package) (*models.Inspection
 			masterInfo.ExternalTcpPort))
 		secureTcpEndpoint, err = net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d",
 			masterInfo.ExternalSecureTcpAddress, masterInfo.ExternalSecureTcpPort))
-		return models.NewInspectionResult(models.InspectionDecision_Retry, "NotHandled - NotMaster",
+		return client.NewInspectionResult(client.InspectionDecision_Retry, "NotHandled - NotMaster",
 			tcpEndpoint, secureTcpEndpoint), nil
 	default:
 		log.Errorf("Unknown NotHandledReason: %s", dto.Reason)
-		return models.NewInspectionResult(models.InspectionDecision_Retry, "NotHandled - <unknown>", nil, nil), nil
+		return client.NewInspectionResult(client.InspectionDecision_Retry, "NotHandled - <unknown>", nil, nil), nil
 	}
 	return nil, err
 }
 
 func (o *baseOperation) inspectUnexpectedCommand(
-	p *models.Package,
-	expectedCommand models.Command,
-) (*models.InspectionResult, error) {
+	p *client.Package,
+	expectedCommand client.Command,
+) (*client.InspectionResult, error) {
 	if p.Command() == expectedCommand {
 		return nil, fmt.Errorf("Command should not be %s", p.Command())
 	}
@@ -180,6 +180,6 @@ TcpPackage data dump: %v`,
 		expectedCommand, p.Command, p.CorrelationId, reflect.TypeOf(o).Name(), o, p.Data,
 	)
 	o.Fail(fmt.Errorf("Command not expected: %s. Expected: %s.", p.Command(), expectedCommand))
-	return models.NewInspectionResult(models.InspectionDecision_EndOperation, fmt.Sprintf("Unexpected command - %s",
+	return client.NewInspectionResult(client.InspectionDecision_EndOperation, fmt.Sprintf("Unexpected command - %s",
 		p.Command()), nil, nil), nil
 }

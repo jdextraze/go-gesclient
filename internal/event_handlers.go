@@ -1,28 +1,28 @@
 package internal
 
 import (
-	"github.com/jdextraze/go-gesclient/models"
-	"fmt"
 	"errors"
+	"fmt"
+	"github.com/jdextraze/go-gesclient/client"
 	"reflect"
 )
 
 type eventHandlers struct {
-	handlers []models.EventHandler
+	handlers []client.EventHandler
 }
 
 func newEventHandlers() *eventHandlers {
 	return &eventHandlers{
-		handlers: make([]models.EventHandler, 0, 10),
+		handlers: make([]client.EventHandler, 0, 10),
 	}
 }
 
-func (h *eventHandlers) Add(handler models.EventHandler) error {
+func (h *eventHandlers) Add(handler client.EventHandler) error {
 	h.handlers = append(h.handlers, handler)
 	return nil
 }
 
-func (h *eventHandlers) Remove(handler models.EventHandler) error {
+func (h *eventHandlers) Remove(handler client.EventHandler) error {
 	pos := -1
 	for i, h := range h.handlers {
 		if fmt.Sprintf("%v", h) == fmt.Sprintf("%v", handler) {
@@ -37,7 +37,7 @@ func (h *eventHandlers) Remove(handler models.EventHandler) error {
 	return nil
 }
 
-func (h *eventHandlers) Raise(evt models.Event) {
+func (h *eventHandlers) Raise(evt client.Event) {
 	go func() {
 		for _, h := range h.handlers {
 			if err := h(evt); err != nil {

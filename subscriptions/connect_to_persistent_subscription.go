@@ -1,12 +1,12 @@
 package subscriptions
 
 import (
-	"github.com/jdextraze/go-gesclient/models"
-	"github.com/jdextraze/go-gesclient/protobuf"
-	"github.com/golang/protobuf/proto"
 	"errors"
-	"github.com/satori/go.uuid"
+	"github.com/golang/protobuf/proto"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/protobuf"
 	"github.com/jdextraze/go-gesclient/tasks"
+	"github.com/satori/go.uuid"
 )
 
 type connectToPersistentSubscription struct {
@@ -21,9 +21,9 @@ func NewConnectToPersistentSubscription(
 	groupName string,
 	bufferSize int,
 	streamId string,
-	userCredentials *models.UserCredentials,
-	eventAppeared models.EventAppearedHandler,
-	subscriptionDropped models.SubscriptionDroppedHandler,
+	userCredentials *client.UserCredentials,
+	eventAppeared client.EventAppearedHandler,
+	subscriptionDropped client.SubscriptionDroppedHandler,
 	verboseLogging bool,
 	getConnection GetConnectionHandler,
 ) *connectToPersistentSubscription {
@@ -37,11 +37,11 @@ func NewConnectToPersistentSubscription(
 	return obj
 }
 
-func (s *connectToPersistentSubscription) createSubscriptionPackage() (*models.Package, error) {
+func (s *connectToPersistentSubscription) createSubscriptionPackage() (*client.Package, error) {
 	bufferSize := int32(s.bufferSize)
 	dto := &protobuf.ConnectToPersistentSubscription{
-		SubscriptionId: &s.groupName,
-		EventStreamId: &s.streamId,
+		SubscriptionId:          &s.groupName,
+		EventStreamId:           &s.streamId,
 		AllowedInFlightMessages: &bufferSize,
 	}
 	data, err := proto.Marshal(dto)
@@ -50,17 +50,17 @@ func (s *connectToPersistentSubscription) createSubscriptionPackage() (*models.P
 	}
 	var flags byte
 	if s.userCredentials != nil {
-		flags = models.FlagsAuthenticated
+		flags = client.FlagsAuthenticated
 	}
-	return models.NewTcpPackage(models.Command_ConnectToPersistentSubscription, flags, s.correlationId, data,
+	return client.NewTcpPackage(client.Command_ConnectToPersistentSubscription, flags, s.correlationId, data,
 		s.userCredentials), nil
 }
 
 func (s *connectToPersistentSubscription) inspectPackage(
-	p *models.Package,
-) (ok bool, result *models.InspectionResult, err error) {
+	p *client.Package,
+) (ok bool, result *client.InspectionResult, err error) {
 	switch p.Command() {
-	case models.Command_PersistentSubscriptionConfirmation:
+	case client.Command_PersistentSubscriptionConfirmation:
 		dto := &protobuf.PersistentSubscriptionConfirmation{}
 		if err = proto.Unmarshal(p.Data(), dto); err != nil {
 			break
@@ -70,42 +70,42 @@ func (s *connectToPersistentSubscription) inspectPackage(
 			break
 		}
 		s.subscriptionId = *dto.SubscriptionId
-		result = models.NewInspectionResult(models.InspectionDecision_DoNothing, "SubscriptionConfirmation", nil, nil)
-	case models.Command_PersistentSubscriptionStreamEventAppeared:
+		result = client.NewInspectionResult(client.InspectionDecision_DoNothing, "SubscriptionConfirmation", nil, nil)
+	case client.Command_PersistentSubscriptionStreamEventAppeared:
 		dto := &protobuf.PersistentSubscriptionStreamEventAppeared{}
 		if err = proto.Unmarshal(p.Data(), dto); err != nil {
 			break
 		}
-		if err = s.eventAppeared(models.NewResolvedEvent(dto.Event)); err != nil {
+		if err = s.eventAppeared(client.NewResolvedEvent(dto.Event)); err != nil {
 			break
 		}
-		result = models.NewInspectionResult(models.InspectionDecision_DoNothing, "StreamEventAppeard", nil, nil)
-	case models.Command_SubscriptionDropped:
+		result = client.NewInspectionResult(client.InspectionDecision_DoNothing, "StreamEventAppeard", nil, nil)
+	case client.Command_SubscriptionDropped:
 		dto := &protobuf.SubscriptionDropped{}
 		if err = proto.Unmarshal(p.Data(), dto); err != nil {
 			break
 		}
 		switch dto.GetReason() {
 		case protobuf.SubscriptionDropped_AccessDenied:
-			err = s.DropSubscription(models.SubscriptionDropReason_AccessDenied,
+			err = s.DropSubscription(client.SubscriptionDropReason_AccessDenied,
 				errors.New("You do not have access to the stream."), nil)
 		case protobuf.SubscriptionDropped_NotFound:
-			err = s.DropSubscription(models.SubscriptionDropReason_NotFound,
+			err = s.DropSubscription(client.SubscriptionDropReason_NotFound,
 				errors.New("Subscription not found"), nil)
 		case protobuf.SubscriptionDropped_PersistentSubscriptionDeleted:
-			err = s.DropSubscription(models.SubscriptionDropReason_PersistentSubscriptionDeleted,
+			err = s.DropSubscription(client.SubscriptionDropReason_PersistentSubscriptionDeleted,
 				errors.New("Persistent subscription deleted"), nil)
 		case protobuf.SubscriptionDropped_SubscriberMaxCountReached:
-			err = s.DropSubscription(models.SubscriptionDropReason_MaxSubscribersReached,
+			err = s.DropSubscription(client.SubscriptionDropReason_MaxSubscribersReached,
 				errors.New("Max subscribers reached"), nil)
 		default:
 			conn, _ := s.getConnection()
-			err = s.DropSubscription(models.SubscriptionDropReason(*dto.Reason), nil, conn)
+			err = s.DropSubscription(client.SubscriptionDropReason(*dto.Reason), nil, conn)
 		}
 		if err != nil {
 			break
 		}
-		result = models.NewInspectionResult(models.InspectionDecision_EndOperation, "SubscriptionDropped", nil, nil)
+		result = client.NewInspectionResult(client.InspectionDecision_EndOperation, "SubscriptionDropped", nil, nil)
 	}
 	ok = result != nil
 	return
@@ -114,8 +114,8 @@ func (s *connectToPersistentSubscription) inspectPackage(
 func (s *connectToPersistentSubscription) createSubscriptionObject(
 	lastCommitPosition int64,
 	lastEventNumber *int,
-) (*models.EventStoreSubscription, error) {
-	subscription := models.NewPersistentEventStoreSubscription(s, s.streamId, lastCommitPosition, lastEventNumber)
+) (*client.EventStoreSubscription, error) {
+	subscription := client.NewPersistentEventStoreSubscription(s, s.streamId, lastCommitPosition, lastEventNumber)
 	return subscription.EventStoreSubscription, nil
 }
 
@@ -130,7 +130,7 @@ func (s *connectToPersistentSubscription) NotifyEventsProcessed(processedEvents 
 	}
 
 	dto := &protobuf.PersistentSubscriptionAckEvents{
-		SubscriptionId: &s.subscriptionId,
+		SubscriptionId:    &s.subscriptionId,
 		ProcessedEventIds: processedEventIds,
 	}
 	data, err := proto.Marshal(dto)
@@ -140,10 +140,10 @@ func (s *connectToPersistentSubscription) NotifyEventsProcessed(processedEvents 
 
 	var flags byte
 	if s.userCredentials != nil {
-		flags = models.FlagsAuthenticated
+		flags = client.FlagsAuthenticated
 	}
 
-	pkg := models.NewTcpPackage(models.Command_PersistentSubscriptionAckEvents, flags, s.correlationId, data,
+	pkg := client.NewTcpPackage(client.Command_PersistentSubscriptionAckEvents, flags, s.correlationId, data,
 		s.userCredentials)
 
 	return s.enqueueSend(pkg)
@@ -151,7 +151,7 @@ func (s *connectToPersistentSubscription) NotifyEventsProcessed(processedEvents 
 
 func (s *connectToPersistentSubscription) NotifyEventsFailed(
 	processedEvents []uuid.UUID,
-	action models.PersistentSubscriptionNakEventAction,
+	action client.PersistentSubscriptionNakEventAction,
 	reason string,
 ) error {
 	if processedEvents == nil {
@@ -165,10 +165,10 @@ func (s *connectToPersistentSubscription) NotifyEventsFailed(
 
 	nakAction := protobuf.PersistentSubscriptionNakEvents_NakAction(action)
 	dto := &protobuf.PersistentSubscriptionNakEvents{
-		SubscriptionId: &s.subscriptionId,
+		SubscriptionId:    &s.subscriptionId,
 		ProcessedEventIds: processedEventIds,
-		Action: &nakAction,
-		Message: &reason,
+		Action:            &nakAction,
+		Message:           &reason,
 	}
 	data, err := proto.Marshal(dto)
 	if err != nil {
@@ -177,10 +177,10 @@ func (s *connectToPersistentSubscription) NotifyEventsFailed(
 
 	var flags byte
 	if s.userCredentials != nil {
-		flags = models.FlagsAuthenticated
+		flags = client.FlagsAuthenticated
 	}
 
-	pkg := models.NewTcpPackage(models.Command_PersistentSubscriptionAckEvents, flags, s.correlationId, data,
+	pkg := client.NewTcpPackage(client.Command_PersistentSubscriptionAckEvents, flags, s.correlationId, data,
 		s.userCredentials)
 
 	return s.enqueueSend(pkg)

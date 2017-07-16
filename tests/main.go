@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"time"
 	"github.com/jdextraze/go-gesclient/tasks"
+	"time"
 )
 
 type parent struct {

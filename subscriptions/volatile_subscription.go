@@ -1,9 +1,9 @@
 package subscriptions
 
 import (
-	"github.com/jdextraze/go-gesclient/models"
-	"github.com/jdextraze/go-gesclient/protobuf"
 	"github.com/golang/protobuf/proto"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/protobuf"
 	"github.com/jdextraze/go-gesclient/tasks"
 )
 
@@ -15,9 +15,9 @@ func NewVolatileSubscription(
 	source *tasks.CompletionSource,
 	streamId string,
 	resolveLinkTos bool,
-	userCredentials *models.UserCredentials,
-	eventAppeared models.EventAppearedHandler,
-	subscriptionDropped models.SubscriptionDroppedHandler,
+	userCredentials *client.UserCredentials,
+	eventAppeared client.EventAppearedHandler,
+	subscriptionDropped client.SubscriptionDroppedHandler,
 	verboseLogging bool,
 	getConnection GetConnectionHandler,
 ) *VolatileSubscription {
@@ -28,9 +28,9 @@ func NewVolatileSubscription(
 	return obj
 }
 
-func (s *VolatileSubscription) createSubscriptionPackage() (*models.Package, error) {
+func (s *VolatileSubscription) createSubscriptionPackage() (*client.Package, error) {
 	dto := &protobuf.SubscribeToStream{
-		EventStreamId: &s.streamId,
+		EventStreamId:  &s.streamId,
 		ResolveLinkTos: &s.resolveLinkTos,
 	}
 	data, err := proto.Marshal(dto)
@@ -39,13 +39,13 @@ func (s *VolatileSubscription) createSubscriptionPackage() (*models.Package, err
 	}
 	var flags byte
 	if s.userCredentials != nil {
-		flags = models.FlagsAuthenticated
+		flags = client.FlagsAuthenticated
 	}
-	return models.NewTcpPackage(models.Command_SubscribeToStream, flags, s.correlationId, data, s.userCredentials), nil
+	return client.NewTcpPackage(client.Command_SubscribeToStream, flags, s.correlationId, data, s.userCredentials), nil
 }
 
-func (s *VolatileSubscription) inspectPackage(p *models.Package) (bool, *models.InspectionResult, error) {
-	if p.Command() == models.Command_SubscriptionConfirmation {
+func (s *VolatileSubscription) inspectPackage(p *client.Package) (bool, *client.InspectionResult, error) {
+	if p.Command() == client.Command_SubscriptionConfirmation {
 		dto := &protobuf.SubscriptionConfirmation{}
 		if err := proto.Unmarshal(p.Data(), dto); err != nil {
 			return false, nil, err
@@ -54,24 +54,24 @@ func (s *VolatileSubscription) inspectPackage(p *models.Package) (bool, *models.
 		if err := s.confirmSubscription(dto.GetLastCommitPosition(), &lastEventNumber); err != nil {
 			return false, nil, err
 		}
-		return true, models.NewInspectionResult(models.InspectionDecision_Subscribed, "SubscriptionConfirmation",
+		return true, client.NewInspectionResult(client.InspectionDecision_Subscribed, "SubscriptionConfirmation",
 			nil, nil), nil
-	} else if p.Command() == models.Command_StreamEventAppeared {
+	} else if p.Command() == client.Command_StreamEventAppeared {
 		dto := &protobuf.StreamEventAppeared{}
 		if err := proto.Unmarshal(p.Data(), dto); err != nil {
 			return false, nil, err
 		}
-		if err := s.eventAppeared(models.NewResolvedEventFrom(dto.Event)); err != nil {
+		if err := s.eventAppeared(client.NewResolvedEventFrom(dto.Event)); err != nil {
 			return false, nil, err
 		}
-		return true, models.NewInspectionResult(models.InspectionDecision_DoNothing, "StreamEventAppeared",
+		return true, client.NewInspectionResult(client.InspectionDecision_DoNothing, "StreamEventAppeared",
 			nil, nil), nil
 	}
 	return false, nil, nil
 }
 
 func (s *VolatileSubscription) createSubscriptionObject(lastCommitPosition int64, lastEventNumber *int,
-) (*models.EventStoreSubscription, error) {
+) (*client.EventStoreSubscription, error) {
 	subscription := NewVolatileEventStoreSubscription(s, s.streamId, lastCommitPosition, lastEventNumber)
 	return subscription.EventStoreSubscription, nil
 }

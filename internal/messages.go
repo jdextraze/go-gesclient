@@ -1,9 +1,9 @@
 package internal
 
 import (
-	"time"
-	"github.com/jdextraze/go-gesclient/models"
+	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/tasks"
+	"time"
 )
 
 type message interface{}
@@ -31,8 +31,8 @@ func newStartConnectionMessage(
 	}
 }
 
-func (m *startConnectionMessage) Task() *tasks.CompletionSource { return m.task }
-func (m *startConnectionMessage) EndpointDiscoverer() EndpointDiscoverer      { return m.endpointDiscoverer }
+func (m *startConnectionMessage) Task() *tasks.CompletionSource          { return m.task }
+func (m *startConnectionMessage) EndpointDiscoverer() EndpointDiscoverer { return m.endpointDiscoverer }
 
 type closeConnectionMessage struct {
 	reason string
@@ -65,10 +65,10 @@ func newEstablishTcpConnectionMessage(endpoints *NodeEndpoints) *establishTcpCon
 func (m *establishTcpConnectionMessage) Endpoints() *NodeEndpoints { return m.endpoints }
 
 type tcpConnectionEstablishedMessage struct {
-	connection *models.PackageConnection
+	connection *client.PackageConnection
 }
 
-func newTcpConnectionEstablishedMessage(connection *models.PackageConnection) *tcpConnectionEstablishedMessage {
+func newTcpConnectionEstablishedMessage(connection *client.PackageConnection) *tcpConnectionEstablishedMessage {
 	if connection == nil {
 		panic("connection is nil")
 	}
@@ -77,15 +77,15 @@ func newTcpConnectionEstablishedMessage(connection *models.PackageConnection) *t
 	}
 }
 
-func (m *tcpConnectionEstablishedMessage) Connection() *models.PackageConnection { return m.connection }
+func (m *tcpConnectionEstablishedMessage) Connection() *client.PackageConnection { return m.connection }
 
 type tcpConnectionClosedMessage struct {
-	connection  *models.PackageConnection
+	connection  *client.PackageConnection
 	socketError error
 }
 
 func newTcpConnectionClosedMessage(
-	connection *models.PackageConnection,
+	connection *client.PackageConnection,
 	socketError error,
 ) *tcpConnectionClosedMessage {
 	if connection == nil {
@@ -97,11 +97,11 @@ func newTcpConnectionClosedMessage(
 	}
 }
 
-func (m *tcpConnectionClosedMessage) Connection() *models.PackageConnection { return m.connection }
+func (m *tcpConnectionClosedMessage) Connection() *client.PackageConnection { return m.connection }
 func (m *tcpConnectionClosedMessage) SocketError() error                    { return m.socketError }
 
 type startOperationMessage struct {
-	operation  models.Operation
+	operation  client.Operation
 	maxRetries int
 	timeout    time.Duration
 }
@@ -110,9 +110,9 @@ type startSubscriptionMessage struct {
 	source              *tasks.CompletionSource
 	streamId            string
 	resolveLinkTos      bool
-	userCredentials     *models.UserCredentials
-	eventAppeared       models.EventAppearedHandler
-	subscriptionDropped models.SubscriptionDroppedHandler
+	userCredentials     *client.UserCredentials
+	eventAppeared       client.EventAppearedHandler
+	subscriptionDropped client.SubscriptionDroppedHandler
 	maxRetries          int
 	timeout             time.Duration
 }
@@ -122,19 +122,19 @@ type startPersistentSubscriptionMessage struct {
 	subscriptionId      string
 	streamId            string
 	bufferSize          int
-	userCredentials     *models.UserCredentials
-	eventAppeared       models.EventAppearedHandler
-	subscriptionDropped models.SubscriptionDroppedHandler
+	userCredentials     *client.UserCredentials
+	eventAppeared       client.EventAppearedHandler
+	subscriptionDropped client.SubscriptionDroppedHandler
 	maxRetries          int
 	timeout             time.Duration
 }
 
 type handleTcpPackageMessage struct {
-	connection *models.PackageConnection
-	pkg        *models.Package
+	connection *client.PackageConnection
+	pkg        *client.Package
 }
 
 type tcpConnectionErrorMessage struct {
-	connection *models.PackageConnection
+	connection *client.PackageConnection
 	error      error
 }

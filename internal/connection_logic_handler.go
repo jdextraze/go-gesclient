@@ -1,27 +1,27 @@
 package internal
 
 import (
-	"github.com/jdextraze/go-gesclient/models"
-	"net"
-	"time"
 	"errors"
 	"fmt"
-	"github.com/satori/go.uuid"
-	"sync/atomic"
+	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/subscriptions"
-	"reflect"
 	"github.com/jdextraze/go-gesclient/tasks"
+	"github.com/satori/go.uuid"
+	"net"
+	"reflect"
+	"sync/atomic"
+	"time"
 )
 
 type ConnectionLogicHandler interface {
 	TotalOperationCount() int
 	EnqueueMessage(msg message) error
-	Connected() models.EventHandlers
-	Disconnected() models.EventHandlers
-	Reconnecting() models.EventHandlers
-	Closed() models.EventHandlers
-	ErrorOccurred() models.EventHandlers
-	AuthenticationFailed() models.EventHandlers
+	Connected() client.EventHandlers
+	Disconnected() client.EventHandlers
+	Reconnecting() client.EventHandlers
+	Closed() client.EventHandlers
+	ErrorOccurred() client.EventHandlers
+	AuthenticationFailed() client.EventHandlers
 }
 
 type heartbeatInfo struct {
@@ -43,7 +43,7 @@ type authInfo struct {
 type connectionState int
 
 const (
-	connectionState_Init       connectionState = iota
+	connectionState_Init connectionState = iota
 	connectionState_Connecting
 	connectionState_Connected
 	connectionState_Closed
@@ -63,7 +63,7 @@ func (s connectionState) String() string {
 type connectingPhase int
 
 const (
-	connectingPhase_Invalid                connectingPhase = iota
+	connectingPhase_Invalid connectingPhase = iota
 	connectingPhase_Reconnecting
 	connectingPhase_EndpointDiscovery
 	connectingPhase_ConnectionEstablishing
@@ -78,8 +78,8 @@ type connectionLogicHandler struct {
 	closed                *eventHandlers
 	errorOccurred         *eventHandlers
 	authenticationFailed  *eventHandlers
-	esConnection          models.Connection
-	settings              *models.ConnectionSettings
+	esConnection          client.Connection
+	settings              *client.ConnectionSettings
 	queue                 *simpleQueuedHandler
 	timer                 *time.Ticker
 	endpointDiscoverer    EndpointDiscoverer
@@ -94,12 +94,12 @@ type connectionLogicHandler struct {
 	connectingPhase       connectingPhase
 	wasConnected          int32
 	packageNumber         int
-	connection            *models.PackageConnection
+	connection            *client.PackageConnection
 }
 
 func NewConnectionLogicHandler(
-	connection models.Connection,
-	settings *models.ConnectionSettings,
+	connection client.Connection,
+	settings *client.ConnectionSettings,
 ) *connectionLogicHandler {
 	if connection == nil {
 		panic("connection is nil")
@@ -140,7 +140,7 @@ func NewConnectionLogicHandler(
 
 	queue.RegisterHandler(&timerTickMessage{}, obj.timerTick)
 
-	obj.timer = time.NewTicker(models.TimerPeriod)
+	obj.timer = time.NewTicker(client.TimerPeriod)
 	go func() {
 		for range obj.timer.C {
 			obj.EnqueueMessage(&timerTickMessage{})
@@ -296,7 +296,7 @@ func (h *connectionLogicHandler) startSubscription(msg message) error {
 	case connectionState_Connecting, connectionState_Connected:
 		operation := subscriptions.NewVolatileSubscription(m.source, m.streamId, m.resolveLinkTos,
 			m.userCredentials, m.eventAppeared, m.subscriptionDropped, h.settings.VerboseLogging(),
-			func() (*models.PackageConnection, error) { return h.connection, nil })
+			func() (*client.PackageConnection, error) { return h.connection, nil })
 		var state string
 		if h.state == connectionState_Connected {
 			state = "fire"
@@ -326,7 +326,7 @@ func (h *connectionLogicHandler) startPersistentSubscription(msg message) error 
 	case connectionState_Connecting, connectionState_Connected:
 		operation := subscriptions.NewConnectToPersistentSubscription(m.source, m.subscriptionId,
 			m.bufferSize, m.streamId, m.userCredentials, m.eventAppeared, m.subscriptionDropped,
-			h.settings.VerboseLogging(), func() (*models.PackageConnection, error) { return h.connection, nil })
+			h.settings.VerboseLogging(), func() (*client.PackageConnection, error) { return h.connection, nil })
 		log.Debugf("StartSubscription %s %s, %d, %s", h.state, operation, m.maxRetries, m.timeout)
 		subscription := NewSubscriptionItem(operation, m.maxRetries, m.timeout)
 		if h.state == connectionState_Connecting {
@@ -366,12 +366,12 @@ func (h *connectionLogicHandler) establishTcpConnection(msg message) error {
 		return nil
 	}
 	h.connectingPhase = connectingPhase_ConnectionEstablishing
-	h.connection = models.NewPackageConnection(log, tcpEndpoint, uuid.NewV4(), h.settings.UseSslConnection(),
+	h.connection = client.NewPackageConnection(log, tcpEndpoint, uuid.NewV4(), h.settings.UseSslConnection(),
 		h.settings.TargetHost(), h.settings.ValidateService(), h.settings.ClientConnectionTimeout(),
-		func(c *models.PackageConnection, p *models.Package) { h.EnqueueMessage(&handleTcpPackageMessage{c, p}) },
-		func(c *models.PackageConnection, err error) { h.EnqueueMessage(&tcpConnectionErrorMessage{c, err}) },
-		func(c *models.PackageConnection) { h.EnqueueMessage(&tcpConnectionEstablishedMessage{c}) },
-		func(c *models.PackageConnection, err error) { h.EnqueueMessage(&tcpConnectionClosedMessage{c, err}) })
+		func(c *client.PackageConnection, p *client.Package) { h.EnqueueMessage(&handleTcpPackageMessage{c, p}) },
+		func(c *client.PackageConnection, err error) { h.EnqueueMessage(&tcpConnectionErrorMessage{c, err}) },
+		func(c *client.PackageConnection) { h.EnqueueMessage(&tcpConnectionEstablishedMessage{c}) },
+		func(c *client.PackageConnection, err error) { h.EnqueueMessage(&tcpConnectionClosedMessage{c, err}) })
 	return h.connection.StartReceiving()
 }
 
@@ -391,8 +391,8 @@ func (h *connectionLogicHandler) tcpConnectionEstablished(msg message) error {
 	if h.settings.DefaultUserCredentials != nil {
 		h.connectingPhase = connectingPhase_Authentication
 		h.authInfo = authInfo{uuid.NewV4(), h.elapsedTime()}
-		h.connection.EnqueueSend(models.NewTcpPackage(
-			models.Command_Authenticate,
+		h.connection.EnqueueSend(client.NewTcpPackage(
+			client.Command_Authenticate,
 			1,
 			h.authInfo.CorrelationId,
 			nil,
@@ -478,19 +478,19 @@ func (h *connectionLogicHandler) handleTcpPackage(msg message) error {
 		correlationId)
 	h.packageNumber += 1
 
-	if command == models.Command_HeartbeatResponseCommand {
+	if command == client.Command_HeartbeatResponseCommand {
 		return nil
 	}
-	if command == models.Command_HeartbeatRequestCommand {
-		return h.connection.EnqueueSend(models.NewTcpPackage(models.Command_HeartbeatResponseCommand, models.FlagsNone,
+	if command == client.Command_HeartbeatRequestCommand {
+		return h.connection.EnqueueSend(client.NewTcpPackage(client.Command_HeartbeatResponseCommand, client.FlagsNone,
 			correlationId, nil, nil))
 	}
 
-	if command == models.Command_Authenticated || command == models.Command_NotAuthenticated {
+	if command == client.Command_Authenticated || command == client.Command_NotAuthenticated {
 		if h.state == connectionState_Connecting &&
 			h.connectingPhase == connectingPhase_Authentication &&
 			h.authInfo.CorrelationId == correlationId {
-			if command == models.Command_NotAuthenticated {
+			if command == client.Command_NotAuthenticated {
 				h.raiseAuthFailed("Not authenticated")
 			}
 			h.goToConnectedState()
@@ -498,7 +498,7 @@ func (h *connectionLogicHandler) handleTcpPackage(msg message) error {
 		}
 	}
 
-	if command == models.Command_BadRequest && correlationId == uuid.Nil {
+	if command == client.Command_BadRequest && correlationId == uuid.Nil {
 		message := string(m.pkg.Data())
 		if message == "" {
 			message = "<no message>"
@@ -514,13 +514,13 @@ func (h *connectionLogicHandler) handleTcpPackage(msg message) error {
 		log.Debugf("HandleTcpPackage OPERATION DECISION %s (%s), %s", result.Decision(), result.Description(),
 			operation)
 		switch result.Decision() {
-		case models.InspectionDecision_DoNothing:
+		case client.InspectionDecision_DoNothing:
 			break
-		case models.InspectionDecision_EndOperation:
+		case client.InspectionDecision_EndOperation:
 			h.operations.RemoveOperation(operation)
-		case models.InspectionDecision_Retry:
+		case client.InspectionDecision_Retry:
 			h.operations.ScheduleOperationRetry(operation)
-		case models.InspectionDecision_Reconnect:
+		case client.InspectionDecision_Reconnect:
 			h.reconnectTo(NewNodeEndpoints(result.TcpEndpoint(), result.SecureTcpEndpoint()))
 			h.operations.ScheduleOperationRetry(operation)
 		default:
@@ -537,16 +537,16 @@ func (h *connectionLogicHandler) handleTcpPackage(msg message) error {
 		log.Debugf("HandleTcpPackage SUBSCRIPTION DECISION %s (%s), %s", result.Decision(), result.Description(),
 			subscription)
 		switch result.Decision() {
-		case models.InspectionDecision_DoNothing:
+		case client.InspectionDecision_DoNothing:
 			break
-		case models.InspectionDecision_EndOperation:
+		case client.InspectionDecision_EndOperation:
 			h.subscriptions.RemoveSubscription(subscription)
-		case models.InspectionDecision_Retry:
+		case client.InspectionDecision_Retry:
 			h.subscriptions.ScheduleSubscriptionRetry(subscription)
-		case models.InspectionDecision_Reconnect:
+		case client.InspectionDecision_Reconnect:
 			h.reconnectTo(NewNodeEndpoints(result.TcpEndpoint(), result.SecureTcpEndpoint()))
 			h.subscriptions.ScheduleSubscriptionRetry(subscription)
-		case models.InspectionDecision_Subscribed:
+		case client.InspectionDecision_Subscribed:
 			subscription.IsSubscribed = true
 		default:
 			return fmt.Errorf("Unknown InspectionDecision: %s", result.Decision())
@@ -646,7 +646,7 @@ func (h *connectionLogicHandler) manageHeartbeats() error {
 	}
 
 	if h.heartbeatInfo.IsIntervalStage {
-		h.connection.EnqueueSend(models.NewTcpPackage(models.Command_HeartbeatRequestCommand, models.FlagsNone,
+		h.connection.EnqueueSend(client.NewTcpPackage(client.Command_HeartbeatRequestCommand, client.FlagsNone,
 			uuid.NewV4(), nil, nil))
 		h.heartbeatInfo = heartbeatInfo{h.heartbeatInfo.LastPackageNumber, false, h.elapsedTime()}
 	} else {
@@ -660,38 +660,40 @@ func (h *connectionLogicHandler) manageHeartbeats() error {
 	return nil
 }
 
-func (h *connectionLogicHandler) Connected() models.EventHandlers { return h.connected }
+func (h *connectionLogicHandler) Connected() client.EventHandlers { return h.connected }
 
 func (h *connectionLogicHandler) raiseConnected(addr net.Addr) {
-	h.connected.Raise(models.NewClientConnectionEventArgs(addr, h.esConnection))
+	h.connected.Raise(client.NewClientConnectionEventArgs(addr, h.esConnection))
 }
 
-func (h *connectionLogicHandler) Disconnected() models.EventHandlers { return h.disconnected }
+func (h *connectionLogicHandler) Disconnected() client.EventHandlers { return h.disconnected }
 
 func (h *connectionLogicHandler) raiseDisconnected(addr net.Addr) {
-	h.disconnected.Raise(models.NewClientConnectionEventArgs(addr, h.esConnection))
+	h.disconnected.Raise(client.NewClientConnectionEventArgs(addr, h.esConnection))
 }
 
-func (h *connectionLogicHandler) Reconnecting() models.EventHandlers { return h.reconnecting }
+func (h *connectionLogicHandler) Reconnecting() client.EventHandlers { return h.reconnecting }
 
 func (h *connectionLogicHandler) raiseReconnecting() {
-	h.reconnecting.Raise(models.NewClientReconnectingEventArgs(h.esConnection))
+	h.reconnecting.Raise(client.NewClientReconnectingEventArgs(h.esConnection))
 }
 
-func (h *connectionLogicHandler) Closed() models.EventHandlers { return h.closed }
+func (h *connectionLogicHandler) Closed() client.EventHandlers { return h.closed }
 
 func (h *connectionLogicHandler) raiseClosed(reason string) {
-	h.closed.Raise(models.NewClientClosedEventArgs(reason, h.esConnection))
+	h.closed.Raise(client.NewClientClosedEventArgs(reason, h.esConnection))
 }
 
-func (h *connectionLogicHandler) ErrorOccurred() models.EventHandlers { return h.errorOccurred }
+func (h *connectionLogicHandler) ErrorOccurred() client.EventHandlers { return h.errorOccurred }
 
 func (h *connectionLogicHandler) raiseErrorOccurred(err error) {
-	h.errorOccurred.Raise(models.NewClientErrorEventArgs(err, h.esConnection))
+	h.errorOccurred.Raise(client.NewClientErrorEventArgs(err, h.esConnection))
 }
 
-func (h *connectionLogicHandler) AuthenticationFailed() models.EventHandlers { return h.authenticationFailed }
+func (h *connectionLogicHandler) AuthenticationFailed() client.EventHandlers {
+	return h.authenticationFailed
+}
 
 func (h *connectionLogicHandler) raiseAuthFailed(reason string) {
-	h.authenticationFailed.Raise(models.NewClientAuthenticationFailedEventArgs(reason, h.esConnection))
+	h.authenticationFailed.Raise(client.NewClientAuthenticationFailedEventArgs(reason, h.esConnection))
 }

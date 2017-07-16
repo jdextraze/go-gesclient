@@ -1,23 +1,23 @@
 package internal
 
 import (
+	"fmt"
 	"reflect"
 	"sync/atomic"
-	"fmt"
 )
 
 type messageHandler func(message message) error
 
 type simpleQueuedHandler struct {
 	messageQueue chan message
-	handlers map[reflect.Type]messageHandler
+	handlers     map[reflect.Type]messageHandler
 	isProcessing int32
 }
 
 func newSimpleQueuedHandler(maxQueueSize int) *simpleQueuedHandler {
 	return &simpleQueuedHandler{
 		messageQueue: make(chan message, maxQueueSize),
-		handlers: map[reflect.Type]messageHandler{},
+		handlers:     map[reflect.Type]messageHandler{},
 	}
 }
 
@@ -37,7 +37,7 @@ func (h *simpleQueuedHandler) EnqueueMessage(msg message) error {
 func (h *simpleQueuedHandler) processQueue() {
 	for {
 		select {
-		case msg := <- h.messageQueue:
+		case msg := <-h.messageQueue:
 			msgType := reflect.TypeOf(msg)
 			msgHandler, found := h.handlers[msgType]
 			if !found {

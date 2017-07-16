@@ -1,34 +1,34 @@
 package operations
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
 	"errors"
 	"github.com/golang/protobuf/proto"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/protobuf"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/jdextraze/go-gesclient/models"
 )
 
 var _ = Describe("DeleteStreamOperation", func() {
 	var (
-		sut *deleteStream
-		result chan *models.DeleteResult
+		sut    *deleteStream
+		result chan *client.DeleteResult
 	)
 
 	BeforeEach(func() {
-		result = make(chan *models.DeleteResult, 1)
+		result = make(chan *client.DeleteResult, 1)
 		sut = NewDeleteStream(
 			"Test",
-			models.ExpectedVersion_Any,
+			client.ExpectedVersion_Any,
 			false,
-			models.NewUserCredentials("test", "!test!"),
+			client.NewUserCredentials("test", "!test!"),
 			result,
 		)
 	})
 
 	Describe("getting request command", func() {
 		It("should return DeleteStream", func() {
-			Expect(sut.GetRequestCommand()).To(BeEquivalentTo(models.Command_DeleteStream))
+			Expect(sut.GetRequestCommand()).To(BeEquivalentTo(client.Command_DeleteStream))
 		})
 	})
 
@@ -46,7 +46,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 		It("should be populated", func() {
 			deleteStream := msg.(*protobuf.DeleteStream)
 			Expect(deleteStream.GetEventStreamId()).To(Equal("Test"))
-			Expect(deleteStream.GetExpectedVersion()).To(BeEquivalentTo(models.ExpectedVersion_Any))
+			Expect(deleteStream.GetExpectedVersion()).To(BeEquivalentTo(client.ExpectedVersion_Any))
 			Expect(deleteStream.GetHardDelete()).To(BeFalse())
 			Expect(deleteStream.GetRequireMaster()).To(BeFalse())
 		})
@@ -54,12 +54,12 @@ var _ = Describe("DeleteStreamOperation", func() {
 
 	Describe("getting user credentials", func() {
 		It("should return provided value", func() {
-			Expect(sut.UserCredentials()).To(Equal(models.NewUserCredentials("test", "!test!")))
+			Expect(sut.UserCredentials()).To(Equal(client.NewUserCredentials("test", "!test!")))
 		})
 	})
 
 	Describe("fail", func() {
-		var res <-chan *models.DeleteResult
+		var res <-chan *client.DeleteResult
 
 		BeforeEach(func() {
 			res = sut.resultChannel
@@ -67,7 +67,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 		})
 
 		It("should send DeleteResult on the channel and close it", func() {
-			Expect(res).To(Receive(BeEquivalentTo(models.NewDeleteResult(nil, errors.New("error")))))
+			Expect(res).To(Receive(BeEquivalentTo(client.NewDeleteResult(nil, errors.New("error")))))
 			Expect(res).To(BeClosed())
 		})
 
@@ -81,7 +81,7 @@ var _ = Describe("DeleteStreamOperation", func() {
 	})
 
 	Describe("parsing response", func() {
-		var res <-chan *models.DeleteResult
+		var res <-chan *client.DeleteResult
 
 		Context("when response is success", func() {
 			BeforeEach(func() {
@@ -94,15 +94,15 @@ var _ = Describe("DeleteStreamOperation", func() {
 					PreparePosition: &zero64,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_DeleteStreamCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_DeleteStreamCompleted,
 					Data:    payload,
 				})
 			})
 
 			It("should send DeleteResult on the channel and close it", func() {
-				pos, _ := models.NewPosition(0, 0)
-				Expect(res).To(Receive(BeEquivalentTo(models.NewDeleteResult(pos, nil))))
+				pos, _ := client.NewPosition(0, 0)
+				Expect(res).To(Receive(BeEquivalentTo(client.NewDeleteResult(pos, nil))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -126,8 +126,8 @@ var _ = Describe("DeleteStreamOperation", func() {
 					PreparePosition: &zero64,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_DeleteStreamCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_DeleteStreamCompleted,
 					Data:    payload,
 				})
 			})
@@ -160,8 +160,8 @@ var _ = Describe("DeleteStreamOperation", func() {
 					PreparePosition: &zero64,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_DeleteStreamCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_DeleteStreamCompleted,
 					Data:    payload,
 				})
 			})
@@ -194,8 +194,8 @@ var _ = Describe("DeleteStreamOperation", func() {
 					PreparePosition: &zero64,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_DeleteStreamCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_DeleteStreamCompleted,
 					Data:    payload,
 				})
 			})
@@ -228,14 +228,14 @@ var _ = Describe("DeleteStreamOperation", func() {
 					PreparePosition: &zero64,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_DeleteStreamCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_DeleteStreamCompleted,
 					Data:    payload,
 				})
 			})
 
 			It("should send DeleteResult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewDeleteResult(nil, models.WrongExpectedVersion))))
+				Expect(res).To(Receive(BeEquivalentTo(client.NewDeleteResult(nil, client.WrongExpectedVersion))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -259,14 +259,14 @@ var _ = Describe("DeleteStreamOperation", func() {
 					PreparePosition: &zero64,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_DeleteStreamCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_DeleteStreamCompleted,
 					Data:    payload,
 				})
 			})
 
 			It("should send DeleteResult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewDeleteResult(nil, models.StreamDeleted))))
+				Expect(res).To(Receive(BeEquivalentTo(client.NewDeleteResult(nil, client.StreamDeleted))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -290,14 +290,14 @@ var _ = Describe("DeleteStreamOperation", func() {
 					PreparePosition: &zero64,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_DeleteStreamCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_DeleteStreamCompleted,
 					Data:    payload,
 				})
 			})
 
 			It("should send DeleteResult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewDeleteResult(nil, models.InvalidTransaction))))
+				Expect(res).To(Receive(BeEquivalentTo(client.NewDeleteResult(nil, client.InvalidTransaction))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -321,14 +321,14 @@ var _ = Describe("DeleteStreamOperation", func() {
 					PreparePosition: &zero64,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_DeleteStreamCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_DeleteStreamCompleted,
 					Data:    payload,
 				})
 			})
 
 			It("should send DeleteResult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewDeleteResult(nil, models.AccessDenied))))
+				Expect(res).To(Receive(BeEquivalentTo(client.NewDeleteResult(nil, client.AccessDenied))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -344,14 +344,14 @@ var _ = Describe("DeleteStreamOperation", func() {
 		Context("when response protobuf unmarshal fails", func() {
 			BeforeEach(func() {
 				res = sut.resultChannel
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_DeleteStreamCompleted,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_DeleteStreamCompleted,
 					Data:    []byte{0},
 				})
 			})
 
 			It("should send DeleteResult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewDeleteResult(nil,
+				Expect(res).To(Receive(BeEquivalentTo(client.NewDeleteResult(nil,
 					errors.New("proto: protobuf.DeleteStreamCompleted: illegal tag 0 (wire type 0)")))))
 				Expect(res).To(BeClosed())
 			})
@@ -368,14 +368,14 @@ var _ = Describe("DeleteStreamOperation", func() {
 		Context("when response is not authenticated", func() {
 			BeforeEach(func() {
 				res = sut.resultChannel
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_NotAuthenticated,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_NotAuthenticated,
 					Data:    []byte{},
 				})
 			})
 
 			It("should send DeleteResult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewDeleteResult(nil, models.AuthenticationError))))
+				Expect(res).To(Receive(BeEquivalentTo(client.NewDeleteResult(nil, client.AuthenticationError))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -391,14 +391,14 @@ var _ = Describe("DeleteStreamOperation", func() {
 		Context("when response is bad request", func() {
 			BeforeEach(func() {
 				res = sut.resultChannel
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_BadRequest,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_BadRequest,
 					Data:    []byte{},
 				})
 			})
 
 			It("should send DeleteResult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewDeleteResult(nil, models.BadRequest))))
+				Expect(res).To(Receive(BeEquivalentTo(client.NewDeleteResult(nil, client.BadRequest))))
 				Expect(res).To(BeClosed())
 			})
 
@@ -419,8 +419,8 @@ var _ = Describe("DeleteStreamOperation", func() {
 					Reason: protobuf.NotHandled_NotReady.Enum(),
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_NotHandled,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_NotHandled,
 					Data:    payload,
 				})
 			})
@@ -450,8 +450,8 @@ var _ = Describe("DeleteStreamOperation", func() {
 					Reason: protobuf.NotHandled_TooBusy.Enum(),
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_NotHandled,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_NotHandled,
 					Data:    payload,
 				})
 			})
@@ -481,14 +481,14 @@ var _ = Describe("DeleteStreamOperation", func() {
 					Reason: protobuf.NotHandled_NotMaster.Enum(),
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_NotHandled,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_NotHandled,
 					Data:    payload,
 				})
 			})
 
 			It("should send DeleteResult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewDeleteResult(nil,
+				Expect(res).To(Receive(BeEquivalentTo(client.NewDeleteResult(nil,
 					errors.New("NotHandled - NotMaster not supported")))))
 				Expect(res).To(BeClosed())
 			})
@@ -511,8 +511,8 @@ var _ = Describe("DeleteStreamOperation", func() {
 					Reason: &reason,
 				})
 
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_NotHandled,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_NotHandled,
 					Data:    payload,
 				})
 			})
@@ -537,14 +537,14 @@ var _ = Describe("DeleteStreamOperation", func() {
 		Context("when response is unexpected command", func() {
 			BeforeEach(func() {
 				res = sut.resultChannel
-				sut.ParseResponse(&models.Package{
-					Command: models.Command_SubscriptionConfirmation,
+				sut.ParseResponse(&client.Package{
+					Command: client.Command_SubscriptionConfirmation,
 					Data:    []byte{},
 				})
 			})
 
 			It("should send DeleteResult on the channel and close it", func() {
-				Expect(res).To(Receive(BeEquivalentTo(models.NewDeleteResult(nil, errors.New(
+				Expect(res).To(Receive(BeEquivalentTo(client.NewDeleteResult(nil, errors.New(
 					"Command not expected. Expected: DeleteStreamCompleted, Actual: SubscriptionConfirmation")))))
 				Expect(res).To(BeClosed())
 			})

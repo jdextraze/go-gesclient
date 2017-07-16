@@ -1,29 +1,29 @@
 package internal
 
 import (
-	"github.com/jdextraze/go-gesclient/models"
-	"github.com/jdextraze/go-gesclient/operations"
 	"errors"
 	"fmt"
-	"github.com/satori/go.uuid"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/operations"
 	"github.com/jdextraze/go-gesclient/subscriptions"
 	"github.com/jdextraze/go-gesclient/tasks"
+	"github.com/satori/go.uuid"
 )
 
 type connection struct {
-	connectionSettings *models.ConnectionSettings
-	clusterSettings    *models.ClusterSettings
+	connectionSettings *client.ConnectionSettings
+	clusterSettings    *client.ClusterSettings
 	name               string
 	endpointDiscoverer EndpointDiscoverer
 	handler            ConnectionLogicHandler
 }
 
 func NewConnection(
-	settings *models.ConnectionSettings,
-	clusterSettings *models.ClusterSettings,
+	settings *client.ConnectionSettings,
+	clusterSettings *client.ClusterSettings,
 	endpointDiscoverer EndpointDiscoverer,
 	name string,
-) models.Connection {
+) client.Connection {
 	if settings == nil {
 		panic("settings is nil")
 	}
@@ -63,7 +63,7 @@ func (c *connection) DeleteStreamAsync(
 	stream string,
 	expectedVersion int,
 	hardDelete bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 ) (*tasks.Task, error) {
 	if stream == "" {
 		return nil, errors.New("stream must be present")
@@ -76,8 +76,8 @@ func (c *connection) DeleteStreamAsync(
 func (c *connection) AppendToStreamAsync(
 	stream string,
 	expectedVersion int,
-	events []*models.EventData,
-	userCredentials *models.UserCredentials,
+	events []*client.EventData,
+	userCredentials *client.UserCredentials,
 ) (*tasks.Task, error) {
 	if stream == "" {
 		panic("stream is empty")
@@ -95,7 +95,7 @@ func (c *connection) ReadEventAsync(
 	stream string,
 	eventNumber int,
 	resolveTos bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 ) (*tasks.Task, error) {
 	if stream == "" {
 		return nil, errors.New("stream must be present")
@@ -110,7 +110,7 @@ func (c *connection) ReadStreamEventsForwardAsync(
 	start int,
 	max int,
 	resolveLinkTos bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 ) (*tasks.Task, error) {
 	if stream == "" {
 		return nil, errors.New("stream must be present")
@@ -126,7 +126,7 @@ func (c *connection) ReadStreamEventsBackwardAsync(
 	start int,
 	max int,
 	resolveLinkTos bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 ) (*tasks.Task, error) {
 	if stream == "" {
 		return nil, errors.New("stream must be present")
@@ -138,10 +138,10 @@ func (c *connection) ReadStreamEventsBackwardAsync(
 }
 
 func (c *connection) ReadAllEventsForwardAsync(
-	position *models.Position,
+	position *client.Position,
 	max int,
 	resolveTos bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 ) (*tasks.Task, error) {
 	if position == nil {
 		panic("position is nil")
@@ -152,10 +152,10 @@ func (c *connection) ReadAllEventsForwardAsync(
 }
 
 func (c *connection) ReadAllEventsBackwardAsync(
-	position *models.Position,
+	position *client.Position,
 	max int,
 	resolveTos bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 ) (*tasks.Task, error) {
 	if position == nil {
 		panic("position is nil")
@@ -168,9 +168,9 @@ func (c *connection) ReadAllEventsBackwardAsync(
 func (c *connection) SubscribeToStreamAsync(
 	stream string,
 	resolveLinkTos bool,
-	eventAppeared models.EventAppearedHandler,
-	subscriptionDropped models.SubscriptionDroppedHandler,
-	userCredentials *models.UserCredentials,
+	eventAppeared client.EventAppearedHandler,
+	subscriptionDropped client.SubscriptionDroppedHandler,
+	userCredentials *client.UserCredentials,
 ) (*tasks.Task, error) {
 	if stream == "" {
 		panic("stream is empty")
@@ -193,35 +193,35 @@ func (c *connection) SubscribeToStreamAsync(
 
 func (c *connection) SubscribeToAllAsync(
 	resolveLinkTos bool,
-	eventAppeared models.EventAppearedHandler,
-	subscriptionDropped models.SubscriptionDroppedHandler,
-	userCredentials *models.UserCredentials,
+	eventAppeared client.EventAppearedHandler,
+	subscriptionDropped client.SubscriptionDroppedHandler,
+	userCredentials *client.UserCredentials,
 ) (*tasks.Task, error) {
 	if eventAppeared == nil {
 		panic("eventAppeared is nil")
 	}
 	source := tasks.NewCompletionSource()
 	return source.Task(), c.handler.EnqueueMessage(&startSubscriptionMessage{
-		source: source,
-		streamId: "",
-		resolveLinkTos: resolveLinkTos,
-		userCredentials: userCredentials,
-		eventAppeared: eventAppeared,
+		source:              source,
+		streamId:            "",
+		resolveLinkTos:      resolveLinkTos,
+		userCredentials:     userCredentials,
+		eventAppeared:       eventAppeared,
 		subscriptionDropped: subscriptionDropped,
-		maxRetries: c.Settings().MaxRetries(),
-		timeout: c.Settings().OperationTimeout(),
+		maxRetries:          c.Settings().MaxRetries(),
+		timeout:             c.Settings().OperationTimeout(),
 	})
 }
 
 func (c *connection) SubscribeToStreamFrom(
 	stream string,
 	lastCheckpoint *int,
-	settings *models.CatchUpSubscriptionSettings,
-	eventAppeared models.CatchUpEventAppearedHandler,
-	liveProcessingStarted models.LiveProcessingStartedHandler,
-	subscriptionDropped models.CatchUpSubscriptionDroppedHandler,
-	userCredentials *models.UserCredentials,
-) (models.CatchUpSubscription, error) {
+	settings *client.CatchUpSubscriptionSettings,
+	eventAppeared client.CatchUpEventAppearedHandler,
+	liveProcessingStarted client.LiveProcessingStartedHandler,
+	subscriptionDropped client.CatchUpSubscriptionDroppedHandler,
+	userCredentials *client.UserCredentials,
+) (client.CatchUpSubscription, error) {
 	sub := subscriptions.NewStreamCatchUpSubscription(c, stream, lastCheckpoint, userCredentials, eventAppeared,
 		liveProcessingStarted, subscriptionDropped, settings)
 	sub.Start()
@@ -229,13 +229,13 @@ func (c *connection) SubscribeToStreamFrom(
 }
 
 func (c *connection) SubscribeToAllFrom(
-	lastCheckpoint *models.Position,
-	settings *models.CatchUpSubscriptionSettings,
-	eventAppeared models.CatchUpEventAppearedHandler,
-	liveProcessingStarted models.LiveProcessingStartedHandler,
-	subscriptionDropped models.CatchUpSubscriptionDroppedHandler,
-	userCredentials *models.UserCredentials,
-) (models.CatchUpSubscription, error) {
+	lastCheckpoint *client.Position,
+	settings *client.CatchUpSubscriptionSettings,
+	eventAppeared client.CatchUpEventAppearedHandler,
+	liveProcessingStarted client.LiveProcessingStartedHandler,
+	subscriptionDropped client.CatchUpSubscriptionDroppedHandler,
+	userCredentials *client.UserCredentials,
+) (client.CatchUpSubscription, error) {
 	sub := subscriptions.NewAllCatchUpSubscription(c, lastCheckpoint, userCredentials, eventAppeared,
 		liveProcessingStarted, subscriptionDropped, settings)
 	sub.Start()
@@ -245,8 +245,8 @@ func (c *connection) SubscribeToAllFrom(
 func (c *connection) CreatePersistentSubscriptionAsync(
 	stream string,
 	groupName string,
-	settings *models.PersistentSubscriptionSettings,
-	userCredentials *models.UserCredentials,
+	settings *client.PersistentSubscriptionSettings,
+	userCredentials *client.UserCredentials,
 ) (*tasks.Task, error) {
 	source := tasks.NewCompletionSource()
 	op := operations.NewCreatePersistentSubscription(source, stream, groupName, settings, userCredentials)
@@ -256,8 +256,8 @@ func (c *connection) CreatePersistentSubscriptionAsync(
 func (c *connection) UpdatePersistentSubscriptionAsync(
 	stream string,
 	groupName string,
-	settings *models.PersistentSubscriptionSettings,
-	userCredentials *models.UserCredentials,
+	settings *client.PersistentSubscriptionSettings,
+	userCredentials *client.UserCredentials,
 ) (*tasks.Task, error) {
 	source := tasks.NewCompletionSource()
 	op := operations.NewUpdatePersistentSubscription(source, stream, groupName, settings, userCredentials)
@@ -267,14 +267,14 @@ func (c *connection) UpdatePersistentSubscriptionAsync(
 func (c *connection) DeletePersistentSubscriptionAsync(
 	stream string,
 	groupName string,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 ) (*tasks.Task, error) {
 	source := tasks.NewCompletionSource()
 	op := operations.NewDeletePersistentSubscription(source, stream, groupName, userCredentials)
 	return source.Task(), c.enqueueOperation(op)
 }
 
-func (c *connection) enqueueOperation(op models.Operation) error {
+func (c *connection) enqueueOperation(op client.Operation) error {
 	return c.handler.EnqueueMessage(&startOperationMessage{
 		operation:  op,
 		maxRetries: c.connectionSettings.MaxReconnections(),
@@ -282,18 +282,20 @@ func (c *connection) enqueueOperation(op models.Operation) error {
 	})
 }
 
-func (c *connection) Settings() *models.ConnectionSettings {
+func (c *connection) Settings() *client.ConnectionSettings {
 	return c.connectionSettings
 }
 
-func (c *connection) Connected() models.EventHandlers { return c.handler.Connected() }
+func (c *connection) Connected() client.EventHandlers { return c.handler.Connected() }
 
-func (c *connection) Disconnected() models.EventHandlers { return c.handler.Disconnected() }
+func (c *connection) Disconnected() client.EventHandlers { return c.handler.Disconnected() }
 
-func (c *connection) Reconnecting() models.EventHandlers { return c.handler.Reconnecting() }
+func (c *connection) Reconnecting() client.EventHandlers { return c.handler.Reconnecting() }
 
-func (c *connection) Closed() models.EventHandlers { return c.handler.Closed() }
+func (c *connection) Closed() client.EventHandlers { return c.handler.Closed() }
 
-func (c *connection) ErrorOccurred() models.EventHandlers { return c.handler.ErrorOccurred() }
+func (c *connection) ErrorOccurred() client.EventHandlers { return c.handler.ErrorOccurred() }
 
-func (c *connection) AuthenticationFailed() models.EventHandlers { return c.handler.AuthenticationFailed() }
+func (c *connection) AuthenticationFailed() client.EventHandlers {
+	return c.handler.AuthenticationFailed()
+}

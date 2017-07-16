@@ -1,10 +1,10 @@
 package operations
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
-	"github.com/jdextraze/go-gesclient/models"
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/protobuf"
 	"github.com/jdextraze/go-gesclient/tasks"
 )
 
@@ -20,14 +20,14 @@ func NewDeleteStream(
 	stream string,
 	expectedVersion int,
 	hardDelete bool,
-	userCredentials *models.UserCredentials,
+	userCredentials *client.UserCredentials,
 ) *deleteStream {
 	obj := &deleteStream{
 		stream:          stream,
 		expectedVersion: expectedVersion,
 		hardDelete:      hardDelete,
 	}
-	obj.baseOperation = newBaseOperation(models.Command_DeleteStream, models.Command_DeleteStreamCompleted,
+	obj.baseOperation = newBaseOperation(client.Command_DeleteStream, client.Command_DeleteStreamCompleted,
 		userCredentials, source, obj.createRequestDto, obj.inspectResponse, obj.transformResponse, obj.createResponse)
 	return obj
 }
@@ -43,7 +43,7 @@ func (o *deleteStream) createRequestDto() proto.Message {
 	}
 }
 
-func (o *deleteStream) inspectResponse(message proto.Message) (*models.InspectionResult, error) {
+func (o *deleteStream) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
 	msg := message.(*protobuf.DeleteStreamCompleted)
 	switch msg.GetResult() {
 	case protobuf.OperationResult_Success:
@@ -53,24 +53,24 @@ func (o *deleteStream) inspectResponse(message proto.Message) (*models.Inspectio
 	case protobuf.OperationResult_PrepareTimeout,
 		protobuf.OperationResult_ForwardTimeout,
 		protobuf.OperationResult_CommitTimeout:
-		return models.NewInspectionResult(models.InspectionDecision_Retry, msg.GetResult().String(), nil, nil), nil
+		return client.NewInspectionResult(client.InspectionDecision_Retry, msg.GetResult().String(), nil, nil), nil
 	case protobuf.OperationResult_WrongExpectedVersion:
-		o.Fail(models.WrongExpectedVersion)
+		o.Fail(client.WrongExpectedVersion)
 	case protobuf.OperationResult_StreamDeleted:
-		o.Fail(models.StreamDeleted)
+		o.Fail(client.StreamDeleted)
 	case protobuf.OperationResult_InvalidTransaction:
-		o.Fail(models.InvalidTransaction)
+		o.Fail(client.InvalidTransaction)
 	case protobuf.OperationResult_AccessDenied:
-		o.Fail(models.AccessDenied)
+		o.Fail(client.AccessDenied)
 	default:
 		o.Fail(fmt.Errorf("Unexpected Operation result: %v", msg.GetResult()))
 	}
-	return models.NewInspectionResult(models.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
+	return client.NewInspectionResult(client.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
 }
 
 func (o *deleteStream) transformResponse(message proto.Message) (interface{}, error) {
 	response := message.(*protobuf.DeleteStreamCompleted)
-	return models.NewDeleteResult(models.NewPosition(response.GetCommitPosition(), response.GetPreparePosition())), nil
+	return client.NewDeleteResult(client.NewPosition(response.GetCommitPosition(), response.GetPreparePosition())), nil
 }
 
 func (o *deleteStream) createResponse() proto.Message {

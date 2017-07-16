@@ -1,17 +1,17 @@
 package operations
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/jdextraze/go-gesclient/models"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/protobuf"
 	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type appendToStream struct {
 	*baseOperation
 	requireMaster    bool
-	events           []*models.EventData
+	events           []*client.EventData
 	stream           string
 	expectedVersion  int
 	wasCommitTimeout bool
@@ -22,8 +22,8 @@ func NewAppendToStream(
 	requireMaster bool,
 	stream string,
 	expectedVersion int,
-	events []*models.EventData,
-	userCredentials *models.UserCredentials,
+	events []*client.EventData,
+	userCredentials *client.UserCredentials,
 ) *appendToStream {
 	obj := &appendToStream{
 		requireMaster:   requireMaster,
@@ -31,7 +31,7 @@ func NewAppendToStream(
 		expectedVersion: expectedVersion,
 		events:          events,
 	}
-	obj.baseOperation = newBaseOperation(models.Command_WriteEvents, models.Command_WriteEventsCompleted,
+	obj.baseOperation = newBaseOperation(client.Command_WriteEvents, client.Command_WriteEventsCompleted,
 		userCredentials, source, obj.createRequestDto, obj.inspectResponse, obj.transformResponse, obj.createResponse)
 	return obj
 }
@@ -50,7 +50,7 @@ func (o *appendToStream) createRequestDto() proto.Message {
 	}
 }
 
-func (o *appendToStream) inspectResponse(message proto.Message) (*models.InspectionResult, error) {
+func (o *appendToStream) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
 	msg := message.(*protobuf.WriteEventsCompleted)
 	switch msg.GetResult() {
 	case protobuf.OperationResult_Success:
@@ -61,28 +61,28 @@ func (o *appendToStream) inspectResponse(message proto.Message) (*models.Inspect
 			return nil, err
 		}
 	case protobuf.OperationResult_PrepareTimeout, protobuf.OperationResult_ForwardTimeout:
-		return models.NewInspectionResult(models.InspectionDecision_Retry, msg.GetResult().String(), nil, nil), nil
+		return client.NewInspectionResult(client.InspectionDecision_Retry, msg.GetResult().String(), nil, nil), nil
 	case protobuf.OperationResult_CommitTimeout:
 		o.wasCommitTimeout = true
-		return models.NewInspectionResult(models.InspectionDecision_Retry, msg.GetResult().String(), nil, nil), nil
+		return client.NewInspectionResult(client.InspectionDecision_Retry, msg.GetResult().String(), nil, nil), nil
 	case protobuf.OperationResult_WrongExpectedVersion:
-		o.Fail(models.WrongExpectedVersion)
+		o.Fail(client.WrongExpectedVersion)
 	case protobuf.OperationResult_StreamDeleted:
-		o.Fail(models.StreamDeleted)
+		o.Fail(client.StreamDeleted)
 	case protobuf.OperationResult_InvalidTransaction:
-		o.Fail(models.InvalidTransaction)
+		o.Fail(client.InvalidTransaction)
 	case protobuf.OperationResult_AccessDenied:
-		o.Fail(models.AccessDenied)
+		o.Fail(client.AccessDenied)
 	default:
 		return nil, fmt.Errorf("Unexpected OperationResult: %s", msg.GetResult())
 	}
-	return models.NewInspectionResult(models.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
+	return client.NewInspectionResult(client.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
 }
 
 func (o *appendToStream) transformResponse(message proto.Message) (interface{}, error) {
 	msg := message.(*protobuf.WriteEventsCompleted)
-	pos := models.NewPosition(msg.GetCommitPosition(), msg.GetPreparePosition())
-	return models.NewWriteResult(int(msg.GetLastEventNumber()), pos), nil
+	pos := client.NewPosition(msg.GetCommitPosition(), msg.GetPreparePosition())
+	return client.NewWriteResult(int(msg.GetLastEventNumber()), pos), nil
 }
 
 func (o *appendToStream) createResponse() proto.Message {

@@ -1,27 +1,27 @@
 package tasks
 
 import (
-	"sync"
-	"sync/atomic"
 	"errors"
 	"reflect"
+	"sync"
+	"sync/atomic"
 )
 
 type TaskCallback func() (interface{}, error)
 type ContinueWithCallback func(*Task) error
 
 type Task struct {
-	fn TaskCallback
-	result interface{}
-	err error
-	running int32
+	fn        TaskCallback
+	result    interface{}
+	err       error
+	running   int32
 	completed int32
 	waitGroup *sync.WaitGroup
 }
 
 func New(cb TaskCallback) *Task {
 	return &Task{
-		fn: cb,
+		fn:        cb,
 		waitGroup: &sync.WaitGroup{},
 	}
 }
@@ -36,7 +36,7 @@ func (t *Task) Result(res interface{}) error {
 	t.Start()
 	t.Wait()
 	result := reflect.ValueOf(t.result)
-	if !result.IsNil() {
+	if result.IsValid() && !result.IsNil() {
 		reflect.ValueOf(res).Elem().Set(result.Elem())
 	}
 	return t.err

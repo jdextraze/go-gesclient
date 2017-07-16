@@ -1,16 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"github.com/jdextraze/go-gesclient"
-	"github.com/jdextraze/go-gesclient/models"
-	"net/url"
-	"log"
+	"github.com/jdextraze/go-gesclient/client"
 	"github.com/satori/go.uuid"
-	"encoding/json"
-	"time"
+	"log"
+	"net/url"
 	"os"
 	"os/signal"
+	"time"
 )
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error parsing address: %v", err)
 	}
-	c, err := gesclient.Create(models.DefaultConnectionSettings, uri, "Publisher")
+	c, err := gesclient.Create(client.DefaultConnectionSettings, uri, "Publisher")
 	if err != nil {
 		log.Fatalf("Error creating connection: %v", err)
 	}
@@ -44,9 +44,9 @@ func main() {
 		default:
 		}
 		data, _ := json.Marshal(&TestEvent{})
-		evt := models.NewEventData(uuid.NewV4(), "TestEvent", true, data, nil)
-		result := &models.WriteResult{}
-		task, err := c.AppendToStreamAsync(stream, models.ExpectedVersion_Any, []*models.EventData{evt}, nil)
+		evt := client.NewEventData(uuid.NewV4(), "TestEvent", true, data, nil)
+		result := &client.WriteResult{}
+		task, err := c.AppendToStreamAsync(stream, client.ExpectedVersion_Any, []*client.EventData{evt}, nil)
 		if err != nil {
 			log.Printf("Error occured while appending to stream: %v", err)
 		} else if err := task.Result(result); err != nil {
@@ -58,4 +58,4 @@ func main() {
 	}
 }
 
-type TestEvent struct {}
+type TestEvent struct{}
