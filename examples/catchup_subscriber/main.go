@@ -11,14 +11,20 @@ import (
 )
 
 func main() {
+	var debug bool
 	var addr string
 	var stream string
 	var lastCheckpoint int
 
+	flag.BoolVar(&debug, "debug", false, "Debug")
 	flag.StringVar(&addr, "endpoint", "tcp://127.0.0.1:1113", "EventStore address")
 	flag.StringVar(&stream, "stream", "Default", "Stream ID")
 	flag.IntVar(&lastCheckpoint, "lastCheckpoint", 0, "Last checkpoint")
 	flag.Parse()
+
+	if debug {
+		gesclient.Debug()
+	}
 
 	uri, err := url.Parse(addr)
 	if err != nil {
