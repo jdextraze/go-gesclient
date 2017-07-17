@@ -4,7 +4,7 @@ A [Go](https://golang.org/) port of the .Net client for [Event Store](https://ge
 
 ## Status
 
-This project is considered at an alpha stage and shouldn't be used in production.
+This project is considered at a beta stage and should'nt be used in production.
 
 ## License
 
@@ -25,6 +25,8 @@ I suggest using [Docker](https://docker.com/) with [Event Store Docker Container
 * Reading all events backwards
 * Volatile subscriptions
 * Deleting stream
+* Cluster connection
+* Global authentication
 
 ## TODO
 
@@ -32,5 +34,3 @@ I suggest using [Docker](https://docker.com/) with [Event Store Docker Container
 * Complete unit and integration tests
 * Transaction
 * Scavenging database
-* Global authentication
-* Cluster connection

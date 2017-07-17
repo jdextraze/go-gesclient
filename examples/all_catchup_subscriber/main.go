@@ -28,7 +28,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error parsing address: %v", err)
 	}
-	c, err := gesclient.Create(client.DefaultConnectionSettings, uri, "Publisher")
+	c, err := gesclient.Create(client.DefaultConnectionSettings, uri, "AllCatchUpSubscriber")
 	if err != nil {
 		log.Fatalf("Error creating connection: %v", err)
 	}
