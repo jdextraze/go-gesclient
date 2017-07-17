@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 )
 
@@ -42,7 +42,7 @@ func NewReadStreamEventsBackward(
 func (o *readStreamEventsBackward) createRequestDto() proto.Message {
 	start := int32(o.start)
 	max := int32(o.max)
-	return &protobuf.ReadStreamEvents{
+	return &messages.ReadStreamEvents{
 		EventStreamId:   &o.stream,
 		FromEventNumber: &start,
 		MaxCount:        &max,
@@ -52,17 +52,17 @@ func (o *readStreamEventsBackward) createRequestDto() proto.Message {
 }
 
 func (o *readStreamEventsBackward) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
-	msg := message.(*protobuf.ReadStreamEventsCompleted)
+	msg := message.(*messages.ReadStreamEventsCompleted)
 	switch msg.GetResult() {
-	case protobuf.ReadStreamEventsCompleted_Success,
-		protobuf.ReadStreamEventsCompleted_StreamDeleted,
-		protobuf.ReadStreamEventsCompleted_NoStream:
+	case messages.ReadStreamEventsCompleted_Success,
+		messages.ReadStreamEventsCompleted_StreamDeleted,
+		messages.ReadStreamEventsCompleted_NoStream:
 		o.succeed()
-	case protobuf.ReadStreamEventsCompleted_Error:
+	case messages.ReadStreamEventsCompleted_Error:
 		o.Fail(client.NewServerError(msg.GetError()))
-	case protobuf.ReadStreamEventsCompleted_NotModified:
+	case messages.ReadStreamEventsCompleted_NotModified:
 		o.Fail(client.NewNotModified(o.stream))
-	case protobuf.ReadStreamEventsCompleted_AccessDenied:
+	case messages.ReadStreamEventsCompleted_AccessDenied:
 		o.Fail(client.AccessDenied)
 	default:
 		o.Fail(fmt.Errorf("Unexpected ReadStreamResult: %v", *msg.Result))
@@ -71,7 +71,7 @@ func (o *readStreamEventsBackward) inspectResponse(message proto.Message) (*clie
 }
 
 func (o *readStreamEventsBackward) transformResponse(message proto.Message) (interface{}, error) {
-	msg := message.(*protobuf.ReadStreamEventsCompleted)
+	msg := message.(*messages.ReadStreamEventsCompleted)
 	status, err := convertStatusCode(msg.GetResult())
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (o *readStreamEventsBackward) transformResponse(message proto.Message) (int
 }
 
 func (o *readStreamEventsBackward) createResponse() proto.Message {
-	return &protobuf.ReadStreamEventsCompleted{}
+	return &messages.ReadStreamEventsCompleted{}
 }
 
 func (o *readStreamEventsBackward) String() string {

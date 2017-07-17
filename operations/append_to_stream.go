@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 )
 
@@ -37,12 +37,12 @@ func NewAppendToStream(
 }
 
 func (o *appendToStream) createRequestDto() proto.Message {
-	newEvents := make([]*protobuf.NewEvent, len(o.events))
+	newEvents := make([]*messages.NewEvent, len(o.events))
 	for i, evt := range o.events {
 		newEvents[i] = evt.ToNewEvent()
 	}
 	expectedVersion := int32(o.expectedVersion)
-	return &protobuf.WriteEvents{
+	return &messages.WriteEvents{
 		EventStreamId:   &o.stream,
 		ExpectedVersion: &expectedVersion,
 		Events:          newEvents,
@@ -51,27 +51,27 @@ func (o *appendToStream) createRequestDto() proto.Message {
 }
 
 func (o *appendToStream) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
-	msg := message.(*protobuf.WriteEventsCompleted)
+	msg := message.(*messages.WriteEventsCompleted)
 	switch msg.GetResult() {
-	case protobuf.OperationResult_Success:
+	case messages.OperationResult_Success:
 		if o.wasCommitTimeout {
 			log.Debugf("IDEMPOTENT WRITE SUCCEEDED FOR %s.", o)
 		}
 		if err := o.succeed(); err != nil {
 			return nil, err
 		}
-	case protobuf.OperationResult_PrepareTimeout, protobuf.OperationResult_ForwardTimeout:
+	case messages.OperationResult_PrepareTimeout, messages.OperationResult_ForwardTimeout:
 		return client.NewInspectionResult(client.InspectionDecision_Retry, msg.GetResult().String(), nil, nil), nil
-	case protobuf.OperationResult_CommitTimeout:
+	case messages.OperationResult_CommitTimeout:
 		o.wasCommitTimeout = true
 		return client.NewInspectionResult(client.InspectionDecision_Retry, msg.GetResult().String(), nil, nil), nil
-	case protobuf.OperationResult_WrongExpectedVersion:
+	case messages.OperationResult_WrongExpectedVersion:
 		o.Fail(client.WrongExpectedVersion)
-	case protobuf.OperationResult_StreamDeleted:
+	case messages.OperationResult_StreamDeleted:
 		o.Fail(client.StreamDeleted)
-	case protobuf.OperationResult_InvalidTransaction:
+	case messages.OperationResult_InvalidTransaction:
 		o.Fail(client.InvalidTransaction)
-	case protobuf.OperationResult_AccessDenied:
+	case messages.OperationResult_AccessDenied:
 		o.Fail(client.AccessDenied)
 	default:
 		return nil, fmt.Errorf("Unexpected OperationResult: %s", msg.GetResult())
@@ -80,13 +80,13 @@ func (o *appendToStream) inspectResponse(message proto.Message) (*client.Inspect
 }
 
 func (o *appendToStream) transformResponse(message proto.Message) (interface{}, error) {
-	msg := message.(*protobuf.WriteEventsCompleted)
+	msg := message.(*messages.WriteEventsCompleted)
 	pos := client.NewPosition(msg.GetCommitPosition(), msg.GetPreparePosition())
 	return client.NewWriteResult(int(msg.GetLastEventNumber()), pos), nil
 }
 
 func (o *appendToStream) createResponse() proto.Message {
-	return &protobuf.WriteEventsCompleted{}
+	return &messages.WriteEventsCompleted{}
 }
 
 func (o *appendToStream) String() string {

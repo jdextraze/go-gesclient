@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 )
 
@@ -31,22 +31,22 @@ func NewDeletePersistentSubscription(
 }
 
 func (o *deletePersistentSubscription) createRequestDto() proto.Message {
-	return &protobuf.DeletePersistentSubscription{
+	return &messages.DeletePersistentSubscription{
 		EventStreamId:         &o.stream,
 		SubscriptionGroupName: &o.groupName,
 	}
 }
 
 func (o *deletePersistentSubscription) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
-	msg := message.(*protobuf.DeletePersistentSubscriptionCompleted)
+	msg := message.(*messages.DeletePersistentSubscriptionCompleted)
 	switch msg.GetResult() {
-	case protobuf.DeletePersistentSubscriptionCompleted_Success:
+	case messages.DeletePersistentSubscriptionCompleted_Success:
 		o.succeed()
-	case protobuf.DeletePersistentSubscriptionCompleted_Fail:
+	case messages.DeletePersistentSubscriptionCompleted_Fail:
 		o.Fail(fmt.Errorf("Subscription group %s on stream %s failed '%s'", o.groupName, o.stream, *msg.Reason))
-	case protobuf.DeletePersistentSubscriptionCompleted_AccessDenied:
+	case messages.DeletePersistentSubscriptionCompleted_AccessDenied:
 		o.Fail(client.AccessDenied)
-	case protobuf.DeletePersistentSubscriptionCompleted_DoesNotExist:
+	case messages.DeletePersistentSubscriptionCompleted_DoesNotExist:
 		o.Fail(fmt.Errorf("Subscription group %s on stream %s doesn't exists", o.groupName, o.stream))
 	default:
 		return nil, fmt.Errorf("Unexpected Operation result: %v", msg.GetResult())
@@ -59,7 +59,7 @@ func (o *deletePersistentSubscription) transformResponse(message proto.Message) 
 }
 
 func (o *deletePersistentSubscription) createResponse() proto.Message {
-	return &protobuf.DeletePersistentSubscriptionCompleted{}
+	return &messages.DeletePersistentSubscriptionCompleted{}
 }
 
 func (o *deletePersistentSubscription) String() string {

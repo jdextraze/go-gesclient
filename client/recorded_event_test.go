@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/satori/go.uuid"
@@ -25,7 +25,7 @@ var _ = Describe("RecordedEvent", func() {
 	)
 
 	BeforeEach(func() {
-		evt = newRecordedEvent(&protobuf.EventRecord{
+		evt = newRecordedEvent(&messages.EventRecord{
 			EventStreamId:       &streamId,
 			EventNumber:         &number,
 			EventId:             id,

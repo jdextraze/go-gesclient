@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -15,13 +15,12 @@ var _ = Describe("StreamEventsSlice", func() {
 			"Test",
 			1,
 			ReadDirectionForward,
-			[]*protobuf.ResolvedIndexedEvent{
-				&protobuf.ResolvedIndexedEvent{},
+			[]*messages.ResolvedIndexedEvent{
+				&messages.ResolvedIndexedEvent{},
 			},
 			12,
 			123,
 			true,
-			nil,
 		)
 	})
 
@@ -70,12 +69,6 @@ var _ = Describe("StreamEventsSlice", func() {
 	Describe("getting is end of stream", func() {
 		It("should return provided value", func() {
 			Expect(streamEventsSlice.IsEndOfStream()).To(BeTrue())
-		})
-	})
-
-	Describe("getting error", func() {
-		It("should return provided value", func() {
-			Expect(streamEventsSlice.Error()).To(BeNil())
 		})
 	})
 })

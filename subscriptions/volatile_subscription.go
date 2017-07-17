@@ -3,7 +3,7 @@ package subscriptions
 import (
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 )
 
@@ -29,7 +29,7 @@ func NewVolatileSubscription(
 }
 
 func (s *VolatileSubscription) createSubscriptionPackage() (*client.Package, error) {
-	dto := &protobuf.SubscribeToStream{
+	dto := &messages.SubscribeToStream{
 		EventStreamId:  &s.streamId,
 		ResolveLinkTos: &s.resolveLinkTos,
 	}
@@ -46,7 +46,7 @@ func (s *VolatileSubscription) createSubscriptionPackage() (*client.Package, err
 
 func (s *VolatileSubscription) inspectPackage(p *client.Package) (bool, *client.InspectionResult, error) {
 	if p.Command() == client.Command_SubscriptionConfirmation {
-		dto := &protobuf.SubscriptionConfirmation{}
+		dto := &messages.SubscriptionConfirmation{}
 		if err := proto.Unmarshal(p.Data(), dto); err != nil {
 			return false, nil, err
 		}
@@ -57,7 +57,7 @@ func (s *VolatileSubscription) inspectPackage(p *client.Package) (bool, *client.
 		return true, client.NewInspectionResult(client.InspectionDecision_Subscribed, "SubscriptionConfirmation",
 			nil, nil), nil
 	} else if p.Command() == client.Command_StreamEventAppeared {
-		dto := &protobuf.StreamEventAppeared{}
+		dto := &messages.StreamEventAppeared{}
 		if err := proto.Unmarshal(p.Data(), dto); err != nil {
 			return false, nil, err
 		}

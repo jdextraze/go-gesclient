@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/satori/go.uuid"
 )
 
@@ -33,7 +33,7 @@ func (e *EventData) Data() []byte { return e.data }
 
 func (e *EventData) Metadata() []byte { return e.metadata }
 
-func (e *EventData) ToNewEvent() *protobuf.NewEvent {
+func (e *EventData) ToNewEvent() *messages.NewEvent {
 	var (
 		dataContentType     int32
 		metadataContentType int32
@@ -41,7 +41,7 @@ func (e *EventData) ToNewEvent() *protobuf.NewEvent {
 	if e.isJson {
 		dataContentType = 1
 	}
-	return &protobuf.NewEvent{
+	return &messages.NewEvent{
 		EventId:             e.eventId.Bytes(),
 		EventType:           &e.typ,
 		DataContentType:     &dataContentType,

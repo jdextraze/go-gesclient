@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 )
 
@@ -38,7 +38,7 @@ func (o *readAllEventsBackward) createRequestDto() proto.Message {
 	preparePos := o.pos.PreparePosition()
 	no := false
 	max := int32(o.max)
-	return &protobuf.ReadAllEvents{
+	return &messages.ReadAllEvents{
 		CommitPosition:  &commitPos,
 		PreparePosition: &preparePos,
 		MaxCount:        &max,
@@ -48,13 +48,13 @@ func (o *readAllEventsBackward) createRequestDto() proto.Message {
 }
 
 func (o *readAllEventsBackward) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
-	msg := message.(*protobuf.ReadAllEventsCompleted)
+	msg := message.(*messages.ReadAllEventsCompleted)
 	switch msg.GetResult() {
-	case protobuf.ReadAllEventsCompleted_Success:
+	case messages.ReadAllEventsCompleted_Success:
 		o.succeed()
-	case protobuf.ReadAllEventsCompleted_Error:
+	case messages.ReadAllEventsCompleted_Error:
 		o.Fail(client.NewServerError(msg.GetError()))
-	case protobuf.ReadAllEventsCompleted_AccessDenied:
+	case messages.ReadAllEventsCompleted_AccessDenied:
 		o.Fail(client.AccessDenied)
 	default:
 		return nil, fmt.Errorf("Unexpected ReadAllResult: %v", *msg.Result)
@@ -63,7 +63,7 @@ func (o *readAllEventsBackward) inspectResponse(message proto.Message) (*client.
 }
 
 func (o *readAllEventsBackward) transformResponse(message proto.Message) (interface{}, error) {
-	msg := message.(*protobuf.ReadAllEventsCompleted)
+	msg := message.(*messages.ReadAllEventsCompleted)
 	return client.NewAllEventsSlice(
 		client.ReadDirectionBackward,
 		client.NewPosition(msg.GetCommitPosition(), msg.GetPreparePosition()),
@@ -73,7 +73,7 @@ func (o *readAllEventsBackward) transformResponse(message proto.Message) (interf
 }
 
 func (o *readAllEventsBackward) createResponse() proto.Message {
-	return &protobuf.ReadAllEventsCompleted{}
+	return &messages.ReadAllEventsCompleted{}
 }
 
 func (o *readAllEventsBackward) String() string {

@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 )
 
 type AllEventsSlice struct {
@@ -15,7 +15,7 @@ func NewAllEventsSlice(
 	readDirection ReadDirection,
 	fromPosition *Position,
 	nextPosition *Position,
-	resolvedEvents []*protobuf.ResolvedEvent,
+	resolvedEvents []*messages.ResolvedEvent,
 ) *AllEventsSlice {
 	events := make([]*ResolvedEvent, len(resolvedEvents))
 	for i, evt := range resolvedEvents {

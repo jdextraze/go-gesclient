@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"github.com/satori/go.uuid"
 	"net"
@@ -128,7 +128,7 @@ func (s *subscriptionBase) Unsubscribe() error {
 }
 
 func (s *subscriptionBase) createUnsubscriptionPackage() *client.Package {
-	data, _ := proto.Marshal(&protobuf.UnsubscribeFromStream{})
+	data, _ := proto.Marshal(&messages.UnsubscribeFromStream{})
 	return client.NewTcpPackage(client.Command_UnsubscribeFromStream, client.FlagsNone, s.correlationId, data,
 		s.userCredentials)
 }
@@ -140,7 +140,7 @@ func (s *subscriptionBase) InspectPackage(p *client.Package) (*client.Inspection
 	} else if err == nil {
 		switch p.Command() {
 		case client.Command_StreamEventAppeared:
-			dto := &protobuf.StreamEventAppeared{}
+			dto := &messages.StreamEventAppeared{}
 			if err = proto.Unmarshal(p.Data(), dto); err != nil {
 				break
 			}
@@ -149,17 +149,17 @@ func (s *subscriptionBase) InspectPackage(p *client.Package) (*client.Inspection
 			}
 			return client.NewInspectionResult(client.InspectionDecision_DoNothing, "StreamEventAppeared", nil, nil), nil
 		case client.Command_SubscriptionDropped:
-			dto := &protobuf.SubscriptionDropped{}
+			dto := &messages.SubscriptionDropped{}
 			if err = proto.Unmarshal(p.Data(), dto); err != nil {
 				break
 			}
 			switch dto.GetReason() {
-			case protobuf.SubscriptionDropped_Unsubscribed:
+			case messages.SubscriptionDropped_Unsubscribed:
 				err = s.DropSubscription(client.SubscriptionDropReason_UserInitiated, nil, nil)
-			case protobuf.SubscriptionDropped_AccessDenied:
+			case messages.SubscriptionDropped_AccessDenied:
 				err = s.DropSubscription(client.SubscriptionDropReason_AccessDenied,
 					fmt.Errorf("Subscription to '%s' failed due to access denied.", s.streamId), nil)
-			case protobuf.SubscriptionDropped_NotFound:
+			case messages.SubscriptionDropped_NotFound:
 				err = s.DropSubscription(client.SubscriptionDropReason_NotFound,
 					fmt.Errorf("Subscription to '%s' failed due to not found.", s.streamId), nil)
 			default:
@@ -197,17 +197,17 @@ func (s *subscriptionBase) InspectPackage(p *client.Package) (*client.Inspection
 				err = errors.New("NotHandled command appeared while we are already subscribed.")
 				break
 			}
-			dto := &protobuf.NotHandled{}
+			dto := &messages.NotHandled{}
 			if err = proto.Unmarshal(p.Data(), dto); err != nil {
 				break
 			}
 			switch dto.GetReason() {
-			case protobuf.NotHandled_NotReady:
+			case messages.NotHandled_NotReady:
 				return client.NewInspectionResult(client.InspectionDecision_Retry, "NotHandled - NotReady", nil, nil), nil
-			case protobuf.NotHandled_TooBusy:
+			case messages.NotHandled_TooBusy:
 				return client.NewInspectionResult(client.InspectionDecision_Retry, "NotHandled - TooBusy", nil, nil), nil
-			case protobuf.NotHandled_NotMaster:
-				masterInfo := &protobuf.NotHandled_MasterInfo{}
+			case messages.NotHandled_NotMaster:
+				masterInfo := &messages.NotHandled_MasterInfo{}
 				if err = proto.Unmarshal(dto.AdditionalInfo, masterInfo); err != nil {
 					break
 				}

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"github.com/satori/go.uuid"
 )
@@ -39,7 +39,7 @@ func NewConnectToPersistentSubscription(
 
 func (s *connectToPersistentSubscription) createSubscriptionPackage() (*client.Package, error) {
 	bufferSize := int32(s.bufferSize)
-	dto := &protobuf.ConnectToPersistentSubscription{
+	dto := &messages.ConnectToPersistentSubscription{
 		SubscriptionId:          &s.groupName,
 		EventStreamId:           &s.streamId,
 		AllowedInFlightMessages: &bufferSize,
@@ -61,7 +61,7 @@ func (s *connectToPersistentSubscription) inspectPackage(
 ) (ok bool, result *client.InspectionResult, err error) {
 	switch p.Command() {
 	case client.Command_PersistentSubscriptionConfirmation:
-		dto := &protobuf.PersistentSubscriptionConfirmation{}
+		dto := &messages.PersistentSubscriptionConfirmation{}
 		if err = proto.Unmarshal(p.Data(), dto); err != nil {
 			break
 		}
@@ -72,7 +72,7 @@ func (s *connectToPersistentSubscription) inspectPackage(
 		s.subscriptionId = *dto.SubscriptionId
 		result = client.NewInspectionResult(client.InspectionDecision_DoNothing, "SubscriptionConfirmation", nil, nil)
 	case client.Command_PersistentSubscriptionStreamEventAppeared:
-		dto := &protobuf.PersistentSubscriptionStreamEventAppeared{}
+		dto := &messages.PersistentSubscriptionStreamEventAppeared{}
 		if err = proto.Unmarshal(p.Data(), dto); err != nil {
 			break
 		}
@@ -81,21 +81,21 @@ func (s *connectToPersistentSubscription) inspectPackage(
 		}
 		result = client.NewInspectionResult(client.InspectionDecision_DoNothing, "StreamEventAppeard", nil, nil)
 	case client.Command_SubscriptionDropped:
-		dto := &protobuf.SubscriptionDropped{}
+		dto := &messages.SubscriptionDropped{}
 		if err = proto.Unmarshal(p.Data(), dto); err != nil {
 			break
 		}
 		switch dto.GetReason() {
-		case protobuf.SubscriptionDropped_AccessDenied:
+		case messages.SubscriptionDropped_AccessDenied:
 			err = s.DropSubscription(client.SubscriptionDropReason_AccessDenied,
 				errors.New("You do not have access to the stream."), nil)
-		case protobuf.SubscriptionDropped_NotFound:
+		case messages.SubscriptionDropped_NotFound:
 			err = s.DropSubscription(client.SubscriptionDropReason_NotFound,
 				errors.New("Subscription not found"), nil)
-		case protobuf.SubscriptionDropped_PersistentSubscriptionDeleted:
+		case messages.SubscriptionDropped_PersistentSubscriptionDeleted:
 			err = s.DropSubscription(client.SubscriptionDropReason_PersistentSubscriptionDeleted,
 				errors.New("Persistent subscription deleted"), nil)
-		case protobuf.SubscriptionDropped_SubscriberMaxCountReached:
+		case messages.SubscriptionDropped_SubscriberMaxCountReached:
 			err = s.DropSubscription(client.SubscriptionDropReason_MaxSubscribersReached,
 				errors.New("Max subscribers reached"), nil)
 		default:
@@ -129,7 +129,7 @@ func (s *connectToPersistentSubscription) NotifyEventsProcessed(processedEvents 
 		processedEventIds[i] = e.Bytes()
 	}
 
-	dto := &protobuf.PersistentSubscriptionAckEvents{
+	dto := &messages.PersistentSubscriptionAckEvents{
 		SubscriptionId:    &s.subscriptionId,
 		ProcessedEventIds: processedEventIds,
 	}
@@ -163,8 +163,8 @@ func (s *connectToPersistentSubscription) NotifyEventsFailed(
 		processedEventIds[i] = e.Bytes()
 	}
 
-	nakAction := protobuf.PersistentSubscriptionNakEvents_NakAction(action)
-	dto := &protobuf.PersistentSubscriptionNakEvents{
+	nakAction := messages.PersistentSubscriptionNakEvents_NakAction(action)
+	dto := &messages.PersistentSubscriptionNakEvents{
 		SubscriptionId:    &s.subscriptionId,
 		ProcessedEventIds: processedEventIds,
 		Action:            &nakAction,

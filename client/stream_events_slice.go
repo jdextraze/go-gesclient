@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 )
 
 type StreamEventsSlice struct {
@@ -20,7 +20,7 @@ func NewStreamEventsSlice(
 	stream string,
 	fromEventNumber int,
 	readDirection ReadDirection,
-	resolvedEvents []*protobuf.ResolvedIndexedEvent,
+	resolvedEvents []*messages.ResolvedIndexedEvent,
 	nextEventNumber int,
 	lastEventNumber int,
 	isEndOfStream bool,

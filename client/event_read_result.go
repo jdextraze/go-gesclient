@@ -1,6 +1,6 @@
 package client
 
-import "github.com/jdextraze/go-gesclient/protobuf"
+import "github.com/jdextraze/go-gesclient/messages"
 
 type EventReadResult struct {
 	status      EventReadStatus
@@ -13,7 +13,7 @@ func NewEventReadResult(
 	status EventReadStatus,
 	stream string,
 	eventNumber int,
-	event *protobuf.ResolvedIndexedEvent,
+	event *messages.ResolvedIndexedEvent,
 ) *EventReadResult {
 	resolvedEvent := NewResolvedEvent(event)
 	return &EventReadResult{

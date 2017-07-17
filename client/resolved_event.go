@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 )
 
 type ResolvedEvent struct {
@@ -10,7 +10,7 @@ type ResolvedEvent struct {
 	originalPosition *Position
 }
 
-func NewResolvedEventFrom(evt *protobuf.ResolvedEvent) *ResolvedEvent {
+func NewResolvedEventFrom(evt *messages.ResolvedEvent) *ResolvedEvent {
 	var event *RecordedEvent
 	if evt.Event != nil {
 		event = newRecordedEvent(evt.Event)
@@ -27,7 +27,7 @@ func NewResolvedEventFrom(evt *protobuf.ResolvedEvent) *ResolvedEvent {
 	}
 }
 
-func NewResolvedEvent(evt *protobuf.ResolvedIndexedEvent) *ResolvedEvent {
+func NewResolvedEvent(evt *messages.ResolvedIndexedEvent) *ResolvedEvent {
 	var event *RecordedEvent
 	if evt != nil && evt.Event != nil {
 		event = newRecordedEvent(evt.Event)

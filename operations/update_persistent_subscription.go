@@ -5,7 +5,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/common"
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"time"
 )
@@ -64,7 +64,7 @@ func NewUpdatePersistentSubscription(
 
 func (o *updatePersistentSubscription) createRequestDto() proto.Message {
 	preferRoundRobin := o.namedConsumerStrategy == common.SystemConsumerStrategies_RoundRobin.ToString()
-	return &protobuf.UpdatePersistentSubscription{
+	return &messages.UpdatePersistentSubscription{
 		EventStreamId:              &o.stream,
 		SubscriptionGroupName:      &o.groupName,
 		ResolveLinkTos:             &o.resolveLinkTos,
@@ -85,17 +85,17 @@ func (o *updatePersistentSubscription) createRequestDto() proto.Message {
 }
 
 func (o *updatePersistentSubscription) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
-	msg := message.(*protobuf.UpdatePersistentSubscriptionCompleted)
+	msg := message.(*messages.UpdatePersistentSubscriptionCompleted)
 	switch msg.GetResult() {
-	case protobuf.UpdatePersistentSubscriptionCompleted_Success:
+	case messages.UpdatePersistentSubscriptionCompleted_Success:
 		if err := o.succeed(); err != nil {
 			return nil, err
 		}
-	case protobuf.UpdatePersistentSubscriptionCompleted_Fail:
+	case messages.UpdatePersistentSubscriptionCompleted_Fail:
 		o.Fail(fmt.Errorf("Subscription group %s on stream %s failed '%s'", o.groupName, o.stream, *msg.Reason))
-	case protobuf.UpdatePersistentSubscriptionCompleted_AccessDenied:
+	case messages.UpdatePersistentSubscriptionCompleted_AccessDenied:
 		o.Fail(client.AccessDenied)
-	case protobuf.UpdatePersistentSubscriptionCompleted_DoesNotExist:
+	case messages.UpdatePersistentSubscriptionCompleted_DoesNotExist:
 		o.Fail(fmt.Errorf("Subscription group %s on stream %s does not exists", o.groupName, o.stream))
 	default:
 		return nil, fmt.Errorf("Unexpected Operation result: %v", msg.GetResult())
@@ -108,7 +108,7 @@ func (o *updatePersistentSubscription) transformResponse(message proto.Message) 
 }
 
 func (o *updatePersistentSubscription) createResponse() proto.Message {
-	return &protobuf.UpdatePersistentSubscriptionCompleted{}
+	return &messages.UpdatePersistentSubscriptionCompleted{}
 }
 
 func (o *updatePersistentSubscription) String() string {

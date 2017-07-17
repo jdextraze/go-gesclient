@@ -2,7 +2,7 @@ package client_test
 
 import (
 	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/satori/go.uuid"
@@ -56,7 +56,7 @@ var _ = Describe("EventData", func() {
 				dataContentType := int32(1)
 				metaDataContentType := int32(0)
 				Expect(eventData.ToNewEvent()).To(
-					Equal(&protobuf.NewEvent{
+					Equal(&messages.NewEvent{
 						EventId:             id.Bytes(),
 						EventType:           &eventType,
 						DataContentType:     &dataContentType,
@@ -72,7 +72,7 @@ var _ = Describe("EventData", func() {
 				dataContentType := int32(0)
 				metaDataContentType := int32(0)
 				Expect(client.NewEventData(id, eventType, false, data, metadata).ToNewEvent()).To(
-					Equal(&protobuf.NewEvent{
+					Equal(&messages.NewEvent{
 						EventId:             id.Bytes(),
 						EventType:           &eventType,
 						DataContentType:     &dataContentType,

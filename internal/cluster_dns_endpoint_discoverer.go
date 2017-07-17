@@ -1,17 +1,17 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/tasks"
-	"net"
-	"time"
 	"github.com/jdextraze/go-gesclient/messages"
-	"math/rand"
-	"net/http"
+	"github.com/jdextraze/go-gesclient/tasks"
 	"io/ioutil"
-	"encoding/json"
+	"math/rand"
+	"net"
+	"net/http"
 	"sort"
+	"time"
 )
 
 type ClusterDnsEndpointDiscoverer struct {
@@ -118,7 +118,7 @@ func (d *ClusterDnsEndpointDiscoverer) getGossipCandidatesFromDns() ([]*client.G
 			endpoints[i] = client.NewGossipSeed(&net.TCPAddr{IP: ip, Port: d.managerExternalHttpPort}, "")
 		}
 	}
-	d.randomShuffle(endpoints, 0, len(endpoints) - 1)
+	d.randomShuffle(endpoints, 0, len(endpoints)-1)
 	return endpoints, nil
 }
 
@@ -187,7 +187,7 @@ func (d *ClusterDnsEndpointDiscoverer) arrangeGossipCandidates(
 		}
 	}
 	d.randomShuffle(result, 0, i)
-	d.randomShuffle(result, j, len(members) - 1)
+	d.randomShuffle(result, j, len(members)-1)
 	return nil
 }
 
@@ -195,7 +195,7 @@ func (d *ClusterDnsEndpointDiscoverer) randomShuffle(arr []*client.GossipSeed, i
 	if i >= j {
 		return
 	}
-	perm := rand.Perm(j+1)
+	perm := rand.Perm(j + 1)
 	for k := i; k <= j; k++ {
 		index := perm[k]
 		tmp := arr[index]

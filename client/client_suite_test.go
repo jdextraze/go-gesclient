@@ -1,4 +1,4 @@
-package gesclient
+package client_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -11,5 +11,5 @@ import (
 func TestGoGesclient(t *testing.T) {
 	logging.SetLevel(logging.CRITICAL, "gesclient")
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "GoGesclient Suite")
+	RunSpecs(t, "Client Suite")
 }

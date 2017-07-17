@@ -1,8 +1,8 @@
 package internal
 
 import (
-	"net"
 	"fmt"
+	"net"
 )
 
 type NodeEndpoints struct {
@@ -23,7 +23,7 @@ func NewNodeEndpoints(
 	}
 }
 
-func (e *NodeEndpoints) TcpEndpoint() net.Addr       { return e.tcpEndpoint }
+func (e *NodeEndpoints) TcpEndpoint() net.Addr { return e.tcpEndpoint }
 
 func (e *NodeEndpoints) SecureTcpEndpoint() net.Addr { return e.secureTcpEndpoint }
 

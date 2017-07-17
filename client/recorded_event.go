@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/satori/go.uuid"
 	"time"
 )
@@ -18,7 +18,7 @@ type RecordedEvent struct {
 	createdEpoch  time.Time
 }
 
-func newRecordedEvent(evt *protobuf.EventRecord) *RecordedEvent {
+func newRecordedEvent(evt *messages.EventRecord) *RecordedEvent {
 	return &RecordedEvent{
 		eventStreamId: evt.GetEventStreamId(),
 		eventId:       uuid.FromBytesOrNil(evt.GetEventId()),

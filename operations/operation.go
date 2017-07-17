@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/protobuf"
+	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"github.com/satori/go.uuid"
 	"net"
@@ -136,17 +136,17 @@ func (o *baseOperation) inspectBadRequest(p *client.Package) *client.InspectionR
 
 func (o *baseOperation) inspectNotHandled(p *client.Package) (*client.InspectionResult, error) {
 	var err error
-	dto := &protobuf.NotHandled{}
+	dto := &messages.NotHandled{}
 	if err := proto.Unmarshal(p.Data(), dto); err != nil {
 		return nil, fmt.Errorf("Invalid payload for NotHandled: %v", err)
 	}
 	switch dto.GetReason() {
-	case protobuf.NotHandled_NotReady:
+	case messages.NotHandled_NotReady:
 		return client.NewInspectionResult(client.InspectionDecision_Retry, "NotHandled - NotReady", nil, nil), nil
-	case protobuf.NotHandled_TooBusy:
+	case messages.NotHandled_TooBusy:
 		return client.NewInspectionResult(client.InspectionDecision_Retry, "NotHandled - TooBusy", nil, nil), nil
-	case protobuf.NotHandled_NotMaster:
-		masterInfo := &protobuf.NotHandled_MasterInfo{}
+	case messages.NotHandled_NotMaster:
+		masterInfo := &messages.NotHandled_MasterInfo{}
 		if err = proto.Unmarshal(dto.AdditionalInfo, masterInfo); err != nil {
 			break
 		}
