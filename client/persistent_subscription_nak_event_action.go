@@ -3,21 +3,21 @@ package client
 type PersistentSubscriptionNakEventAction int
 
 const (
-	PersistentSubscriptionNakEventAction_Unknown PersistentSubscriptionNakEventAction = 0
-	PersistentSubscriptionNakEventAction_Park    PersistentSubscriptionNakEventAction = 1
-	PersistentSubscriptionNakEventAction_Retry   PersistentSubscriptionNakEventAction = 2
-	PersistentSubscriptionNakEventAction_Skip    PersistentSubscriptionNakEventAction = 3
-	PersistentSubscriptionNakEventAction_Stop    PersistentSubscriptionNakEventAction = 4
+	PersistentSubscriptionNakEventAction_Unknown PersistentSubscriptionNakEventAction = iota
+	PersistentSubscriptionNakEventAction_Park
+	PersistentSubscriptionNakEventAction_Retry
+	PersistentSubscriptionNakEventAction_Skip
+	PersistentSubscriptionNakEventAction_Stop
 )
 
-var PersistentSubscriptionNakEventAction_name = map[int]string{
-	0: "Unknown",
-	1: "Park",
-	2: "Retry",
-	3: "Skip",
-	4: "Stop",
+var PersistentSubscriptionNakEventAction_names = []string{
+	"Unknown",
+	"Park",
+	"Retry",
+	"Skip",
+	"Stop",
 }
 
 func (x PersistentSubscriptionNakEventAction) String() string {
-	return PersistentSubscriptionNakEventAction_name[int(x)]
+	return PersistentSubscriptionNakEventAction_names[x]
 }

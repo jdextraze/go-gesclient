@@ -370,7 +370,7 @@ func (h *connectionLogicHandler) establishTcpConnection(msg message) error {
 		return nil
 	}
 	h.connectingPhase = connectingPhase_ConnectionEstablishing
-	h.connection = client.NewPackageConnection(log, tcpEndpoint, uuid.NewV4(), h.settings.UseSslConnection(),
+	h.connection = client.NewPackageConnection(tcpEndpoint, uuid.NewV4(), h.settings.UseSslConnection(),
 		h.settings.TargetHost(), h.settings.ValidateService(), h.settings.ClientConnectionTimeout(),
 		func(c *client.PackageConnection, p *client.Package) { h.EnqueueMessage(&handleTcpPackageMessage{c, p}) },
 		func(c *client.PackageConnection, err error) { h.EnqueueMessage(&tcpConnectionErrorMessage{c, err}) },

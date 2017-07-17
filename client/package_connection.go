@@ -17,7 +17,6 @@ import (
 )
 
 type PackageConnection struct {
-	logger                Logger
 	ipEndpoint            net.Addr
 	connectionId          uuid.UUID
 	ssl                   bool
@@ -38,7 +37,6 @@ type PackageConnection struct {
 }
 
 func NewPackageConnection(
-	logger Logger,
 	ipEndpoint net.Addr,
 	connectionId uuid.UUID,
 	ssl bool,
@@ -51,7 +49,6 @@ func NewPackageConnection(
 	connectionClosed func(conn *PackageConnection, err error),
 ) *PackageConnection {
 	c := &PackageConnection{
-		logger:                logger,
 		ipEndpoint:            ipEndpoint,
 		connectionId:          connectionId,
 		ssl:                   ssl,

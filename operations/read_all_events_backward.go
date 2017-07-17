@@ -65,7 +65,7 @@ func (o *readAllEventsBackward) inspectResponse(message proto.Message) (*client.
 func (o *readAllEventsBackward) transformResponse(message proto.Message) (interface{}, error) {
 	msg := message.(*messages.ReadAllEventsCompleted)
 	return client.NewAllEventsSlice(
-		client.ReadDirectionBackward,
+		client.ReadDirection_Backward,
 		client.NewPosition(msg.GetCommitPosition(), msg.GetPreparePosition()),
 		client.NewPosition(msg.GetNextCommitPosition(), msg.GetNextPreparePosition()),
 		msg.Events,

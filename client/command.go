@@ -80,83 +80,81 @@ const (
 	Command_NotAuthenticated = 0xF4
 )
 
-var commands [255]string
+var commands = map[byte]string{
+	0x01: "HeartbeatRequestCommand",
+	0x02: "HeartbeatResponseCommand",
 
-func init() {
-	commands[0x01] = "HeartbeatRequestCommand"
-	commands[0x02] = "HeartbeatResponseCommand"
+	0x03: "Ping",
+	0x04: "Pong",
 
-	commands[0x03] = "Ping"
-	commands[0x04] = "Pong"
+	0x05: "PrepareAck",
+	0x06: "CommitAck",
 
-	commands[0x05] = "PrepareAck"
-	commands[0x06] = "CommitAck"
+	0x07: "SlaveAssignment",
+	0x08: "CloneAssignment",
 
-	commands[0x07] = "SlaveAssignment"
-	commands[0x08] = "CloneAssignment"
+	0x10: "SubscribeReplica",
+	0x11: "ReplicaLogPositionAck",
+	0x12: "CreateChunk",
+	0x13: "RawChunkBulk",
+	0x14: "DataChunkBulk",
+	0x15: "ReplicaSubscriptionRetry",
+	0x16: "ReplicaSubscribed",
 
-	commands[0x10] = "SubscribeReplica"
-	commands[0x11] = "ReplicaLogPositionAck"
-	commands[0x12] = "CreateChunk"
-	commands[0x13] = "RawChunkBulk"
-	commands[0x14] = "DataChunkBulk"
-	commands[0x15] = "ReplicaSubscriptionRetry"
-	commands[0x16] = "ReplicaSubscribed"
+	0x80: "CreateStream",
+	0x81: "CreateStreamCompleted",
 
-	commands[0x80] = "CreateStream"
-	commands[0x81] = "CreateStreamCompleted"
+	0x82: "WriteEvents",
+	0x83: "WriteEventsCompleted",
 
-	commands[0x82] = "WriteEvents"
-	commands[0x83] = "WriteEventsCompleted"
+	0x84: "TransactionStart",
+	0x85: "TransactionStartCompleted",
+	0x86: "TransactionWrite",
+	0x87: "TransactionWriteCompleted",
+	0x88: "TransactionCommit",
+	0x89: "TransactionCommitCompleted",
 
-	commands[0x84] = "TransactionStart"
-	commands[0x85] = "TransactionStartCompleted"
-	commands[0x86] = "TransactionWrite"
-	commands[0x87] = "TransactionWriteCompleted"
-	commands[0x88] = "TransactionCommit"
-	commands[0x89] = "TransactionCommitCompleted"
+	0x8A: "DeleteStream",
+	0x8B: "DeleteStreamCompleted",
 
-	commands[0x8A] = "DeleteStream"
-	commands[0x8B] = "DeleteStreamCompleted"
+	0xB0: "ReadEvent",
+	0xB1: "ReadEventCompleted",
+	0xB2: "ReadStreamEventsForward",
+	0xB3: "ReadStreamEventsForwardCompleted",
+	0xB4: "ReadStreamEventsBackward",
+	0xB5: "ReadStreamEventsBackwardCompleted",
+	0xB6: "ReadAllEventsForward",
+	0xB7: "ReadAllEventsForwardCompleted",
+	0xB8: "ReadAllEventsBackward",
+	0xB9: "ReadAllEventsBackwardCompleted",
 
-	commands[0xB0] = "ReadEvent"
-	commands[0xB1] = "ReadEventCompleted"
-	commands[0xB2] = "ReadStreamEventsForward"
-	commands[0xB3] = "ReadStreamEventsForwardCompleted"
-	commands[0xB4] = "ReadStreamEventsBackward"
-	commands[0xB5] = "ReadStreamEventsBackwardCompleted"
-	commands[0xB6] = "ReadAllEventsForward"
-	commands[0xB7] = "ReadAllEventsForwardCompleted"
-	commands[0xB8] = "ReadAllEventsBackward"
-	commands[0xB9] = "ReadAllEventsBackwardCompleted"
+	0xC0: "SubscribeToStream",
+	0xC1: "SubscriptionConfirmation",
+	0xC2: "StreamEventAppeared",
+	0xC3: "UnsubscribeFromStream",
+	0xC4: "SubscriptionDropped",
+	0xC5: "ConnectToPersistentSubscription",
+	0xC6: "PersistentSubscriptionConfirmation",
+	0xC7: "PersistentSubscriptionStreamEventAppeared",
+	0xC8: "CreatePersistentSubscription",
+	0xC9: "CreatePersistentSubscriptionCompleted",
+	0xCA: "DeletePersistentSubscription",
+	0xCB: "DeletePersistentSubscriptionCompleted",
+	0xCC: "PersistentSubscriptionAckEvents",
+	0xCD: "PersistentSubscriptionNakEvents",
+	0xCE: "UpdatePersistentSubscription",
+	0xCF: "UpdatePersistentSubscriptionCompleted",
 
-	commands[0xC0] = "SubscribeToStream"
-	commands[0xC1] = "SubscriptionConfirmation"
-	commands[0xC2] = "StreamEventAppeared"
-	commands[0xC3] = "UnsubscribeFromStream"
-	commands[0xC4] = "SubscriptionDropped"
-	commands[0xC5] = "ConnectToPersistentSubscription"
-	commands[0xC6] = "PersistentSubscriptionConfirmation"
-	commands[0xC7] = "PersistentSubscriptionStreamEventAppeared"
-	commands[0xC8] = "CreatePersistentSubscription"
-	commands[0xC9] = "CreatePersistentSubscriptionCompleted"
-	commands[0xCA] = "DeletePersistentSubscription"
-	commands[0xCB] = "DeletePersistentSubscriptionCompleted"
-	commands[0xCC] = "PersistentSubscriptionAckEvents"
-	commands[0xCD] = "PersistentSubscriptionNakEvents"
-	commands[0xCE] = "UpdatePersistentSubscription"
-	commands[0xCF] = "UpdatePersistentSubscriptionCompleted"
+	0xD0: "ScavengeDatabase",
+	0xD1: "ScavengeDatabaseCompleted",
 
-	commands[0xD0] = "ScavengeDatabase"
-	commands[0xD1] = "ScavengeDatabaseCompleted"
-
-	commands[0xF0] = "BadRequest"
-	commands[0xF1] = "NotHandled"
-	commands[0xF2] = "Authenticate"
-	commands[0xF3] = "Authenticated"
-	commands[0xF4] = "NotAuthenticated"
+	0xF0: "BadRequest",
+	0xF1: "NotHandled",
+	0xF2: "Authenticate",
+	0xF3: "Authenticated",
+	0xF4: "NotAuthenticated",
 }
 
 func (c Command) String() string {
-	return commands[c]
+	return commands[byte(c)]
 }

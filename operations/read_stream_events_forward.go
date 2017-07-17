@@ -76,7 +76,7 @@ func (o *readStreamEventsForward) transformResponse(message proto.Message) (inte
 	if err != nil {
 		return nil, err
 	}
-	return client.NewStreamEventsSlice(status, o.stream, o.start, client.ReadDirectionForward, msg.GetEvents(),
+	return client.NewStreamEventsSlice(status, o.stream, o.start, client.ReadDirection_Forward, msg.GetEvents(),
 		int(msg.GetNextEventNumber()), int(msg.GetLastEventNumber()), msg.GetIsEndOfStream()), nil
 }
 

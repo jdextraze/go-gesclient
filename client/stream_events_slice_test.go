@@ -14,7 +14,7 @@ var _ = Describe("StreamEventsSlice", func() {
 			SliceReadStatus_Success,
 			"Test",
 			1,
-			ReadDirectionForward,
+			ReadDirection_Forward,
 			[]*messages.ResolvedIndexedEvent{
 				&messages.ResolvedIndexedEvent{},
 			},
@@ -44,7 +44,7 @@ var _ = Describe("StreamEventsSlice", func() {
 
 	Describe("getting read direction", func() {
 		It("should return provided value", func() {
-			Expect(streamEventsSlice.ReadDirection()).To(Equal(ReadDirectionForward))
+			Expect(streamEventsSlice.ReadDirection()).To(Equal(ReadDirection_Forward))
 		})
 	})
 
