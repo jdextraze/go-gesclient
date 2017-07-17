@@ -174,7 +174,7 @@ func (csb *ConnectionSettingsBuilder) SetClusterGossipPort(port int) *Connection
 	return csb
 }
 
-func (csb *ConnectionSettingsBuilder) SetGossipSeedEndPoints(endpoints []net.TCPAddr) *ConnectionSettingsBuilder {
+func (csb *ConnectionSettingsBuilder) SetGossipSeedEndPoints(endpoints []*net.TCPAddr) *ConnectionSettingsBuilder {
 	gossipSeeds := make([]*GossipSeed, len(endpoints))
 	for i, endpoint := range endpoints {
 		gossipSeeds[i] = NewGossipSeed(endpoint, "")

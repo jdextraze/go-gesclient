@@ -33,7 +33,7 @@ func Create(settings *client.ConnectionSettings, uri *url.URL, name string) (cli
 	var endPointDiscoverer internal.EndpointDiscoverer
 	if scheme == "discover" {
 		port, _ := strconv.Atoi(uri.Port())
-		clusterSettings := client.NewClusterSettings(uri.Host, connectionSettings.MaxDiscoverAttempts(), port,
+		clusterSettings := client.NewClusterSettings(uri.Hostname(), connectionSettings.MaxDiscoverAttempts(), port,
 			nil, connectionSettings.GossipTimeout())
 
 		endPointDiscoverer = internal.NewClusterDnsEndPointDiscoverer(

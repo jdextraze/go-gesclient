@@ -57,7 +57,7 @@ func main() {
 }
 
 func eventAppeared(s *client.EventStoreSubscription, e *client.ResolvedEvent) error {
-	log.Printf("event appeared: %d | %s", e.OriginalEventNumber(), string(e.OriginalEvent().Data()))
+	log.Printf("event appeared: %d | %s", e.OriginalEventNumber(), string(e.Event().Data()))
 	return nil
 }
 

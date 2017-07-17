@@ -2,6 +2,7 @@ package internal
 
 import (
 	"net"
+	"fmt"
 )
 
 type NodeEndpoints struct {
@@ -22,5 +23,18 @@ func NewNodeEndpoints(
 	}
 }
 
-func (ne *NodeEndpoints) TcpEndpoint() net.Addr       { return ne.tcpEndpoint }
-func (ne *NodeEndpoints) SecureTcpEndpoint() net.Addr { return ne.secureTcpEndpoint }
+func (e *NodeEndpoints) TcpEndpoint() net.Addr       { return e.tcpEndpoint }
+
+func (e *NodeEndpoints) SecureTcpEndpoint() net.Addr { return e.secureTcpEndpoint }
+
+func (e *NodeEndpoints) String() string {
+	normal := "n/a"
+	secure := "n/a"
+	if e.tcpEndpoint != nil {
+		normal = e.tcpEndpoint.String()
+	}
+	if e.secureTcpEndpoint != nil {
+		secure = e.secureTcpEndpoint.String()
+	}
+	return fmt.Sprintf("[%s, %s]", normal, secure)
+}

@@ -201,27 +201,31 @@ func (h *connectionLogicHandler) discoverEndpoint(task *tasks.CompletionSource) 
 
 	h.connectingPhase = connectingPhase_EndpointDiscovery
 
-	go func() {
-		var remoteEndpoint net.Addr
-		if h.connection != nil {
-			remoteEndpoint = h.connection.RemoteEndpoint()
-		}
-		discovered := <-h.endpointDiscoverer.DiscoverAsync(remoteEndpoint)
-		if discovered.error != nil {
+	var remoteEndpoint net.Addr
+	if h.connection != nil {
+		remoteEndpoint = h.connection.RemoteEndpoint()
+	}
+	h.endpointDiscoverer.DiscoverAsync(remoteEndpoint).ContinueWith(func(t *tasks.Task) error {
+		if t.IsFaulted() {
 			h.EnqueueMessage(newCloseConnectionMessage(
 				"Failed to resolve TCP end point to which to connect.",
-				discovered.error,
+				t.Error(),
 			))
 			if task != nil {
 				task.SetError(fmt.Errorf("Cannot resolve target endpoint"))
 			}
-			return
+		} else {
+			nodeEndpoints := &NodeEndpoints{}
+			if err := t.Result(nodeEndpoints); err != nil {
+				return err
+			}
+			h.EnqueueMessage(newEstablishTcpConnectionMessage(nodeEndpoints))
+			if task != nil {
+				task.SetResult(nil)
+			}
 		}
-		h.EnqueueMessage(newEstablishTcpConnectionMessage(discovered.nodeEndpoints))
-		if task != nil {
-			task.SetResult(nil)
-		}
-	}()
+		return nil
+	})
 }
 
 func (h *connectionLogicHandler) closeConnection(msg message) error {

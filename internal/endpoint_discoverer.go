@@ -1,45 +1,36 @@
 package internal
 
 import (
+	"github.com/jdextraze/go-gesclient/tasks"
 	"net"
 )
 
-type EndpointDiscovererResult struct {
-	nodeEndpoints *NodeEndpoints
-	error         error
-}
-
 type EndpointDiscoverer interface {
-	DiscoverAsync(ipEndpoint net.Addr) chan *EndpointDiscovererResult
+	DiscoverAsync(ipEndpoint net.Addr) *tasks.Task
 }
 
 type staticEndpointDiscoverer struct {
-	result chan *EndpointDiscovererResult
+	task *tasks.Task
 }
 
 func NewStaticEndpointDiscoverer(ipEndpoint net.Addr, isSsl bool) *staticEndpointDiscoverer {
 	if ipEndpoint == nil {
 		panic("ipEndpoint is nil")
 	}
-	ch := make(chan *EndpointDiscovererResult, 1)
 	var nodeEndpoints *NodeEndpoints
 	if isSsl {
 		nodeEndpoints = NewNodeEndpoints(nil, ipEndpoint)
 	} else {
 		nodeEndpoints = NewNodeEndpoints(ipEndpoint, nil)
 	}
-	go func() {
-		for {
-			ch <- &EndpointDiscovererResult{
-				nodeEndpoints: nodeEndpoints,
-			}
-		}
-	}()
+	task := tasks.New(func() (interface{}, error) {
+		return nodeEndpoints, nil
+	})
 	return &staticEndpointDiscoverer{
-		result: ch,
+		task: task,
 	}
 }
 
-func (d *staticEndpointDiscoverer) DiscoverAsync(ipEndpoint net.Addr) chan *EndpointDiscovererResult {
-	return d.result
+func (d *staticEndpointDiscoverer) DiscoverAsync(ipEndpoint net.Addr) *tasks.Task {
+	return d.task
 }

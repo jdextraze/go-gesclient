@@ -17,10 +17,12 @@ func main() {
 	var debug bool
 	var addr string
 	var stream string
+	var interval int
 
 	flag.BoolVar(&debug, "debug", false, "Debug")
 	flag.StringVar(&addr, "endpoint", "tcp://127.0.0.1:1113", "EventStore address")
 	flag.StringVar(&stream, "stream", "Default", "Stream ID")
+	flag.IntVar(&interval, "interval", 1000000, "Publish interval in microseconds")
 	flag.Parse()
 
 	if debug {
@@ -60,7 +62,7 @@ func main() {
 		} else {
 			log.Printf("AppendToStream result: %v", result)
 		}
-		<-time.After(time.Second)
+		<-time.After(time.Duration(interval) * time.Microsecond)
 	}
 }
 

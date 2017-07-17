@@ -351,3 +351,7 @@ func (s *subscriptionBase) executeActions() {
 		break
 	}
 }
+
+func (s *subscriptionBase) String() string {
+	return fmt.Sprintf("Subscription to %s", s.streamId)
+}
