@@ -1,18 +1,18 @@
 # Event Store Go Client
 
-A [Go](https://golang.org/) client for [Event Store](https://geteventstore.com/).
+A [Go](https://golang.org/) port of the .Net client for [Event Store](https://geteventstore.com/).
 
 ## Status
 
-This project is considered at an alpha stage and shouldn't be used in production.
+This project is considered at a beta stage and should'nt be used in production.
 
 ## License
 
 MIT. See [LICENSE](https://github.com/jdextraze/go-gesclient/blob/master/LICENSE).
 
-## Example
+## Examples
 
-For an example, look into `example`. You will need an instance of event store to be running to try it.
+For examples, look into `examples`. You will need an instance of event store to be running to try it.
 I suggest using [Docker](https://docker.com/) with [Event Store Docker Container](https://hub.docker.com/r/eventstore/eventstore/).
 
 ## Implemented
@@ -24,13 +24,13 @@ I suggest using [Docker](https://docker.com/) with [Event Store Docker Container
 * Reading all events forwards
 * Reading all events backwards
 * Volatile subscriptions
-* Persistent subscription
 * Deleting stream
+* Cluster connection
+* Global authentication
 
 ## TODO
 
+* Persistent subscription
 * Complete unit and integration tests
 * Transaction
 * Scavenging database
-* Global authentication
-* Cluster connection
