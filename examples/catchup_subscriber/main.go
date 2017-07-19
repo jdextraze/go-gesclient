@@ -19,7 +19,7 @@ func main() {
 	flag.BoolVar(&debug, "debug", false, "Debug")
 	flag.StringVar(&addr, "endpoint", "tcp://127.0.0.1:1113", "EventStore address")
 	flag.StringVar(&stream, "stream", "Default", "Stream ID")
-	flag.IntVar(&lastCheckpoint, "lastCheckpoint", 0, "Last checkpoint")
+	flag.IntVar(&lastCheckpoint, "lastCheckpoint", -1, "Last checkpoint")
 	flag.Parse()
 
 	if debug {
