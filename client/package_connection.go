@@ -116,11 +116,7 @@ func (c *PackageConnection) receiver() {
 
 func (c *PackageConnection) sender() {
 	var err error
-	for {
-		p, ok := <-c.sendQueue
-		if !ok {
-			return
-		}
+	for p := range c.sendQueue {
 		if err = binary.Write(c.conn, binary.LittleEndian, p.Size()); err != nil {
 			log.Errorf("binary.Write failed: %v", err)
 			break
@@ -135,14 +131,12 @@ func (c *PackageConnection) sender() {
 }
 
 func (c *PackageConnection) closeInternal(reason string, socketError error) {
-	if atomic.LoadInt32(&c.isClosed) == 1 {
-		return
-	}
-	close(c.sendQueue)
-	log.Debugf("PackageConnection.closeInternal: %s. %v", reason, c.conn.Close())
-	atomic.StoreInt32(&c.isClosed, 1)
-	if c.connectionClosed != nil {
-		c.connectionClosed(c, socketError)
+	if atomic.CompareAndSwapInt32(&c.isClosed, 0, 1) {
+		close(c.sendQueue)
+		log.Debugf("PackageConnection.closeInternal: %s. %v", reason, c.conn.Close())
+		if c.connectionClosed != nil {
+			c.connectionClosed(c, socketError)
+		}
 	}
 }
 
@@ -184,6 +178,9 @@ func (c *PackageConnection) StartReceiving() error {
 	if c.conn == nil {
 		return errors.New("Failed connection")
 	}
+	if c.IsClosed() {
+		return errors.New("Connection is closed")
+	}
 	go c.receiver()
 	return nil
 }
@@ -191,6 +188,9 @@ func (c *PackageConnection) StartReceiving() error {
 func (c *PackageConnection) EnqueueSend(p *Package) error {
 	if c.conn == nil {
 		return errors.New("Failed connection")
+	}
+	if c.IsClosed() {
+		return errors.New("Connection is closed")
 	}
 	c.sendQueue <- p
 	return nil
@@ -200,6 +200,10 @@ func (c *PackageConnection) Close(reason string) error {
 	if c.conn == nil {
 		return errors.New("Failed connection")
 	}
+	if c.IsClosed() {
+		return errors.New("Already closed")
+	}
+
 	return c.conn.Close()
 }
 

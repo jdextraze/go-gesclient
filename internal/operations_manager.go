@@ -67,19 +67,19 @@ func (m *OperationsManager) CheckTimeoutsAndRetry(c *client.PackageConnection) {
 
 	removeOperations := []*operationItem{}
 	retryOperations := []*operationItem{}
-	for _, s := range m.activeOperations {
-		if s.ConnectionId != c.ConnectionId() {
-			m.retryPendingOperations = append(m.retryPendingOperations, s)
-		} else if s.timeout > time.Duration(0) && time.Now().UTC().Sub(s.LastUpdated) > m.settings.OperationTimeout() {
+	for _, o := range m.activeOperations {
+		if o.ConnectionId != c.ConnectionId() {
+			retryOperations = append(retryOperations, o)
+		} else if o.timeout > time.Duration(0) && time.Now().UTC().Sub(o.LastUpdated) > m.settings.OperationTimeout() {
 			err := fmt.Errorf("EventStoreConnection '%s': operation never got response from server.\n"+
-				"UTC now: %s, operation: %s.", m.connectionName, time.Now().UTC(), s)
+				"UTC now: %s, operation: %s.", m.connectionName, time.Now().UTC(), o)
 			log.Errorf("%v", err)
 
 			if m.settings.FailOnNoServerResponse() {
-				s.operation.Fail(err)
-				removeOperations = append(removeOperations, s)
+				o.operation.Fail(err)
+				removeOperations = append(removeOperations, o)
 			} else {
-				retryOperations = append(retryOperations, s)
+				retryOperations = append(retryOperations, o)
 			}
 		}
 	}
