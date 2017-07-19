@@ -6,6 +6,10 @@ A [Go](https://golang.org/) port of the .Net client for [Event Store](https://ge
 
 This project is considered at a beta stage and should'nt be used in production.
 
+## Requirements
+
+- Go 1.8+
+
 ## License
 
 MIT. See [LICENSE](https://github.com/jdextraze/go-gesclient/blob/master/LICENSE).
