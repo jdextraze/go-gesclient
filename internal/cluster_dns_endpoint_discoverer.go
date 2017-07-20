@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"sort"
 	"time"
+	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type ClusterDnsEndpointDiscoverer struct {

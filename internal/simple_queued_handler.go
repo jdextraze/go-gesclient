@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync/atomic"
+	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type messageHandler func(message message) error

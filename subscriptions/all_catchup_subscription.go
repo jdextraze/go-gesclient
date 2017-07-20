@@ -65,10 +65,10 @@ func (s *AllCatchUpSubscription) readEventsInternal(
 	task, err := connection.ReadAllEventsForwardAsync(s.nextReadPosition, s.readBatchSize, resolveLinkTos,
 		userCredentials)
 	if err == nil {
-		task.ContinueWith(tasks.ContinueWithCallback(func(t *tasks.Task) error {
+		task.ContinueWith(func(t *tasks.Task) error {
 			return s.readEventsCallback(t, connection, resolveLinkTos, userCredentials, lastCommitPosition,
 				lastEventNumber)
-		}))
+		})
 	} else {
 		s.completion.TrySetError(err)
 	}
@@ -88,14 +88,13 @@ func (s *AllCatchUpSubscription) readEventsCallback(
 	} else {
 		result := &client.AllEventsSlice{}
 		if err = task.Result(result); err == nil {
-			if ok, err2 := s.processEvents(lastCommitPosition, result); ok && !s.shouldStop {
+			if done, err2 := s.processEvents(lastCommitPosition, result); !done && !s.shouldStop {
 				s.readEventsInternal(connection, resolveLinkTos, userCredentials, lastCommitPosition, lastEventNumber)
 			} else if err2 != nil {
 				err = err2
 			} else {
 				if s.verbose {
-					log.Debugf("Catch-up Subscription to %s: finished reading events, nextReadPosition = %s.",
-						s.streamId, s.nextReadPosition)
+					s.debug("finished reading events, nextReadPosition = %s.", s.nextReadPosition)
 				}
 				res := true
 				s.completion.TrySetResult(&res)
@@ -145,9 +144,8 @@ func (s *AllCatchUpSubscription) tryProcess(e *client.ResolvedEvent) error {
 		processed = true
 	}
 	if s.verbose {
-		log.Debugf("Catch-up Subscription to %s: %b event (%s, %d, %s @ %s).", s.streamId, processed,
-			e.OriginalEvent().EventStreamId(), e.OriginalEvent().EventNumber(), e.OriginalEvent().EventType(),
-			e.OriginalPosition())
+		s.debug("%t event (%s, %d, %s @ %s).", processed, e.OriginalEvent().EventStreamId(),
+			e.OriginalEvent().EventNumber(), e.OriginalEvent().EventType(), e.OriginalPosition())
 	}
 	return nil
 }

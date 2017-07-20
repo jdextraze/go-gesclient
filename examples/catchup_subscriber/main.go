@@ -15,11 +15,13 @@ func main() {
 	var addr string
 	var stream string
 	var lastCheckpoint int
+	var verbose bool
 
 	flag.BoolVar(&debug, "debug", false, "Debug")
 	flag.StringVar(&addr, "endpoint", "tcp://127.0.0.1:1113", "EventStore address")
 	flag.StringVar(&stream, "stream", "Default", "Stream ID")
 	flag.IntVar(&lastCheckpoint, "lastCheckpoint", -1, "Last checkpoint")
+	flag.BoolVar(&verbose, "verbose", false, "Verbose logging (Requires debug)")
 	flag.Parse()
 
 	if debug {
@@ -30,7 +32,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error parsing address: %v", err)
 	}
-	c, err := gesclient.Create(client.DefaultConnectionSettings, uri, "CatchUpSubscriber")
+	settingsBuilder := client.CreateConnectionSettings()
+	if verbose {
+		settingsBuilder.EnableVerboseLogging()
+	}
+	c, err := gesclient.Create(settingsBuilder.Build(), uri, "CatchUpSubscriber")
 	if err != nil {
 		log.Fatalf("Error creating connection: %v", err)
 	}
@@ -39,8 +45,10 @@ func main() {
 		log.Fatalf("Error connecting: %v", err)
 	}
 
-	sub, err := c.SubscribeToStreamFrom(stream, &lastCheckpoint, client.CatchUpSubscriptionSettings_Default,
-		eventAppeared, liveProcessingStarted, subscriptionDropped, nil)
+	settings := client.NewCatchUpSubscriptionSettings(client.CatchUpDefaultMaxPushQueueSize,
+		client.CatchUpDefaultReadBatchSize, verbose, true)
+	sub, err := c.SubscribeToStreamFrom(stream, &lastCheckpoint, settings, eventAppeared, liveProcessingStarted,
+		subscriptionDropped, nil)
 	if err != nil {
 		log.Printf("Error occured while subscribing to stream: %v", err)
 	} else {

@@ -16,12 +16,14 @@ func main() {
 	var stream string
 	var preparePosition int64
 	var commitPosition int64
+	var verbose bool
 
 	flag.BoolVar(&debug, "debug", false, "Debug")
 	flag.StringVar(&addr, "endpoint", "tcp://127.0.0.1:1113", "EventStore address")
 	flag.StringVar(&stream, "stream", "Default", "Stream ID")
 	flag.Int64Var(&preparePosition, "prepare", 0, "Prepare position")
 	flag.Int64Var(&commitPosition, "commit", 0, "Commit position")
+	flag.BoolVar(&verbose, "verbose", false, "Verbose logging (Need debug)")
 	flag.Parse()
 
 	if debug {
@@ -32,7 +34,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error parsing address: %v", err)
 	}
-	c, err := gesclient.Create(client.DefaultConnectionSettings, uri, "AllCatchUpSubscriber")
+	settingsBuilder := client.CreateConnectionSettings()
+	if verbose {
+		settingsBuilder.EnableVerboseLogging()
+	}
+	c, err := gesclient.Create(settingsBuilder.Build(), uri, "AllCatchUpSubscriber")
 	if err != nil {
 		log.Fatalf("Error creating connection: %v", err)
 	}
@@ -42,8 +48,10 @@ func main() {
 	}
 
 	user := client.NewUserCredentials("admin", "changeit")
+	settings := client.NewCatchUpSubscriptionSettings(client.CatchUpDefaultMaxPushQueueSize,
+		client.CatchUpDefaultReadBatchSize, verbose, true)
 	sub, err := c.SubscribeToAllFrom(client.NewPosition(commitPosition, preparePosition),
-		client.CatchUpSubscriptionSettings_Default, eventAppeared, liveProcessingStarted, subscriptionDropped, user)
+		settings, eventAppeared, liveProcessingStarted, subscriptionDropped, user)
 	if err != nil {
 		log.Printf("Error occured while subscribing to stream: %v", err)
 	} else {

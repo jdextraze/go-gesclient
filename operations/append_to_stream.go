@@ -6,6 +6,7 @@ import (
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
+	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type appendToStream struct {

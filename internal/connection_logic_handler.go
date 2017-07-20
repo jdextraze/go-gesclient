@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"sync/atomic"
 	"time"
+	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type ConnectionLogicHandler interface {

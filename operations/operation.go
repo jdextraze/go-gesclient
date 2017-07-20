@@ -11,6 +11,7 @@ import (
 	"net"
 	"reflect"
 	"sync/atomic"
+	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type CreateRequestDtoHandler func() proto.Message

@@ -7,6 +7,7 @@ import (
 	"sort"
 	"sync"
 	"time"
+	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type OperationsManager struct {

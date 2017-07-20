@@ -44,10 +44,10 @@ type MemberInfoDto struct {
 
 func (x MemberInfoDto) String() string {
 	if x.State == VNodeState_Manager {
-		return fmt.Sprintf("MAN %s <%b> [%s, %s:%d, %s:%d | %s", x.InstanceId, x.IsAlive, x.State, x.InternalHttpIp,
+		return fmt.Sprintf("MAN %s <%t> [%s, %s:%d, %s:%d | %s", x.InstanceId, x.IsAlive, x.State, x.InternalHttpIp,
 			x.InternalHttpPort, x.ExternalHttpIp, x.ExternalHttpPort, x.Timestamp)
 	}
-	return fmt.Sprintf("VND %s <%b> [%s, %s:%d, %d, %s:%d, %d, %s:%d, %s:%d] %d/%d/%d/E%d@%d:%s | %s", x.InstanceId,
+	return fmt.Sprintf("VND %s <%t> [%s, %s:%d, %d, %s:%d, %d, %s:%d, %s:%d] %d/%d/%d/E%d@%d:%s | %s", x.InstanceId,
 		x.IsAlive, x.State, x.InternalTcpIp, x.InternalTcpPort, x.InternalSecureTcpPort, x.ExternalTcpIp,
 		x.ExternalTcpPort, x.ExternalSecureTcpPort, x.InternalHttpIp, x.InternalHttpPort, x.ExternalHttpIp,
 		x.ExternalHttpPort, x.LastCommitPosition, x.WriterCheckpoint, x.ChaserCheckpoint, x.EpochNumber,

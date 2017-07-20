@@ -98,8 +98,7 @@ func (s *StreamCatchUpSubscription) readEventsCallback(
 				err = err2
 			} else {
 				if s.verbose {
-					log.Debugf("Catch-up Subscription to %s: finished reading events, nextReadEventNumber = %s.",
-						s.streamId, s.nextReadEventNumber)
+					s.debug("finished reading events, nextReadEventNumber = %s.", s.nextReadEventNumber)
 				}
 				res := true
 				s.completion.TrySetResult(&res)
@@ -158,9 +157,8 @@ func (s *StreamCatchUpSubscription) tryProcess(e *client.ResolvedEvent) error {
 		processed = true
 	}
 	if s.verbose {
-		log.Debugf("Catch-up Subscription to %s: %b event (%s, %d, %s @ %s).", s.streamId, processed,
-			e.OriginalEvent().EventStreamId(), e.OriginalEvent().EventNumber(), e.OriginalEvent().EventType(),
-			e.OriginalPosition())
+		s.debug("%t event (%s, %d, %s @ %s).", processed, e.OriginalEvent().EventStreamId(),
+			e.OriginalEvent().EventNumber(), e.OriginalEvent().EventType(), e.OriginalPosition())
 	}
 	return nil
 }

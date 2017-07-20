@@ -16,7 +16,7 @@ func NewCompletionSource() *CompletionSource {
 		waitGroup: &sync.WaitGroup{},
 	}
 	obj.waitGroup.Add(1)
-	obj.task = NewStarted(TaskCallback(obj.run))
+	obj.task = NewStarted(obj.run)
 	return obj
 }
 

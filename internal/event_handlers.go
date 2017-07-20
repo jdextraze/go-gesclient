@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jdextraze/go-gesclient/client"
 	"reflect"
+	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type eventHandlers struct {

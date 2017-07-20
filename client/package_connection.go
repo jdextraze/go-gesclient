@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type PackageConnection struct {

@@ -10,6 +10,7 @@ import (
 	"github.com/satori/go.uuid"
 	"net"
 	"sync/atomic"
+	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type Subscription interface {
@@ -60,9 +61,6 @@ func newSubscriptionBase(
 	inspectPackage InspectPackageHandler,
 	createSubscriptionObject CreateSubscriptionObjectHandler,
 ) *subscriptionBase {
-	if log == nil {
-		panic("log is nil")
-	}
 	if source == nil {
 		panic("source is nil")
 	}
@@ -158,10 +156,10 @@ func (s *subscriptionBase) InspectPackage(p *client.Package) (*client.Inspection
 				err = s.DropSubscription(client.SubscriptionDropReason_UserInitiated, nil, nil)
 			case messages.SubscriptionDropped_AccessDenied:
 				err = s.DropSubscription(client.SubscriptionDropReason_AccessDenied,
-					fmt.Errorf("Subscription to '%s' failed due to access denied.", s.streamId), nil)
+					fmt.Errorf("%s failed due to access denied.", s.String()), nil)
 			case messages.SubscriptionDropped_NotFound:
 				err = s.DropSubscription(client.SubscriptionDropReason_NotFound,
-					fmt.Errorf("Subscription to '%s' failed due to not found.", s.streamId), nil)
+					fmt.Errorf("%s failed due to not found.", s.String()), nil)
 			default:
 				if s.verboseLogging {
 					log.Debugf("Subscription dropped by server. Reason: %s", dto.Reason)
@@ -257,8 +255,7 @@ func (s *subscriptionBase) DropSubscription(
 ) error {
 	if atomic.CompareAndSwapInt32(&s.unsubscribed, 0, 1) {
 		if s.verboseLogging {
-			log.Debugf("Subscription %s to %s: closing subscription, reason: %s, error: %s",
-				s.correlationId, s.streamId, reason, err)
+			log.Debugf("%s (%s): closing subscription, reason: %s, error: %s", s.String(), s.correlationId, reason, err)
 		}
 
 		if reason != client.SubscriptionDropReason_UserInitiated {
@@ -290,8 +287,8 @@ func (s *subscriptionBase) confirmSubscription(lastCommitPosition int64, lastEve
 	}
 
 	if s.verboseLogging {
-		log.Debugf("Subscription %s to %s: subscribed at CommitPosition: %d, EventNumber: %d",
-			s.correlationId, s.streamId, lastCommitPosition, lastEventNumber)
+		log.Debugf("%s (%s): subscribed at CommitPosition: %d, EventNumber: %v", s.String(), s.correlationId,
+			lastCommitPosition, lastEventNumber)
 	}
 	var err error
 	s.subscription, err = s.createSubscriptionObject(lastCommitPosition, lastEventNumber)
@@ -312,9 +309,8 @@ func (s *subscriptionBase) eventAppeared(event *client.ResolvedEvent) error {
 	}
 
 	if s.verboseLogging {
-		log.Debugf("Subscription %s to %s: event appeared (%s, %d, %s @ %d)",
-			s.correlationId, s.streamId, event.OriginalStreamId(), event.OriginalEventNumber(),
-			event.OriginalEvent().EventType(), event.OriginalPosition())
+		log.Debugf("%s (%s): event appeared (%s, %d, %s @ %d)", s.String(), s.correlationId, event.OriginalStreamId(),
+			event.OriginalEventNumber(), event.OriginalEvent().EventType(), event.OriginalPosition())
 	}
 
 	s.executeActionAsync(func() error {
@@ -353,5 +349,11 @@ func (s *subscriptionBase) executeActions() {
 }
 
 func (s *subscriptionBase) String() string {
-	return fmt.Sprintf("Subscription to %s", s.streamId)
+	var stream string
+	if s.streamId == "" {
+		stream = "<all>"
+	} else {
+		stream = s.streamId
+	}
+	return fmt.Sprintf("Subscription to %s", stream)
 }

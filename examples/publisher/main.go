@@ -18,11 +18,13 @@ func main() {
 	var addr string
 	var stream string
 	var interval int
+	var verbose bool
 
 	flag.BoolVar(&debug, "debug", false, "Debug")
 	flag.StringVar(&addr, "endpoint", "tcp://127.0.0.1:1113", "EventStore address")
 	flag.StringVar(&stream, "stream", "Default", "Stream ID")
 	flag.IntVar(&interval, "interval", 1000000, "Publish interval in microseconds")
+	flag.BoolVar(&verbose, "verbose", false, "Verbose logging (Requires debug)")
 	flag.Parse()
 
 	if debug {
@@ -33,7 +35,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error parsing address: %v", err)
 	}
-	c, err := gesclient.Create(client.DefaultConnectionSettings, uri, "Publisher")
+	settingsBuilder := client.CreateConnectionSettings()
+	if verbose {
+		settingsBuilder.EnableVerboseLogging()
+	}
+	c, err := gesclient.Create(settingsBuilder.Build(), uri, "Publisher")
 	if err != nil {
 		log.Fatalf("Error creating connection: %v", err)
 	}
