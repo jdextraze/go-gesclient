@@ -14,14 +14,16 @@ const (
 	PackageMandatorySize     = PackageAuthOffset
 )
 
+type TcpFlag byte
+
 const (
-	FlagsNone          byte = 0x00
-	FlagsAuthenticated byte = 0x01
+	FlagsNone          TcpFlag = 0x00
+	FlagsAuthenticated TcpFlag = 0x01
 )
 
 type Package struct {
 	command       Command
-	flags         byte
+	flags         TcpFlag
 	correlationId uuid.UUID
 	data          []byte
 	username      string
@@ -30,7 +32,7 @@ type Package struct {
 
 func NewTcpPackage(
 	cmd Command,
-	flags byte,
+	flags TcpFlag,
 	correlationId uuid.UUID,
 	data []byte,
 	userCredentials *UserCredentials,
@@ -64,7 +66,7 @@ func TcpPacketFromBytes(data []byte) (*Package, error) {
 	}
 
 	command := Command(data[PackageCommandOffset])
-	flags := data[PackageFlagsOffset]
+	flags := TcpFlag(data[PackageFlagsOffset])
 
 	correlationId, _ := uuid.FromBytes(data[PackageCorrelationOffset:PackageAuthOffset])
 
@@ -127,7 +129,7 @@ func (p *Package) Size() int32 {
 
 func (p *Package) Command() Command { return p.command }
 
-func (p *Package) Flags() byte { return p.flags }
+func (p *Package) Flags() TcpFlag { return p.flags }
 
 func (p *Package) CorrelationId() uuid.UUID { return p.correlationId }
 

@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"time"
 )
 
 func main() {
@@ -65,6 +66,7 @@ func main() {
 	}
 
 	c.Close()
+	time.Sleep(10 * time.Millisecond)
 }
 
 func eventAppeared(s client.CatchUpSubscription, e *client.ResolvedEvent) error {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jdextraze/go-gesclient/client"
+	log "github.com/jdextraze/go-gesclient/logger"
 	"github.com/jdextraze/go-gesclient/subscriptions"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"github.com/satori/go.uuid"
@@ -11,7 +12,6 @@ import (
 	"reflect"
 	"sync/atomic"
 	"time"
-	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type ConnectionLogicHandler interface {
@@ -398,7 +398,7 @@ func (h *connectionLogicHandler) tcpConnectionEstablished(msg message) error {
 		h.authInfo = authInfo{uuid.NewV4(), h.elapsedTime()}
 		h.connection.EnqueueSend(client.NewTcpPackage(
 			client.Command_Authenticate,
-			1,
+			client.FlagsAuthenticated,
 			h.authInfo.CorrelationId,
 			nil,
 			h.settings.DefaultUserCredentials,

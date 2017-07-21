@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
+	log "github.com/jdextraze/go-gesclient/logger"
 	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"github.com/satori/go.uuid"
 	"net"
 	"sync/atomic"
-	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type Subscription interface {
@@ -127,8 +127,7 @@ func (s *subscriptionBase) Unsubscribe() error {
 
 func (s *subscriptionBase) createUnsubscriptionPackage() *client.Package {
 	data, _ := proto.Marshal(&messages.UnsubscribeFromStream{})
-	return client.NewTcpPackage(client.Command_UnsubscribeFromStream, client.FlagsNone, s.correlationId, data,
-		s.userCredentials)
+	return client.NewTcpPackage(client.Command_UnsubscribeFromStream, client.FlagsNone, s.correlationId, data, nil)
 }
 
 func (s *subscriptionBase) InspectPackage(p *client.Package) (*client.InspectionResult, error) {

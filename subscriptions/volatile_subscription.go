@@ -37,7 +37,7 @@ func (s *VolatileSubscription) createSubscriptionPackage() (*client.Package, err
 	if err != nil {
 		return nil, err
 	}
-	var flags byte
+	var flags client.TcpFlag
 	if s.userCredentials != nil {
 		flags = client.FlagsAuthenticated
 	}

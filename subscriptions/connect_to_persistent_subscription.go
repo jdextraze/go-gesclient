@@ -48,7 +48,7 @@ func (s *connectToPersistentSubscription) createSubscriptionPackage() (*client.P
 	if err != nil {
 		return nil, err
 	}
-	var flags byte
+	var flags client.TcpFlag
 	if s.userCredentials != nil {
 		flags = client.FlagsAuthenticated
 	}
@@ -138,7 +138,7 @@ func (s *connectToPersistentSubscription) NotifyEventsProcessed(processedEvents 
 		return err
 	}
 
-	var flags byte
+	var flags client.TcpFlag
 	if s.userCredentials != nil {
 		flags = client.FlagsAuthenticated
 	}
@@ -175,7 +175,7 @@ func (s *connectToPersistentSubscription) NotifyEventsFailed(
 		return err
 	}
 
-	var flags byte
+	var flags client.TcpFlag
 	if s.userCredentials != nil {
 		flags = client.FlagsAuthenticated
 	}

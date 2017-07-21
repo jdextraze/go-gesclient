@@ -1,0 +1,7 @@
+build:
+  summary: Build examples
+  command: for i in `go list github.com/jdextraze/go-gesclient/examples/...`; do go build $i; done
+
+run_es:
+  summary: Run eventstore
+  command: docker run --rm -d -p 1113:1113 eventstore/eventstore:release-3.9.3

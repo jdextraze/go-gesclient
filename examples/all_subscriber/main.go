@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"time"
 )
 
 func main() {
@@ -58,9 +59,11 @@ func main() {
 		<-ch
 
 		sub.Close()
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	c.Close()
+	time.Sleep(10 * time.Millisecond)
 }
 
 func eventAppeared(s *client.EventStoreSubscription, e *client.ResolvedEvent) error {

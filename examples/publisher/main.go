@@ -54,6 +54,7 @@ func main() {
 		select {
 		case <-ch:
 			c.Close()
+			time.Sleep(10 * time.Millisecond)
 			return
 		default:
 		}

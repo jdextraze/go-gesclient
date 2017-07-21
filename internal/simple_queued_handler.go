@@ -2,9 +2,9 @@ package internal
 
 import (
 	"fmt"
+	log "github.com/jdextraze/go-gesclient/logger"
 	"reflect"
 	"sync/atomic"
-	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type messageHandler func(message message) error

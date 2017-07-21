@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
+	log "github.com/jdextraze/go-gesclient/logger"
 	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"github.com/satori/go.uuid"
 	"net"
 	"reflect"
 	"sync/atomic"
-	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type CreateRequestDtoHandler func() proto.Message
@@ -58,7 +58,7 @@ func newBaseOperation(
 }
 
 func (o *baseOperation) CreateNetworkPackage(correlationId uuid.UUID) (*client.Package, error) {
-	var flags byte
+	var flags client.TcpFlag
 	if o.userCredentials != nil {
 		flags = client.FlagsAuthenticated
 	}

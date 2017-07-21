@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"time"
 )
 
 func main() {
@@ -47,7 +48,11 @@ func main() {
 
 	settings := client.NewCatchUpSubscriptionSettings(client.CatchUpDefaultMaxPushQueueSize,
 		client.CatchUpDefaultReadBatchSize, verbose, true)
-	sub, err := c.SubscribeToStreamFrom(stream, &lastCheckpoint, settings, eventAppeared, liveProcessingStarted,
+	var fromEventNumber *int
+	if lastCheckpoint >= 0 {
+		fromEventNumber = &lastCheckpoint
+	}
+	sub, err := c.SubscribeToStreamFrom(stream, fromEventNumber, settings, eventAppeared, liveProcessingStarted,
 		subscriptionDropped, nil)
 	if err != nil {
 		log.Printf("Error occured while subscribing to stream: %v", err)
@@ -62,6 +67,7 @@ func main() {
 	}
 
 	c.Close()
+	time.Sleep(10 * time.Millisecond)
 }
 
 func eventAppeared(s client.CatchUpSubscription, e *client.ResolvedEvent) error {
