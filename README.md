@@ -14,11 +14,6 @@ This project is considered at a beta stage and should'nt be used in production.
 
 MIT. See [LICENSE](https://github.com/jdextraze/go-gesclient/blob/master/LICENSE).
 
-## Examples
-
-For examples, look into `examples`. You will need an instance of event store to be running to try it.
-I suggest using [Docker](https://docker.com/) with [Event Store Docker Container](https://hub.docker.com/r/eventstore/eventstore/).
-
 ## Implemented
 
 * Writing to a stream
@@ -38,3 +33,13 @@ I suggest using [Docker](https://docker.com/) with [Event Store Docker Container
 * Complete unit and integration tests
 * Transaction
 * Scavenging database
+
+## External tools
+
+* [Robo](https://github.com/tj/robo) (`go install github.com/tj/robo`)
+* [Docker](https://www.docker.com/get-docker)
+
+## Examples
+
+For examples, look into `examples`. You will need an instance of event store to be running to try it.
+I suggest using [Docker](https://docker.com/) with [Event Store Docker Container](https://hub.docker.com/r/eventstore/eventstore/).

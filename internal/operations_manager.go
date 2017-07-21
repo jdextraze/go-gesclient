@@ -3,11 +3,11 @@ package internal
 import (
 	"fmt"
 	"github.com/jdextraze/go-gesclient/client"
+	log "github.com/jdextraze/go-gesclient/logger"
 	"github.com/satori/go.uuid"
 	"sort"
 	"sync"
 	"time"
-	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type OperationsManager struct {

@@ -3,11 +3,11 @@ package subscriptions
 import (
 	"errors"
 	"github.com/jdextraze/go-gesclient/client"
+	log "github.com/jdextraze/go-gesclient/logger"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"sync"
 	"sync/atomic"
 	"time"
-	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 var dropSubscriptionEvent = client.NewResolvedEvent(nil)
@@ -337,12 +337,12 @@ func (s *catchUpSubscription) dropSubscription(
 }
 
 func (s *catchUpSubscription) debug(format string, args ...interface{}) {
-	arguments := make([]interface{}, len(args) + 1)
+	arguments := make([]interface{}, len(args)+1)
 	if s.streamId == "" {
 		arguments[0] = "<all>"
 	} else {
 		arguments[0] = s.streamId
 	}
 	copy(arguments[1:], args)
-	log.Debugf("Catch-up Subscription to %s: " + format, arguments...)
+	log.Debugf("Catch-up Subscription to %s: "+format, arguments...)
 }

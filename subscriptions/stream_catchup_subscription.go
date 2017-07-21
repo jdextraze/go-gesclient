@@ -92,7 +92,7 @@ func (s *StreamCatchUpSubscription) readEventsCallback(
 	} else {
 		result := &client.StreamEventsSlice{}
 		if err = task.Result(result); err == nil {
-			if ok, err2 := s.processEvents(lastEventNumber, result); ok && !s.shouldStop {
+			if done, err2 := s.processEvents(lastEventNumber, result); !done && !s.shouldStop {
 				s.readEventsInternal(connection, resolveLinkTos, userCredentials, lastCommitPosition, lastEventNumber)
 			} else if err2 != nil {
 				err = err2
