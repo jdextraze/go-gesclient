@@ -37,7 +37,14 @@ func (t *Task) Result(res interface{}) error {
 	t.Wait()
 	result := reflect.ValueOf(t.result)
 	if result.IsValid() && !result.IsNil() {
-		reflect.ValueOf(res).Elem().Set(result.Elem())
+		resValue := reflect.ValueOf(res).Elem()
+		resultValue := result.Elem()
+		firstField := resultValue.Type().Field(0)
+		if firstField.Anonymous && firstField.Type.AssignableTo(reflect.TypeOf(res)) {
+			resValue.Set(resultValue.Field(0).Elem())
+		} else {
+			resValue.Set(resultValue)
+		}
 	}
 	return t.err
 }
