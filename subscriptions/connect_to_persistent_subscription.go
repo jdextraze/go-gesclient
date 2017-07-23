@@ -70,7 +70,7 @@ func (s *connectToPersistentSubscription) inspectPackage(
 			break
 		}
 		s.subscriptionId = *dto.SubscriptionId
-		result = client.NewInspectionResult(client.InspectionDecision_DoNothing, "SubscriptionConfirmation", nil, nil)
+		result = client.NewInspectionResult(client.InspectionDecision_Subscribed, "SubscriptionConfirmation", nil, nil)
 	case client.Command_PersistentSubscriptionStreamEventAppeared:
 		dto := &messages.PersistentSubscriptionStreamEventAppeared{}
 		if err = proto.Unmarshal(p.Data(), dto); err != nil {
@@ -114,9 +114,9 @@ func (s *connectToPersistentSubscription) inspectPackage(
 func (s *connectToPersistentSubscription) createSubscriptionObject(
 	lastCommitPosition int64,
 	lastEventNumber *int,
-) (*client.EventStoreSubscription, error) {
-	subscription := client.NewPersistentEventStoreSubscription(s, s.streamId, lastCommitPosition, lastEventNumber)
-	return subscription.EventStoreSubscription, nil
+) (interface{}, *client.EventStoreSubscription, error) {
+	obj := client.NewPersistentEventStoreSubscription(s, s.streamId, lastCommitPosition, lastEventNumber)
+	return obj, obj.EventStoreSubscription, nil
 }
 
 func (s *connectToPersistentSubscription) NotifyEventsProcessed(processedEvents []uuid.UUID) error {

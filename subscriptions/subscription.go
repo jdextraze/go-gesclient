@@ -24,7 +24,7 @@ type GetConnectionHandler func() (*client.PackageConnection, error)
 type CreateSubscriptionPackageHandler func() (*client.Package, error)
 type InspectPackageHandler func(p *client.Package) (bool, *client.InspectionResult, error)
 type CreateSubscriptionObjectHandler func(lastCommitPosition int64, lastEventNumber *int) (
-	*client.EventStoreSubscription, error)
+	interface{}, *client.EventStoreSubscription, error)
 type ActionHandler func() error
 
 type subscriptionBase struct {
@@ -289,12 +289,12 @@ func (s *subscriptionBase) confirmSubscription(lastCommitPosition int64, lastEve
 		log.Debugf("%s (%s): subscribed at CommitPosition: %d, EventNumber: %v", s.String(), s.correlationId,
 			lastCommitPosition, lastEventNumber)
 	}
-	var err error
-	s.subscription, err = s.createSubscriptionObject(lastCommitPosition, lastEventNumber)
+	sub, ess, err := s.createSubscriptionObject(lastCommitPosition, lastEventNumber)
 	if err != nil {
 		return err
 	}
-	s.source.SetResult(s.subscription)
+	s.subscription = ess
+	s.source.SetResult(sub)
 	return nil
 }
 

@@ -133,8 +133,8 @@ func (s *catchUpSubscription) onReconnect(evt client.Event) error {
 }
 
 func (s *catchUpSubscription) runSubscription() *tasks.Task {
-	return tasks.NewStarted(s.loadHistoricalEvents).ContinueWith(func(t *tasks.Task) error {
-		return s.handleErrorOrContinue(t, nil)
+	return tasks.NewStarted(s.loadHistoricalEvents).ContinueWith(func(t *tasks.Task) (interface{}, error) {
+		return nil, s.handleErrorOrContinue(t, nil)
 	})
 }
 
@@ -151,8 +151,8 @@ func (s *catchUpSubscription) loadHistoricalEvents() (interface{}, error) {
 			s.debug("pulling events...")
 		}
 		s.readEventsTillAsync(s.connection, s.resolveLinkTos, s.userCredentials, nil, nil).
-			ContinueWith(func(t *tasks.Task) error {
-				return s.handleErrorOrContinue(t, s.subscribeToStream)
+			ContinueWith(func(t *tasks.Task) (interface{}, error) {
+				return nil, s.handleErrorOrContinue(t, s.subscribeToStream)
 			})
 		return nil, nil
 	}
@@ -175,8 +175,8 @@ func (s *catchUpSubscription) subscribeToStream() (err error) {
 		if err != nil {
 			return err
 		}
-		task.ContinueWith(func(t *tasks.Task) error {
-			return s.handleErrorOrContinue(t, func() error {
+		task.ContinueWith(func(t *tasks.Task) (interface{}, error) {
+			return nil, s.handleErrorOrContinue(t, func() error {
 				s.subscription = &client.EventStoreSubscription{}
 				if err := t.Result(s.subscription); err != nil {
 					return err
@@ -204,8 +204,8 @@ func (s *catchUpSubscription) readMissedHistoricEvents() {
 			lastEventNumber = &tmp2
 		}
 		s.readEventsTillAsync(s.connection, s.resolveLinkTos, s.userCredentials, &lastCommitPosition,
-			lastEventNumber).ContinueWith(func(t *tasks.Task) error {
-			return s.handleErrorOrContinue(t, s.startLiveProcessing)
+			lastEventNumber).ContinueWith(func(t *tasks.Task) (interface{}, error) {
+			return nil, s.handleErrorOrContinue(t, s.startLiveProcessing)
 		})
 		return
 	}

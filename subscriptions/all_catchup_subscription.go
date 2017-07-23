@@ -65,8 +65,8 @@ func (s *AllCatchUpSubscription) readEventsInternal(
 	task, err := connection.ReadAllEventsForwardAsync(s.nextReadPosition, s.readBatchSize, resolveLinkTos,
 		userCredentials)
 	if err == nil {
-		task.ContinueWith(func(t *tasks.Task) error {
-			return s.readEventsCallback(t, connection, resolveLinkTos, userCredentials, lastCommitPosition,
+		task.ContinueWith(func(t *tasks.Task) (interface{}, error) {
+			return nil, s.readEventsCallback(t, connection, resolveLinkTos, userCredentials, lastCommitPosition,
 				lastEventNumber)
 		})
 	} else {

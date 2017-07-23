@@ -9,4 +9,3 @@ type PersistentSubscription interface {
 	Fail(events []ResolvedEvent, action PersistentSubscriptionNakEventAction, reason string) error
 	Stop(timeout ...time.Duration) error
 }
-

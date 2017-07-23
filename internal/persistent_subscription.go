@@ -1,15 +1,15 @@
 package internal
 
 import (
-	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/tasks"
-	"sync"
-	"time"
 	"errors"
-	"github.com/satori/go.uuid"
+	"github.com/jdextraze/go-gesclient/client"
 	log "github.com/jdextraze/go-gesclient/logger"
-	"unsafe"
+	"github.com/jdextraze/go-gesclient/tasks"
+	"github.com/satori/go.uuid"
+	"sync"
 	"sync/atomic"
+	"time"
+	"unsafe"
 )
 
 var dropSubscriptionEvent = client.NewResolvedEvent(nil)
@@ -37,6 +37,8 @@ type persistentSubscription struct {
 	stopped             sync.WaitGroup
 }
 
+func NilPersistentSubscription() *persistentSubscription { return &persistentSubscription{} }
+
 func NewPersistentSubscription(
 	subscriptionId string,
 	streamId string,
@@ -48,7 +50,7 @@ func NewPersistentSubscription(
 	bufferSize int,
 	autoAck bool,
 ) *persistentSubscription {
-	obj := &persistentSubscription{
+	return &persistentSubscription{
 		subscriptionId:      subscriptionId,
 		streamId:            streamId,
 		eventAppeared:       eventAppeared,
@@ -59,18 +61,17 @@ func NewPersistentSubscription(
 		bufferSize:          bufferSize,
 		autoAck:             autoAck,
 	}
-	return obj
 }
 
 func (s *persistentSubscription) Start() *tasks.Task {
-	s.stopped.Done()
+	s.stopped.Add(1)
 	source := tasks.NewCompletionSource()
 	s.handler.EnqueueMessage(NewStartPersistentSubscriptionMessage(source, s.subscriptionId, s.streamId,
 		s.bufferSize, s.userCredentials, s.onEventAppeared, s.onSubscriptionDropped, s.settings.MaxRetries(),
 		s.settings.OperationTimeout()))
-	return source.Task().ContinueWith(func(t *tasks.Task) error {
+	return source.Task().ContinueWith(func(t *tasks.Task) (interface{}, error) {
 		s.subscription = &client.PersistentEventStoreSubscription{}
-		return t.Result(s.subscription)
+		return s, t.Result(s.subscription)
 	})
 }
 
@@ -148,7 +149,7 @@ func (s *persistentSubscription) enqueue(evt *client.ResolvedEvent) {
 func (s *persistentSubscription) processQueue() {
 	for {
 		for len(s.queue) > 0 {
-			e := <- s.queue
+			e := <-s.queue
 			if e == dropSubscriptionEvent {
 				if s.dropData == nil {
 					s.dropData = &dropData{

@@ -8,7 +8,7 @@ import (
 )
 
 type TaskCallback func() (interface{}, error)
-type ContinueWithCallback func(*Task) error
+type ContinueWithCallback func(*Task) (interface{}, error)
 
 type Task struct {
 	fn        TaskCallback
@@ -57,7 +57,7 @@ func (t *Task) IsFaulted() bool {
 func (t *Task) ContinueWith(cb ContinueWithCallback) *Task {
 	return NewStarted(func() (interface{}, error) {
 		t.Wait()
-		return nil, cb(t)
+		return cb(t)
 	})
 }
 
