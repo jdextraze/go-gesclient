@@ -242,6 +242,20 @@ func (c *connection) SubscribeToAllFrom(
 	return sub, nil
 }
 
+func (c *connection) ConnectToPersistentSubscriptionAsync(
+	stream string,
+	groupName string,
+	eventAppeared client.PersistentEventAppearedHandler,
+	subscriptionDropped client.PersistentSubscriptionDroppedHandler,
+	userCredentials *client.UserCredentials,
+	bufferSize int,
+	autoAck bool,
+) (*tasks.Task, error) {
+	sub := NewPersistentSubscription(groupName, stream, eventAppeared, subscriptionDropped,
+		userCredentials, c.Settings(), c.handler, bufferSize, autoAck)
+	return sub.Start(), nil
+}
+
 func (c *connection) CreatePersistentSubscriptionAsync(
 	stream string,
 	groupName string,

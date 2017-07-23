@@ -8,6 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"unsafe"
 )
 
 var dropSubscriptionEvent = client.NewResolvedEvent(nil)
@@ -231,9 +232,13 @@ func (s *catchUpSubscription) startLiveProcessing() error {
 }
 
 func (s *catchUpSubscription) enqueueSubscriptionDropNotification(reason client.SubscriptionDropReason, err error) {
-	s.liveQueue <- dropSubscriptionEvent
-	if s.allowProcessing {
-		s.ensureProcessingPushQueue()
+	dropData := dropData{reason, err}
+	ptr := unsafe.Pointer(&s.dropData)
+	if atomic.CompareAndSwapPointer(&ptr, nil, unsafe.Pointer(&dropData)) {
+		s.liveQueue <- dropSubscriptionEvent
+		if s.allowProcessing {
+			s.ensureProcessingPushQueue()
+		}
 	}
 }
 

@@ -129,6 +129,30 @@ type startPersistentSubscriptionMessage struct {
 	timeout             time.Duration
 }
 
+func NewStartPersistentSubscriptionMessage(
+	source *tasks.CompletionSource,
+	subscriptionId string,
+	streamId string,
+	bufferSize int,
+	userCredentials *client.UserCredentials,
+	eventAppeared client.EventAppearedHandler,
+	subscriptionDropped client.SubscriptionDroppedHandler,
+	maxRetries int,
+	timeout time.Duration,
+) *startPersistentSubscriptionMessage {
+	return &startPersistentSubscriptionMessage{
+		source:              source,
+		subscriptionId:      subscriptionId,
+		streamId:            streamId,
+		bufferSize:          bufferSize,
+		userCredentials:     userCredentials,
+		eventAppeared:       eventAppeared,
+		subscriptionDropped: subscriptionDropped,
+		maxRetries:          maxRetries,
+		timeout:             timeout,
+	}
+}
+
 type handleTcpPackageMessage struct {
 	connection *client.PackageConnection
 	pkg        *client.Package
