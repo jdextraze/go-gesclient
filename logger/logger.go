@@ -69,7 +69,7 @@ func Panicf(format string, args ...interface{}) {
 
 func Critical(format string, args ...interface{}) {
 	if len(args) > 0 {
-		log.Critical(format, nillable(args)...)
+		log.Critical(nillable(args)...)
 	} else {
 		log.Critical(format)
 	}
@@ -77,7 +77,7 @@ func Critical(format string, args ...interface{}) {
 
 func Error(format string, args ...interface{}) {
 	if len(args) > 0 {
-		log.Error(format, nillable(args)...)
+		log.Error(nillable(args)...)
 	} else {
 		log.Error(format)
 	}
@@ -93,7 +93,7 @@ func Errorf(format string, args ...interface{}) {
 
 func Warning(format string, args ...interface{}) {
 	if len(args) > 0 {
-		log.Warning(format, nillable(args)...)
+		log.Warning(nillable(args)...)
 	} else {
 		log.Warning(format)
 	}
@@ -109,7 +109,7 @@ func Warningf(format string, args ...interface{}) {
 
 func Notice(format string, args ...interface{}) {
 	if len(args) > 0 {
-		log.Notice(format, nillable(args)...)
+		log.Notice(nillable(args)...)
 	} else {
 		log.Notice(format)
 	}
@@ -125,7 +125,7 @@ func Noticef(format string, args ...interface{}) {
 
 func Info(format string, args ...interface{}) {
 	if len(args) > 0 {
-		log.Info(format, nillable(args)...)
+		log.Info(nillable(args)...)
 	} else {
 		log.Info(format)
 	}
@@ -141,7 +141,7 @@ func Infof(format string, args ...interface{}) {
 
 func Debug(format string, args ...interface{}) {
 	if len(args) > 0 {
-		log.Debug(format, nillable(args)...)
+		log.Debug(nillable(args)...)
 	} else {
 		log.Debug(format)
 	}
