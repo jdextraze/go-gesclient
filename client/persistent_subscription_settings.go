@@ -35,8 +35,8 @@ func NewPersistentSubscriptionSettings(
 	maxCheckPointCount int32,
 	maxSubscriberCount int32,
 	namedConsumerStrategy common.SystemConsumerStrategies,
-) PersistentSubscriptionSettings {
-	return PersistentSubscriptionSettings{
+) *PersistentSubscriptionSettings {
+	return &PersistentSubscriptionSettings{
 		resolveLinkTos:        resolveLinkTos,
 		startFrom:             startFrom,
 		extraStatistics:       extraStatistics,
@@ -68,3 +68,6 @@ func (s *PersistentSubscriptionSettings) MinCheckPointCount() int32 { return s.m
 func (s *PersistentSubscriptionSettings) MaxCheckPointCount() int32 { return s.maxCheckPointCount }
 
 func (s *PersistentSubscriptionSettings) MaxSubscriberCount() int32 { return s.maxSubscriberCount }
+
+var DefaultPersistentSubscriptionSettings = NewPersistentSubscriptionSettings(false, -1, false, 30*time.Second,
+	500, 500, 10, 20, 2*time.Second, 10, 1000, 0, common.SystemConsumerStrategies_RoundRobin)

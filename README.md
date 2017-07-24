@@ -23,20 +23,20 @@ MIT. See [LICENSE](https://github.com/jdextraze/go-gesclient/blob/master/LICENSE
 * Reading all events forwards
 * Reading all events backwards
 * Volatile subscriptions
+* Persistent subscription
 * Deleting stream
 * Cluster connection
 * Global authentication
 
 ## TODO
 
-* Persistent subscription
 * Complete unit and integration tests
 * Transaction
 * Scavenging database
 
 ## External tools
 
-* [Robo](https://github.com/tj/robo) (`go install github.com/tj/robo`)
+* [Robo](https://github.com/tj/robo) (`go get github.com/tj/robo`)
 * [Docker](https://www.docker.com/get-docker)
 
 ## Examples

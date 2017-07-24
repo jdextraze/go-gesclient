@@ -15,6 +15,10 @@ type CatchUpSubscriptionDroppedHandler func(s CatchUpSubscription, dr Subscripti
 
 type LiveProcessingStartedHandler func(s CatchUpSubscription) error
 
+type PersistentEventAppearedHandler func(s PersistentSubscription, r *ResolvedEvent) error
+
+type PersistentSubscriptionDroppedHandler func(s PersistentSubscription, dr SubscriptionDropReason, err error) error
+
 type Connection interface {
 	Name() string
 
@@ -73,15 +77,15 @@ type Connection interface {
 		userCredentials *UserCredentials,
 	) (*tasks.Task, error)
 
-	//ConnectToPersistentSubscriptionAsync(
-	//	stream string,
-	//	groupName string,
-	//	eventAppeared EventAppearedHandler,
-	//	subscriptionDropped SubscriptionDroppedHandler,
-	//	userCredentials *UserCredentials,
-	//	bufferSize int,
-	//	autoAck bool,
-	//) (<-chan PersistentSubscription, error)
+	ConnectToPersistentSubscriptionAsync(
+		stream string,
+		groupName string,
+		eventAppeared PersistentEventAppearedHandler,
+		subscriptionDropped PersistentSubscriptionDroppedHandler,
+		userCredentials *UserCredentials,
+		bufferSize int,
+		autoAck bool,
+	) (*tasks.Task, error)
 
 	SubscribeToAllFrom(
 		lastCheckpoint *Position,

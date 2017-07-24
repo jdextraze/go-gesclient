@@ -8,7 +8,7 @@ import (
 )
 
 type TaskCallback func() (interface{}, error)
-type ContinueWithCallback func(*Task) error
+type ContinueWithCallback func(*Task) (interface{}, error)
 
 type Task struct {
 	fn        TaskCallback
@@ -37,7 +37,14 @@ func (t *Task) Result(res interface{}) error {
 	t.Wait()
 	result := reflect.ValueOf(t.result)
 	if result.IsValid() && !result.IsNil() {
-		reflect.ValueOf(res).Elem().Set(result.Elem())
+		resValue := reflect.ValueOf(res).Elem()
+		resultValue := result.Elem()
+		firstField := resultValue.Type().Field(0)
+		if firstField.Anonymous && firstField.Type.AssignableTo(reflect.TypeOf(res)) {
+			resValue.Set(resultValue.Field(0).Elem())
+		} else {
+			resValue.Set(resultValue)
+		}
 	}
 	return t.err
 }
@@ -57,7 +64,7 @@ func (t *Task) IsFaulted() bool {
 func (t *Task) ContinueWith(cb ContinueWithCallback) *Task {
 	return NewStarted(func() (interface{}, error) {
 		t.Wait()
-		return nil, cb(t)
+		return cb(t)
 	})
 }
 

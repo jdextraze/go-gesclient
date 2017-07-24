@@ -206,7 +206,7 @@ func (h *connectionLogicHandler) discoverEndpoint(task *tasks.CompletionSource) 
 	if h.connection != nil {
 		remoteEndpoint = h.connection.RemoteEndpoint()
 	}
-	h.endpointDiscoverer.DiscoverAsync(remoteEndpoint).ContinueWith(func(t *tasks.Task) error {
+	h.endpointDiscoverer.DiscoverAsync(remoteEndpoint).ContinueWith(func(t *tasks.Task) (interface{}, error) {
 		if t.IsFaulted() {
 			h.EnqueueMessage(newCloseConnectionMessage(
 				"Failed to resolve TCP end point to which to connect.",
@@ -218,14 +218,14 @@ func (h *connectionLogicHandler) discoverEndpoint(task *tasks.CompletionSource) 
 		} else {
 			nodeEndpoints := &NodeEndpoints{}
 			if err := t.Result(nodeEndpoints); err != nil {
-				return err
+				return nil, err
 			}
 			h.EnqueueMessage(newEstablishTcpConnectionMessage(nodeEndpoints))
 			if task != nil {
 				task.SetResult(nil)
 			}
 		}
-		return nil
+		return nil, nil
 	})
 }
 

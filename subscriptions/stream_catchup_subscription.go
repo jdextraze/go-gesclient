@@ -69,8 +69,8 @@ func (s *StreamCatchUpSubscription) readEventsInternal(
 	task, err := connection.ReadStreamEventsForwardAsync(s.streamId, s.nextReadEventNumber, s.readBatchSize,
 		resolveLinkTos, userCredentials)
 	if err == nil {
-		task.ContinueWith(func(t *tasks.Task) error {
-			return s.readEventsCallback(t, connection, resolveLinkTos, userCredentials, lastCommitPosition,
+		task.ContinueWith(func(t *tasks.Task) (interface{}, error) {
+			return nil, s.readEventsCallback(t, connection, resolveLinkTos, userCredentials, lastCommitPosition,
 				lastEventNumber)
 		})
 	} else {

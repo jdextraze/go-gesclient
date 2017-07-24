@@ -71,7 +71,7 @@ func (s *VolatileSubscription) inspectPackage(p *client.Package) (bool, *client.
 }
 
 func (s *VolatileSubscription) createSubscriptionObject(lastCommitPosition int64, lastEventNumber *int,
-) (*client.EventStoreSubscription, error) {
-	subscription := NewVolatileEventStoreSubscription(s, s.streamId, lastCommitPosition, lastEventNumber)
-	return subscription.EventStoreSubscription, nil
+) (interface{}, *client.EventStoreSubscription, error) {
+	obj := NewVolatileEventStoreSubscription(s, s.streamId, lastCommitPosition, lastEventNumber)
+	return obj, obj.EventStoreSubscription, nil
 }
