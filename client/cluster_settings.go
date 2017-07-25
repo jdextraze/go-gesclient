@@ -19,13 +19,13 @@ func NewClusterSettings(
 	gossipSeeds []*GossipSeed,
 	gossipTimeout time.Duration,
 ) *ClusterSettings {
-	if clusterDns == "" {
+	if gossipSeeds == nil && clusterDns == "" {
 		panic("clusterDns must be present")
 	}
 	if maxDiscoverAttempts < -1 {
 		panic("maxDiscoverAttempts value is out of range. Allowed range: [-1, infinity].")
 	}
-	if externalGossipPort <= 0 {
+	if gossipSeeds == nil && externalGossipPort <= 0 {
 		panic("externalGossipPort must be positive")
 	}
 
