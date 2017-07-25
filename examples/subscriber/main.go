@@ -9,6 +9,8 @@ import (
 	"os"
 	"os/signal"
 	"time"
+	"strings"
+	"net"
 )
 
 func main() {
@@ -27,19 +29,7 @@ func main() {
 		gesclient.Debug()
 	}
 
-	uri, err := url.Parse(addr)
-	if err != nil {
-		log.Fatalf("Error parsing address: %v", err)
-	}
-	settingsBuilder := client.CreateConnectionSettings()
-	if verbose {
-		settingsBuilder.EnableVerboseLogging()
-	}
-	c, err := gesclient.Create(settingsBuilder.Build(), uri, "Subscriber")
-	if err != nil {
-		log.Fatalf("Error creating connection: %v", err)
-	}
-
+	c := getConnection(addr, verbose)
 	if err := c.ConnectAsync().Wait(); err != nil {
 		log.Fatalf("Error connecting: %v", err)
 	}
@@ -64,6 +54,45 @@ func main() {
 	c.Close()
 	time.Sleep(10 * time.Millisecond)
 }
+
+func getConnection(addr string, verbose bool) client.Connection {
+	settingsBuilder := client.CreateConnectionSettings()
+
+	var uri *url.URL
+	var err error
+	gossipSeeds := strings.Split(addr, ",")
+	if len(gossipSeeds) > 0 {
+		endpoints := make([]*net.TCPAddr, len(gossipSeeds))
+		for i, g := range gossipSeeds {
+			uri, err := url.Parse(g)
+			if err != nil {
+				log.Fatalf("Error parsing address: %v", err)
+			}
+			endpoints[i], err = net.ResolveTCPAddr("tcp", uri.Host)
+			if err != nil {
+				log.Fatalf("Error resolving: %v", uri.Host)
+			}
+		}
+		settingsBuilder.SetGossipSeedEndPoints(endpoints)
+	} else {
+		uri, err = url.Parse(addr)
+		if err != nil {
+			log.Fatalf("Error parsing address: %v", err)
+		}
+	}
+
+	if verbose {
+		settingsBuilder.EnableVerboseLogging()
+	}
+
+	c, err := gesclient.Create(settingsBuilder.Build(), uri, "AllCatchUpSubscriber")
+	if err != nil {
+		log.Fatalf("Error creating connection: %v", err)
+	}
+
+	return c
+}
+
 
 func eventAppeared(s *client.EventStoreSubscription, e *client.ResolvedEvent) error {
 	log.Printf("event appeared: %d | %s", e.OriginalEventNumber(), string(e.Event().Data()))

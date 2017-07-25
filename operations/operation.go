@@ -153,10 +153,16 @@ func (o *baseOperation) inspectNotHandled(p *client.Package) (*client.Inspection
 		}
 		var tcpEndpoint *net.TCPAddr
 		var secureTcpEndpoint *net.TCPAddr
-		tcpEndpoint, err = net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", masterInfo.ExternalTcpAddress,
-			masterInfo.ExternalTcpPort))
+		tcpEndpoint, err = net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", masterInfo.GetExternalTcpAddress(),
+			masterInfo.GetExternalTcpPort()))
+		if err != nil {
+			break
+		}
 		secureTcpEndpoint, err = net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d",
-			masterInfo.ExternalSecureTcpAddress, masterInfo.ExternalSecureTcpPort))
+			masterInfo.GetExternalSecureTcpAddress(), masterInfo.GetExternalSecureTcpPort()))
+		if err != nil {
+			break
+		}
 		return client.NewInspectionResult(client.InspectionDecision_Reconnect, "NotHandled - NotMaster",
 			tcpEndpoint, secureTcpEndpoint), nil
 	default:

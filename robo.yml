@@ -2,6 +2,39 @@ build:
   summary: Build examples
   command: for i in `go list github.com/jdextraze/go-gesclient/examples/...`; do go build $i; done
 
-run_es:
-  summary: Run eventstore
-  command: docker run --rm -d -p 1113:1113 eventstore/eventstore:release-3.9.3
+start_es:
+  summary: Start eventstore
+  command: docker run --rm --name eventstore -d -p 1113:1113 eventstore/eventstore:release-3.9.3
+
+stop_es:
+  summary: Stop eventstore
+  command: docker stop eventstore
+
+start_es_cluster:
+  summary: Start eventstore cluster
+  command: |
+    docker network create --attachable --subnet 172.30.0.0/24 esnet
+    docker run --rm --name eventstore1 --network esnet --network-alias escluster.net --ip 172.30.0.2 -d -e EVENTSTORE_INT_IP=172.30.0.2 -e EVENTSTORE_EXT_IP=172.30.0.2 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-3.9.3
+    docker run --rm --name eventstore2 --network esnet --network-alias escluster.net --ip 172.30.0.3 -d -e EVENTSTORE_INT_IP=172.30.0.3 -e EVENTSTORE_EXT_IP=172.30.0.3 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-3.9.3
+    docker run --rm --name eventstore3 --network esnet --network-alias escluster.net --ip 172.30.0.4 -d -e EVENTSTORE_INT_IP=172.30.0.4 -e EVENTSTORE_EXT_IP=172.30.0.4 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-3.9.3
+
+stop_es_cluster:
+  summary: Stop eventstore cluster
+  command: |
+    docker stop eventstore1 eventstore2 eventstore3
+    docker network rm esnet
+
+run_cluster_test:
+  summary: Run cluster test
+  command: |
+    export GOOS=linux
+    go build ./examples/publisher
+    go build ./examples/catchup_subscriber
+    docker run -d --rm --name publisher -v /"$(PWD)"://workdir:ro --network esnet --network-alias escluster.net golang:1.8 //workdir/publisher -debug -endpoint discover://escluster.net:2112
+    docker run -d --rm --name catchup_subscriber -v /"$(PWD)"://workdir:ro --network esnet --network-alias escluster.net golang:1.8 //workdir/catchup_subscriber -debug -endpoint tcp://172.30.0.2:2112,tcp://172.30.0.3:2112,tcp://172.30.0.4:2112
+
+stop_cluster_test:
+  summary: Stop cluster test
+  command: |
+    docker stop publisher catchup_subscriber
+    rm publisher catchup_subscriber
