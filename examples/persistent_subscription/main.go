@@ -11,6 +11,8 @@ import (
 	"os"
 	"os/signal"
 	"time"
+	"net"
+	"strings"
 )
 
 var debug bool
@@ -45,16 +47,36 @@ func main() {
 }
 
 func connect() client.Connection {
-	uri, err := url.Parse(addr)
-	if err != nil {
-		log.Fatalf("Error parsing address: %v", err)
+	settingsBuilder := client.CreateConnectionSettings()
+
+	var uri *url.URL
+	var err error
+	gossipSeeds := strings.Split(addr, ",")
+	if len(gossipSeeds) > 0 {
+		endpoints := make([]*net.TCPAddr, len(gossipSeeds))
+		for i, g := range gossipSeeds {
+			uri, err := url.Parse(g)
+			if err != nil {
+				log.Fatalf("Error parsing address: %v", err)
+			}
+			endpoints[i], err = net.ResolveTCPAddr("tcp", uri.Host)
+			if err != nil {
+				log.Fatalf("Error resolving: %v", uri.Host)
+			}
+		}
+		settingsBuilder.SetGossipSeedEndPoints(endpoints)
+	} else {
+		uri, err = url.Parse(addr)
+		if err != nil {
+			log.Fatalf("Error parsing address: %v", err)
+		}
 	}
-	settingsBuilder := client.CreateConnectionSettings().
-		SetDefaultUserCredentials(client.NewUserCredentials("admin", "changeit"))
+
 	if verbose {
 		settingsBuilder.EnableVerboseLogging()
 	}
-	c, err := gesclient.Create(settingsBuilder.Build(), uri, "PersistentSubscriber")
+
+	c, err := gesclient.Create(settingsBuilder.Build(), uri, "AllCatchUpSubscriber")
 	if err != nil {
 		log.Fatalf("Error creating connection: %v", err)
 	}

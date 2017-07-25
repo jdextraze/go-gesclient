@@ -33,6 +33,33 @@ func main() {
 		gesclient.Debug()
 	}
 
+	c := getConnection(addr, verbose)
+	if err := c.ConnectAsync().Wait(); err != nil {
+		log.Fatalf("Error connecting: %v", err)
+	}
+
+	user := client.NewUserCredentials("admin", "changeit")
+	settings := client.NewCatchUpSubscriptionSettings(client.CatchUpDefaultMaxPushQueueSize,
+		client.CatchUpDefaultReadBatchSize, verbose, true)
+	sub, err := c.SubscribeToAllFrom(client.NewPosition(commitPosition, preparePosition),
+		settings, eventAppeared, liveProcessingStarted, subscriptionDropped, user)
+	if err != nil {
+		log.Printf("Error occured while subscribing to stream: %v", err)
+	} else {
+		log.Printf("SubscribeToStreamFrom result: %v", sub)
+
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		<-ch
+
+		sub.Stop()
+	}
+
+	c.Close()
+	time.Sleep(10 * time.Millisecond)
+}
+
+func getConnection(addr string, verbose bool) client.Connection {
 	settingsBuilder := client.CreateConnectionSettings()
 
 	var uri *url.URL
@@ -67,29 +94,7 @@ func main() {
 		log.Fatalf("Error creating connection: %v", err)
 	}
 
-	if err := c.ConnectAsync().Wait(); err != nil {
-		log.Fatalf("Error connecting: %v", err)
-	}
-
-	user := client.NewUserCredentials("admin", "changeit")
-	settings := client.NewCatchUpSubscriptionSettings(client.CatchUpDefaultMaxPushQueueSize,
-		client.CatchUpDefaultReadBatchSize, verbose, true)
-	sub, err := c.SubscribeToAllFrom(client.NewPosition(commitPosition, preparePosition),
-		settings, eventAppeared, liveProcessingStarted, subscriptionDropped, user)
-	if err != nil {
-		log.Printf("Error occured while subscribing to stream: %v", err)
-	} else {
-		log.Printf("SubscribeToStreamFrom result: %v", sub)
-
-		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt)
-		<-ch
-
-		sub.Stop()
-	}
-
-	c.Close()
-	time.Sleep(10 * time.Millisecond)
+	return c
 }
 
 func eventAppeared(s client.CatchUpSubscription, e *client.ResolvedEvent) error {
