@@ -587,7 +587,7 @@ func (h *connectionLogicHandler) reconnectTo(endpoints *NodeEndpoints) {
 
 	h.state = connectionState_Connecting
 	h.connectingPhase = connectingPhase_EndpointDiscovery
-	h.establishTcpConnection(endpoints)
+	h.establishTcpConnection(&establishTcpConnectionMessage{endpoints})
 }
 
 func (h *connectionLogicHandler) timerTick(msg message) error {
