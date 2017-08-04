@@ -88,10 +88,10 @@ func (s *AllCatchUpSubscription) readEventsCallback(
 	} else {
 		result := &client.AllEventsSlice{}
 		if err = task.Result(result); err == nil {
-			if done, err2 := s.processEvents(lastCommitPosition, result); !done && !s.shouldStop {
-				s.readEventsInternal(connection, resolveLinkTos, userCredentials, lastCommitPosition, lastEventNumber)
-			} else if err2 != nil {
+			if done, err2 := s.processEvents(lastCommitPosition, result); err2 != nil {
 				err = err2
+			} else if !done && !s.shouldStop {
+				s.readEventsInternal(connection, resolveLinkTos, userCredentials, lastCommitPosition, lastEventNumber)
 			} else {
 				if s.verbose {
 					s.debug("finished reading events, nextReadPosition = %s.", s.nextReadPosition)
