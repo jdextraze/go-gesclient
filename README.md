@@ -27,6 +27,7 @@ MIT. See [LICENSE](https://github.com/jdextraze/go-gesclient/blob/master/LICENSE
 * Deleting stream
 * Cluster connection
 * Global authentication
+* Get/Set stream metadata
 
 ## TODO
 

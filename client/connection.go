@@ -105,7 +105,7 @@ type Connection interface {
 	DeletePersistentSubscriptionAsync(stream string, groupName string,
 		userCredentials *UserCredentials) (*tasks.Task, error)
 
-	SetStreamMetadataAsync(stream string, expectedMetastreamVersion int, metadata []byte,
+	SetStreamMetadataAsync(stream string, expectedMetastreamVersion int, metadata interface{},
 		userCredentials *UserCredentials) (*tasks.Task, error)
 
 	GetStreamMetadataAsync(stream string, userCredentials *UserCredentials) (*tasks.Task, error)

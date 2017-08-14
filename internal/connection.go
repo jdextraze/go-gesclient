@@ -292,7 +292,7 @@ func (c *connection) DeletePersistentSubscriptionAsync(
 func (c *connection) SetStreamMetadataAsync(
 	stream string,
 	expectedMetastreamVersion int,
-	metadata []byte,
+	metadata interface{},
 	userCredentials *client.UserCredentials,
 ) (*tasks.Task, error) {
 	if stream == "" {
@@ -302,8 +302,20 @@ func (c *connection) SetStreamMetadataAsync(
 		panic(fmt.Errorf("Setting metadata for metastream '%s' is not supported.", stream))
 	}
 	source := tasks.NewCompletionSource()
-	metaevent := client.NewEventData(uuid.NewV4(), "$metadata", true, metadata, nil)
-	op := operations.NewAppendToStream(source, c.Settings().RequireMaster(), fmt.Sprintf("$%s", stream),
+	var metaevent *client.EventData
+	switch metadata.(type) {
+	case []byte:
+		metaevent = client.NewEventData(uuid.NewV4(), "$metadata", true, metadata.([]byte), nil)
+	case *client.StreamMetadata:
+		data, err := metadata.(*client.StreamMetadata).MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		metaevent = client.NewEventData(uuid.NewV4(), "$metadata", true, data, nil)
+	default:
+		return nil, fmt.Errorf("Unknown metadata type: %v", metadata)
+	}
+	op := operations.NewAppendToStream(source, c.Settings().RequireMaster(), fmt.Sprintf("$$%s", stream),
 		expectedMetastreamVersion, []*client.EventData { metaevent }, userCredentials)
 	return source.Task(), c.enqueueOperation(op)
 }
@@ -328,9 +340,20 @@ func (c *connection) GetStreamMetadataAsync(
 				return nil, errors.New("Event is nil while operation result is Success.")
 			}
 			evt := res.Event().OriginalEvent()
-			if evt == nil {
-				return client.NewStreamMetadataResult
+			if evt == nil || evt.Data() == nil || len(evt.Data()) == 0 {
+				return client.NewStreamMetadataResult(res.Stream(), false, -1, &client.StreamMetadata{}), nil
 			}
+			if metadata, err := client.StreamMetadataFromJsonBytes(evt.Data()); err != nil {
+				return nil, err
+			} else {
+				return client.NewStreamMetadataResult(res.Stream(), false, -1, metadata), nil
+			}
+		case client.EventReadStatus_NotFound, client.EventReadStatus_NoStream:
+			return client.NewStreamMetadataResult(res.Stream(), false, -1, &client.StreamMetadata{}), nil
+		case client.EventReadStatus_StreamDeleted:
+			return client.NewStreamMetadataResult(res.Stream(), true, 2147483647, &client.StreamMetadata{}), nil
+		default:
+			return nil, fmt.Errorf("Unexpected ReadEventResult: %v", res.Status())
 		}
 	}), nil
 }
