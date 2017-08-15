@@ -38,3 +38,8 @@ stop_cluster_test:
   command: |
     docker stop publisher catchup_subscriber
     rm publisher catchup_subscriber
+
+generate_protobuf:
+  summary: Generate protobuf
+  command: |
+    protoc -I$GOPATH/src --go_out=$GOPATH/src $GOPATH/src/github.com/jdextraze/go-gesclient/messages/ClientMessageDtos.proto

@@ -61,17 +61,13 @@ func getConnection(addr string, verbose bool) client.Connection {
 
 	var uri *url.URL
 	var err error
-	gossipSeeds := strings.Split(addr, ",")
-	if len(gossipSeeds) > 0 {
+	if !strings.Contains(addr, "://") {
+		gossipSeeds := strings.Split(addr, ",")
 		endpoints := make([]*net.TCPAddr, len(gossipSeeds))
-		for i, g := range gossipSeeds {
-			uri, err := url.Parse(g)
+		for i, gossipSeed := range gossipSeeds {
+			endpoints[i], err = net.ResolveTCPAddr("tcp", gossipSeed)
 			if err != nil {
-				log.Fatalf("Error parsing address: %v", err)
-			}
-			endpoints[i], err = net.ResolveTCPAddr("tcp", uri.Host)
-			if err != nil {
-				log.Fatalf("Error resolving: %v", uri.Host)
+				log.Fatalf("Error resolving: %v", gossipSeed)
 			}
 		}
 		settingsBuilder.SetGossipSeedEndPoints(endpoints)
@@ -79,6 +75,12 @@ func getConnection(addr string, verbose bool) client.Connection {
 		uri, err = url.Parse(addr)
 		if err != nil {
 			log.Fatalf("Error parsing address: %v", err)
+		}
+
+		if uri.User != nil {
+			username := uri.User.Username()
+			password, _ := uri.User.Password()
+			settingsBuilder.SetDefaultUserCredentials(client.NewUserCredentials(username, password))
 		}
 	}
 

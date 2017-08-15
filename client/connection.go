@@ -105,10 +105,10 @@ type Connection interface {
 	DeletePersistentSubscriptionAsync(stream string, groupName string,
 		userCredentials *UserCredentials) (*tasks.Task, error)
 
-	//SetStreamMetadataAsync(stream string, expectedMetastreamVersion int, metadata []byte,
-	//	userCredentials *UserCredentials) (<-chan WriteResult, error)
+	SetStreamMetadataAsync(stream string, expectedMetastreamVersion int, metadata interface{},
+		userCredentials *UserCredentials) (*tasks.Task, error)
 
-	//GetStreamMetadataAsync(stream string, userCredentials *UserCredentials) (<-chan StreamMetadataResult, error)
+	GetStreamMetadataAsync(stream string, userCredentials *UserCredentials) (*tasks.Task, error)
 
 	//SetSystemSettings(settings SystemSettings, userCredentials *UserCredentials) (<-chan struct{}, error)
 

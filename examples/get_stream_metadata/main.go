@@ -1,17 +1,12 @@
 package main
 
 import (
-	"encoding/json"
-	"flag"
-	"github.com/jdextraze/go-gesclient"
-	"github.com/jdextraze/go-gesclient/client"
-	"github.com/satori/go.uuid"
 	"log"
+	"github.com/jdextraze/go-gesclient"
+	"flag"
 	"net/url"
-	"os"
-	"os/signal"
-	"time"
 	"net"
+	"github.com/jdextraze/go-gesclient/client"
 	"strings"
 )
 
@@ -19,13 +14,11 @@ func main() {
 	var debug bool
 	var addr string
 	var stream string
-	var interval int
 	var verbose bool
 
 	flag.BoolVar(&debug, "debug", false, "Debug")
 	flag.StringVar(&addr, "endpoint", "tcp://127.0.0.1:1113", "EventStore address")
 	flag.StringVar(&stream, "stream", "Default", "Stream ID")
-	flag.IntVar(&interval, "interval", 1000000, "Publish interval in microseconds")
 	flag.BoolVar(&verbose, "verbose", false, "Verbose logging (Requires debug)")
 	flag.Parse()
 
@@ -38,29 +31,17 @@ func main() {
 		log.Fatalf("Error connecting: %v", err)
 	}
 
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt)
-	for {
-		select {
-		case <-ch:
-			c.Close()
-			time.Sleep(10 * time.Millisecond)
-			return
-		default:
-		}
-		data, _ := json.Marshal(&TestEvent{})
-		evt := client.NewEventData(uuid.NewV4(), "TestEvent", true, data, nil)
-		result := &client.WriteResult{}
-		task, err := c.AppendToStreamAsync(stream, client.ExpectedVersion_Any, []*client.EventData{evt}, nil)
-		if err != nil {
-			log.Printf("Error occured while appending to stream: %v", err)
-		} else if err := task.Result(result); err != nil {
-			log.Printf("Error occured while waiting for result of appending to stream: %v", err)
-		} else {
-			log.Printf("AppendToStream result: %v", result)
-		}
-		<-time.After(time.Duration(interval) * time.Microsecond)
+	result := &client.StreamMetadataResult{}
+	if t, err := c.GetStreamMetadataAsync(stream, nil); err != nil {
+		log.Fatalf("Failed getting stream metadata: %v", err)
+	} else if err := t.Result(result); err != nil {
+		log.Fatalf("Failed getting stream metadata result: %v", err)
 	}
+
+	metadata, _ := result.StreamMetadata().MarshalJSON()
+	log.Printf("metadata: %v | %v", result, string(metadata))
+
+	c.Close()
 }
 
 func getConnection(addr string, verbose bool) client.Connection {
@@ -102,5 +83,3 @@ func getConnection(addr string, verbose bool) client.Connection {
 
 	return c
 }
-
-type TestEvent struct{}
