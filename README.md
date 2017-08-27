@@ -4,7 +4,11 @@ A [Go](https://golang.org/) port of the .Net client for [Event Store](https://ge
 
 ## Status
 
-This project is considered at a beta stage and should'nt be used in production.
+This project is considered at an alpha stage and should'nt be used in production.
+
+## Warning
+
+API is still under development and could change.
 
 ## Requirements
 
