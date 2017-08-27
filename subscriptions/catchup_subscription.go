@@ -18,6 +18,8 @@ type dropData struct {
 	err    error
 }
 
+var nilDropReason *dropData = &dropData{client.SubscriptionDropReason_Unknown, nil}
+
 type ReadEventsTillAsyncHandler func(connection client.Connection, resolveLinkTos bool,
 	userCredentials *client.UserCredentials, lastCommitPosition *int64, lastEventNumber *int32) *tasks.Task
 
@@ -78,6 +80,7 @@ func newCatchUpSubscription(
 		stopped:               &sync.WaitGroup{},
 		readEventsTillAsync:   readEventsTillAsync,
 		tryProcess:            tryProcess,
+		dropData:              nilDropReason,
 	}
 }
 
@@ -152,8 +155,8 @@ func (s *catchUpSubscription) loadHistoricalEvents() (interface{}, error) {
 		}
 		s.readEventsTillAsync(s.connection, s.resolveLinkTos, s.userCredentials, nil, nil).
 			ContinueWith(func(t *tasks.Task) (interface{}, error) {
-				return nil, s.handleErrorOrContinue(t, s.subscribeToStream)
-			})
+			return nil, s.handleErrorOrContinue(t, s.subscribeToStream)
+		})
 		return nil, nil
 	}
 	return nil, s.dropSubscription(client.SubscriptionDropReason_UserInitiated, nil)
@@ -232,9 +235,8 @@ func (s *catchUpSubscription) startLiveProcessing() error {
 }
 
 func (s *catchUpSubscription) enqueueSubscriptionDropNotification(reason client.SubscriptionDropReason, err error) {
-	dropData := dropData{reason, err}
-	ptr := unsafe.Pointer(&s.dropData)
-	if atomic.CompareAndSwapPointer(&ptr, nil, unsafe.Pointer(&dropData)) {
+	dd := dropData{reason, err}
+	if atomic.CompareAndSwapPointer((*unsafe.Pointer)(unsafe.Pointer(&s.dropData)), unsafe.Pointer(nilDropReason), unsafe.Pointer(&dd)) {
 		s.liveQueue <- dropSubscriptionEvent
 		if s.allowProcessing {
 			s.ensureProcessingPushQueue()
@@ -294,7 +296,7 @@ func (s *catchUpSubscription) processLiveQueue() {
 		for len(s.liveQueue) > 0 {
 			e := <-s.liveQueue
 			if e == dropSubscriptionEvent {
-				if s.dropData == nil {
+				if s.dropData == nilDropReason {
 					s.dropData = &dropData{
 						reason: client.SubscriptionDropReason_Unknown,
 						err:    errors.New("Drop reason not specified"),

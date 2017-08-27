@@ -30,7 +30,8 @@ var SubscriptionDropReason_name = map[int]string{
 	8:   "EventHandlerException",
 	9:   "MaxSubscriberReached",
 	10:  "PersistentSubscriptionDeleted",
-	100: "NotFound",
+	11:  "NotFound",
+	100: "Unknown",
 }
 
 func (r SubscriptionDropReason) String() string {
