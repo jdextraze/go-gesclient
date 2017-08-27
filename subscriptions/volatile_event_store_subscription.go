@@ -5,7 +5,7 @@ import (
 )
 
 type VolatileEventStoreSubscription struct {
-	*client.EventStoreSubscription
+	client.EventStoreSubscription
 	subscriptionOperation *VolatileSubscription
 }
 

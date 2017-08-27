@@ -1,6 +1,15 @@
 package client
 
-type EventStoreSubscription struct {
+type EventStoreSubscription interface {
+	IsSubscribedToAll() bool
+	StreamId() string
+	LastCommitPosition() int64
+	LastEventNumber() *int
+	Close() error
+	Unsubscribe() error
+}
+
+type eventStoreSubscription struct {
 	streamId           string
 	lastCommitPosition int64
 	lastEventNumber    *int
@@ -12,8 +21,8 @@ func NewEventStoreSubscription(
 	lastCommitPosition int64,
 	lastEventNumber *int,
 	unsubscribe func() error,
-) *EventStoreSubscription {
-	return &EventStoreSubscription{
+) *eventStoreSubscription {
+	return &eventStoreSubscription{
 		streamId:           streamId,
 		lastCommitPosition: lastCommitPosition,
 		lastEventNumber:    lastEventNumber,
@@ -21,14 +30,14 @@ func NewEventStoreSubscription(
 	}
 }
 
-func (s *EventStoreSubscription) IsSubscribedToAll() bool { return s.streamId == "" }
+func (s *eventStoreSubscription) IsSubscribedToAll() bool { return s.streamId == "" }
 
-func (s *EventStoreSubscription) StreamId() string { return s.streamId }
+func (s *eventStoreSubscription) StreamId() string { return s.streamId }
 
-func (s *EventStoreSubscription) LastCommitPosition() int64 { return s.lastCommitPosition }
+func (s *eventStoreSubscription) LastCommitPosition() int64 { return s.lastCommitPosition }
 
-func (s *EventStoreSubscription) LastEventNumber() *int { return s.lastEventNumber }
+func (s *eventStoreSubscription) LastEventNumber() *int { return s.lastEventNumber }
 
-func (s *EventStoreSubscription) Close() error { return s.unsubscribe() }
+func (s *eventStoreSubscription) Close() error { return s.unsubscribe() }
 
-func (s *EventStoreSubscription) Unsubscribe() error { return s.unsubscribe() }
+func (s *eventStoreSubscription) Unsubscribe() error { return s.unsubscribe() }

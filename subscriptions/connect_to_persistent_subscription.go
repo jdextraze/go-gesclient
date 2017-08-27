@@ -114,7 +114,7 @@ func (s *connectToPersistentSubscription) inspectPackage(
 func (s *connectToPersistentSubscription) createSubscriptionObject(
 	lastCommitPosition int64,
 	lastEventNumber *int,
-) (interface{}, *client.EventStoreSubscription, error) {
+) (interface{}, client.EventStoreSubscription, error) {
 	obj := client.NewPersistentEventStoreSubscription(s, s.streamId, lastCommitPosition, lastEventNumber)
 	return obj, obj.EventStoreSubscription, nil
 }

@@ -1,12 +1,12 @@
 package main
 
 import (
-	"log"
-	"github.com/jdextraze/go-gesclient"
 	"flag"
-	"net/url"
-	"net"
+	"github.com/jdextraze/go-gesclient"
 	"github.com/jdextraze/go-gesclient/client"
+	"log"
+	"net"
+	"net/url"
 	"strings"
 )
 
@@ -38,14 +38,14 @@ func main() {
 		log.Fatalf("Invalid metadata: %v", err)
 	}
 
-	result := &client.WriteResult{}
 	if t, err := c.SetStreamMetadataAsync(stream, client.ExpectedVersion_Any, data, nil); err != nil {
 		log.Fatalf("Failed getting stream metadata: %v", err)
-	} else if err := t.Result(result); err != nil {
+	} else if err := t.Error(); err != nil {
 		log.Fatalf("Failed getting stream metadata result: %v", err)
+	} else {
+		result := t.Result().(*client.WriteResult)
+		log.Printf("result: %v", result)
 	}
-
-	log.Printf("result: %v", result)
 
 	c.Close()
 }
@@ -86,6 +86,13 @@ func getConnection(addr string, verbose bool) client.Connection {
 	if err != nil {
 		log.Fatalf("Error creating connection: %v", err)
 	}
+
+	c.Connected().Add(func(evt client.Event) error { log.Printf("Connected: %v", evt); return nil })
+	c.Disconnected().Add(func(evt client.Event) error { log.Printf("Disconnected: %v", evt); return nil })
+	c.Reconnecting().Add(func(evt client.Event) error { log.Printf("Reconnecting: %v", evt); return nil })
+	c.Closed().Add(func(evt client.Event) error { panic("Connection closed") })
+	c.ErrorOccurred().Add(func(evt client.Event) error { log.Printf("Error: %v", evt); return nil })
+	c.AuthenticationFailed().Add(func(evt client.Event) error { log.Printf("Auth failed: %v", evt); return nil })
 
 	return c
 }

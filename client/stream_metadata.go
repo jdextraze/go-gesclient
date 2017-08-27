@@ -1,10 +1,10 @@
 package client
 
 import (
-	"time"
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"github.com/jdextraze/go-gesclient/common"
+	"time"
 )
 
 type StreamMetadata struct {
@@ -124,10 +124,10 @@ func (d *StreamMetadata) MarshalJSON() ([]byte, error) {
 	}
 	if d.acl != nil {
 		data[common.SystemMetadata_Acl] = map[string][]string{
-			common.SystemMetadata_AclRead: d.acl.readRoles,
-			common.SystemMetadata_AclWrite: d.acl.writeRoles,
-			common.SystemMetadata_AclDelete: d.acl.deleteRoles,
-			common.SystemMetadata_AclMetaRead: d.acl.metaReadRoles,
+			common.SystemMetadata_AclRead:      d.acl.readRoles,
+			common.SystemMetadata_AclWrite:     d.acl.writeRoles,
+			common.SystemMetadata_AclDelete:    d.acl.deleteRoles,
+			common.SystemMetadata_AclMetaRead:  d.acl.metaReadRoles,
 			common.SystemMetadata_AclMetaWrite: d.acl.metaWriteRoles,
 		}
 	}

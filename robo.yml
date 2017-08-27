@@ -4,7 +4,7 @@ build:
 
 start_es:
   summary: Start eventstore
-  command: docker run --rm --name eventstore -d -p 1113:1113 eventstore/eventstore:release-3.9.3
+  command: docker run --rm --name eventstore -d -p 1113:1113 -p 2113:2113 eventstore/eventstore:release-3.9.3
 
 stop_es:
   summary: Stop eventstore
@@ -14,7 +14,7 @@ start_es_cluster:
   summary: Start eventstore cluster
   command: |
     docker network create --attachable --subnet 172.30.0.0/24 esnet
-    docker run --rm --name eventstore1 --network esnet --network-alias escluster.net --ip 172.30.0.2 -d -e EVENTSTORE_INT_IP=172.30.0.2 -e EVENTSTORE_EXT_IP=172.30.0.2 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-3.9.3
+    docker run --rm --name eventstore1 --network esnet --network-alias escluster.net --ip 172.30.0.2 -d -p 2113:2113 -e EVENTSTORE_INT_IP=172.30.0.2 -e EVENTSTORE_EXT_IP=172.30.0.2 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-3.9.3
     docker run --rm --name eventstore2 --network esnet --network-alias escluster.net --ip 172.30.0.3 -d -e EVENTSTORE_INT_IP=172.30.0.3 -e EVENTSTORE_EXT_IP=172.30.0.3 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-3.9.3
     docker run --rm --name eventstore3 --network esnet --network-alias escluster.net --ip 172.30.0.4 -d -e EVENTSTORE_INT_IP=172.30.0.4 -e EVENTSTORE_EXT_IP=172.30.0.4 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-3.9.3
 

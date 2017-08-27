@@ -17,14 +17,14 @@ func (s SystemConsumerStrategies) ToString() string {
 }
 
 const (
-	SystemMetadata_MaxAge = "$maxAge"
-	SystemMetadata_MaxCount = "$maxCount"
+	SystemMetadata_MaxAge         = "$maxAge"
+	SystemMetadata_MaxCount       = "$maxCount"
 	SystemMetadata_TruncateBefore = "$tb"
-	SystemMetadata_CacheControl = "$cacheControl"
-	SystemMetadata_Acl = "$acl"
-	SystemMetadata_AclRead = "$r"
-	SystemMetadata_AclWrite = "$w"
-	SystemMetadata_AclDelete = "$d"
-	SystemMetadata_AclMetaRead = "$mr"
-	SystemMetadata_AclMetaWrite = "$mw"
+	SystemMetadata_CacheControl   = "$cacheControl"
+	SystemMetadata_Acl            = "$acl"
+	SystemMetadata_AclRead        = "$r"
+	SystemMetadata_AclWrite       = "$w"
+	SystemMetadata_AclDelete      = "$d"
+	SystemMetadata_AclMetaRead    = "$mr"
+	SystemMetadata_AclMetaWrite   = "$mw"
 )

@@ -9,7 +9,7 @@ type ConnectToPersistentSubscriptions interface {
 }
 
 type PersistentEventStoreSubscription struct {
-	*EventStoreSubscription
+	EventStoreSubscription
 	subscriptionOperation ConnectToPersistentSubscriptions
 }
 

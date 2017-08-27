@@ -5,12 +5,12 @@ import (
 	"github.com/jdextraze/go-gesclient"
 	"github.com/jdextraze/go-gesclient/client"
 	"log"
+	"net"
 	"net/url"
 	"os"
 	"os/signal"
-	"time"
 	"strings"
-	"net"
+	"time"
 )
 
 func main() {
@@ -35,13 +35,13 @@ func main() {
 	}
 
 	user := client.NewUserCredentials("admin", "changeit")
-	sub := &client.EventStoreSubscription{}
 	task, err := c.SubscribeToAllAsync(true, eventAppeared, subscriptionDropped, user)
 	if err != nil {
 		log.Printf("Error occured while subscribing to stream: %v", err)
-	} else if err := task.Result(sub); err != nil {
+	} else if err := task.Error(); err != nil {
 		log.Printf("Error occured while waiting for result of subscribing to stream: %v", err)
 	} else {
+		sub := task.Result().(client.EventStoreSubscription)
 		log.Printf("SubscribeToAll result: %v", sub)
 
 		ch := make(chan os.Signal, 1)
@@ -93,15 +93,22 @@ func getConnection(addr string, verbose bool) client.Connection {
 		log.Fatalf("Error creating connection: %v", err)
 	}
 
+	c.Connected().Add(func(evt client.Event) error { log.Printf("Connected: %v", evt); return nil })
+	c.Disconnected().Add(func(evt client.Event) error { log.Printf("Disconnected: %v", evt); return nil })
+	c.Reconnecting().Add(func(evt client.Event) error { log.Printf("Reconnecting: %v", evt); return nil })
+	c.Closed().Add(func(evt client.Event) error { panic("Connection closed") })
+	c.ErrorOccurred().Add(func(evt client.Event) error { log.Printf("Error: %v", evt); return nil })
+	c.AuthenticationFailed().Add(func(evt client.Event) error { log.Printf("Auth failed: %v", evt); return nil })
+
 	return c
 }
 
-func eventAppeared(s *client.EventStoreSubscription, e *client.ResolvedEvent) error {
+func eventAppeared(s client.EventStoreSubscription, e *client.ResolvedEvent) error {
 	log.Printf("event appeared: %d | %s", e.OriginalEventNumber(), string(e.OriginalEvent().Data()))
 	return nil
 }
 
-func subscriptionDropped(s *client.EventStoreSubscription, r client.SubscriptionDropReason, err error) error {
+func subscriptionDropped(s client.EventStoreSubscription, r client.SubscriptionDropReason, err error) error {
 	log.Printf("subscription dropped: %s, %v", r, err)
 	return nil
 }

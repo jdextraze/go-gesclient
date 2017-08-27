@@ -90,8 +90,8 @@ func (s *StreamCatchUpSubscription) readEventsCallback(
 	if task.IsFaulted() {
 		err = task.Wait()
 	} else {
-		result := &client.StreamEventsSlice{}
-		if err = task.Result(result); err == nil {
+		if err = task.Error(); err == nil {
+			result := task.Result().(*client.StreamEventsSlice)
 			if done, err2 := s.processEvents(lastEventNumber, result); err2 != nil {
 				err = err2
 			} else if !done && !s.shouldStop {

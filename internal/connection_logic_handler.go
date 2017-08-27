@@ -216,10 +216,10 @@ func (h *connectionLogicHandler) discoverEndpoint(task *tasks.CompletionSource) 
 				task.SetError(fmt.Errorf("Cannot resolve target endpoint"))
 			}
 		} else {
-			nodeEndpoints := &NodeEndpoints{}
-			if err := t.Result(nodeEndpoints); err != nil {
+			if err := t.Error(); err != nil {
 				return nil, err
 			}
+			nodeEndpoints := t.Result().(*NodeEndpoints)
 			h.EnqueueMessage(newEstablishTcpConnectionMessage(nodeEndpoints))
 			if task != nil {
 				task.SetResult(nil)

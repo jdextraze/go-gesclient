@@ -24,7 +24,7 @@ type GetConnectionHandler func() (*client.PackageConnection, error)
 type CreateSubscriptionPackageHandler func() (*client.Package, error)
 type InspectPackageHandler func(p *client.Package) (bool, *client.InspectionResult, error)
 type CreateSubscriptionObjectHandler func(lastCommitPosition int64, lastEventNumber *int) (
-	interface{}, *client.EventStoreSubscription, error)
+	interface{}, client.EventStoreSubscription, error)
 type ActionHandler func() error
 
 type subscriptionBase struct {
@@ -39,7 +39,7 @@ type subscriptionBase struct {
 	maxQueueSize        int
 	actionQueue         chan ActionHandler
 	actionExecuting     int32
-	subscription        *client.EventStoreSubscription
+	subscription        client.EventStoreSubscription
 	unsubscribed        int32
 	correlationId       uuid.UUID
 
@@ -72,7 +72,7 @@ func newSubscriptionBase(
 	}
 	if subscriptionDropped == nil {
 		subscriptionDropped = client.SubscriptionDroppedHandler(
-			func(s *client.EventStoreSubscription, dr client.SubscriptionDropReason, err error) error { return nil })
+			func(s client.EventStoreSubscription, dr client.SubscriptionDropReason, err error) error { return nil })
 	}
 	return &subscriptionBase{
 		source:                    source,

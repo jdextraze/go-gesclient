@@ -19,6 +19,8 @@ type dropData struct {
 	err    error
 }
 
+var nilDropReason *dropData = &dropData{client.SubscriptionDropReason_Unknown, nil}
+
 type persistentSubscription struct {
 	subscriptionId      string
 	streamId            string
@@ -36,8 +38,6 @@ type persistentSubscription struct {
 	isDropped           int32
 	stopped             sync.WaitGroup
 }
-
-func NilPersistentSubscription() *persistentSubscription { return &persistentSubscription{} }
 
 func NewPersistentSubscription(
 	subscriptionId string,
@@ -60,6 +60,8 @@ func NewPersistentSubscription(
 		handler:             handler,
 		bufferSize:          bufferSize,
 		autoAck:             autoAck,
+		queue:               make(chan *client.ResolvedEvent, bufferSize),
+		dropData:            nilDropReason,
 	}
 }
 
@@ -70,8 +72,8 @@ func (s *persistentSubscription) Start() *tasks.Task {
 		s.bufferSize, s.userCredentials, s.onEventAppeared, s.onSubscriptionDropped, s.settings.MaxRetries(),
 		s.settings.OperationTimeout()))
 	return source.Task().ContinueWith(func(t *tasks.Task) (interface{}, error) {
-		s.subscription = &client.PersistentEventStoreSubscription{}
-		return s, t.Result(s.subscription)
+		s.subscription, _ = t.Result().(*client.PersistentEventStoreSubscription)
+		return s, t.Error()
 	})
 }
 
@@ -122,19 +124,19 @@ func (s *persistentSubscription) Stop(timeout ...time.Duration) (err error) {
 }
 
 func (s *persistentSubscription) enqueueSubscriptionDropNotification(reason client.SubscriptionDropReason, err error) {
-	dropData := dropData{reason, err}
-	ptr := unsafe.Pointer(s.dropData)
-	if atomic.CompareAndSwapPointer(&ptr, nil, unsafe.Pointer(&dropData)) {
+	dd := dropData{reason, err}
+	if atomic.CompareAndSwapPointer((*unsafe.Pointer)(unsafe.Pointer(&s.dropData)), unsafe.Pointer(nilDropReason), unsafe.Pointer(&dd)) {
 		s.enqueue(dropSubscriptionEvent)
 	}
 }
 
-func (s *persistentSubscription) onEventAppeared(s2 *client.EventStoreSubscription, evt *client.ResolvedEvent) error {
+func (s *persistentSubscription) onEventAppeared(s2 client.EventStoreSubscription, evt *client.ResolvedEvent) error {
+	log.Debug("=====> HERE <=====")
 	s.enqueue(evt)
 	return nil
 }
 
-func (s *persistentSubscription) onSubscriptionDropped(s2 *client.EventStoreSubscription, dr client.SubscriptionDropReason, err error) error {
+func (s *persistentSubscription) onSubscriptionDropped(s2 client.EventStoreSubscription, dr client.SubscriptionDropReason, err error) error {
 	s.enqueueSubscriptionDropNotification(dr, err)
 	return nil
 }
@@ -151,7 +153,7 @@ func (s *persistentSubscription) processQueue() {
 		for len(s.queue) > 0 {
 			e := <-s.queue
 			if e == dropSubscriptionEvent {
-				if s.dropData == nil {
+				if s.dropData == nilDropReason {
 					s.dropData = &dropData{
 						reason: client.SubscriptionDropReason_Unknown,
 						err:    errors.New("Drop reason not specified"),
@@ -160,7 +162,7 @@ func (s *persistentSubscription) processQueue() {
 				s.dropSubscription(s.dropData.reason, s.dropData.err)
 				return
 			}
-			if s.dropData != nil {
+			if s.dropData != nilDropReason {
 				s.dropSubscription(s.dropData.reason, s.dropData.err)
 				return
 			}

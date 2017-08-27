@@ -7,12 +7,12 @@ import (
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/satori/go.uuid"
 	"log"
+	"net"
 	"net/url"
 	"os"
 	"os/signal"
-	"time"
-	"net"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -50,13 +50,13 @@ func main() {
 		}
 		data, _ := json.Marshal(&TestEvent{})
 		evt := client.NewEventData(uuid.NewV4(), "TestEvent", true, data, nil)
-		result := &client.WriteResult{}
 		task, err := c.AppendToStreamAsync(stream, client.ExpectedVersion_Any, []*client.EventData{evt}, nil)
 		if err != nil {
 			log.Printf("Error occured while appending to stream: %v", err)
-		} else if err := task.Result(result); err != nil {
+		} else if err := task.Error(); err != nil {
 			log.Printf("Error occured while waiting for result of appending to stream: %v", err)
 		} else {
+			result := task.Result().(*client.WriteResult)
 			log.Printf("AppendToStream result: %v", result)
 		}
 		<-time.After(time.Duration(interval) * time.Microsecond)
@@ -99,6 +99,13 @@ func getConnection(addr string, verbose bool) client.Connection {
 	if err != nil {
 		log.Fatalf("Error creating connection: %v", err)
 	}
+
+	c.Connected().Add(func(evt client.Event) error { log.Printf("Connected: %v", evt); return nil })
+	c.Disconnected().Add(func(evt client.Event) error { log.Printf("Disconnected: %v", evt); return nil })
+	c.Reconnecting().Add(func(evt client.Event) error { log.Printf("Reconnecting: %v", evt); return nil })
+	c.Closed().Add(func(evt client.Event) error { panic("Connection closed") })
+	c.ErrorOccurred().Add(func(evt client.Event) error { log.Printf("Error: %v", evt); return nil })
+	c.AuthenticationFailed().Add(func(evt client.Event) error { log.Printf("Auth failed: %v", evt); return nil })
 
 	return c
 }

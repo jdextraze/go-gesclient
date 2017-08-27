@@ -18,6 +18,8 @@ type dropData struct {
 	err    error
 }
 
+var nilDropReason *dropData = &dropData{client.SubscriptionDropReason_Unknown, nil}
+
 type ReadEventsTillAsyncHandler func(connection client.Connection, resolveLinkTos bool,
 	userCredentials *client.UserCredentials, lastCommitPosition *int64, lastEventNumber *int32) *tasks.Task
 
@@ -35,7 +37,7 @@ type catchUpSubscription struct {
 	subscriptionDropped   client.CatchUpSubscriptionDroppedHandler
 	verbose               bool
 	liveQueue             chan *client.ResolvedEvent
-	subscription          *client.EventStoreSubscription
+	subscription          client.EventStoreSubscription
 	dropData              *dropData
 	allowProcessing       bool
 	isProcessing          int32
@@ -78,6 +80,7 @@ func newCatchUpSubscription(
 		stopped:               &sync.WaitGroup{},
 		readEventsTillAsync:   readEventsTillAsync,
 		tryProcess:            tryProcess,
+		dropData:              nilDropReason,
 	}
 }
 
@@ -177,10 +180,10 @@ func (s *catchUpSubscription) subscribeToStream() (err error) {
 		}
 		task.ContinueWith(func(t *tasks.Task) (interface{}, error) {
 			return nil, s.handleErrorOrContinue(t, func() error {
-				s.subscription = &client.EventStoreSubscription{}
-				if err := t.Result(s.subscription); err != nil {
+				if err := t.Error(); err != nil {
 					return err
 				}
+				s.subscription = t.Result().(*VolatileEventStoreSubscription).EventStoreSubscription
 				s.readMissedHistoricEvents()
 				return nil
 			})
@@ -232,9 +235,8 @@ func (s *catchUpSubscription) startLiveProcessing() error {
 }
 
 func (s *catchUpSubscription) enqueueSubscriptionDropNotification(reason client.SubscriptionDropReason, err error) {
-	dropData := dropData{reason, err}
-	ptr := unsafe.Pointer(&s.dropData)
-	if atomic.CompareAndSwapPointer(&ptr, nil, unsafe.Pointer(&dropData)) {
+	dd := dropData{reason, err}
+	if atomic.CompareAndSwapPointer((*unsafe.Pointer)(unsafe.Pointer(&s.dropData)), unsafe.Pointer(nilDropReason), unsafe.Pointer(&dd)) {
 		s.liveQueue <- dropSubscriptionEvent
 		if s.allowProcessing {
 			s.ensureProcessingPushQueue()
@@ -254,7 +256,7 @@ func (s *catchUpSubscription) handleErrorOrContinue(t *tasks.Task, continuation 
 	return nil
 }
 
-func (s *catchUpSubscription) enqueuePushedEvent(s2 *client.EventStoreSubscription, e *client.ResolvedEvent) error {
+func (s *catchUpSubscription) enqueuePushedEvent(s2 client.EventStoreSubscription, e *client.ResolvedEvent) error {
 	if s.verbose {
 		s.debug("event appeared (%s, %s, %s @ %s).", e.OriginalStreamId(),
 			e.OriginalEventNumber(), e.OriginalEvent().EventType(), e.OriginalPosition())
@@ -275,7 +277,7 @@ func (s *catchUpSubscription) enqueuePushedEvent(s2 *client.EventStoreSubscripti
 }
 
 func (s *catchUpSubscription) serverSubscriptionDropped(
-	sub *client.EventStoreSubscription,
+	sub client.EventStoreSubscription,
 	reason client.SubscriptionDropReason,
 	err error,
 ) error {
@@ -294,7 +296,7 @@ func (s *catchUpSubscription) processLiveQueue() {
 		for len(s.liveQueue) > 0 {
 			e := <-s.liveQueue
 			if e == dropSubscriptionEvent {
-				if s.dropData == nil {
+				if s.dropData == nilDropReason {
 					s.dropData = &dropData{
 						reason: client.SubscriptionDropReason_Unknown,
 						err:    errors.New("Drop reason not specified"),
