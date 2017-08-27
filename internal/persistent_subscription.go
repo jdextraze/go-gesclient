@@ -19,6 +19,8 @@ type dropData struct {
 	err    error
 }
 
+var nilDropReason *dropData = &dropData{client.SubscriptionDropReason_Unknown, nil}
+
 type persistentSubscription struct {
 	subscriptionId      string
 	streamId            string
@@ -59,6 +61,7 @@ func NewPersistentSubscription(
 		bufferSize:          bufferSize,
 		autoAck:             autoAck,
 		queue:               make(chan *client.ResolvedEvent, bufferSize),
+		dropData:            nilDropReason,
 	}
 }
 
@@ -121,9 +124,8 @@ func (s *persistentSubscription) Stop(timeout ...time.Duration) (err error) {
 }
 
 func (s *persistentSubscription) enqueueSubscriptionDropNotification(reason client.SubscriptionDropReason, err error) {
-	dropData := dropData{reason, err}
-	ptr := unsafe.Pointer(s.dropData)
-	if atomic.CompareAndSwapPointer(&ptr, nil, unsafe.Pointer(&dropData)) {
+	dd := dropData{reason, err}
+	if atomic.CompareAndSwapPointer((*unsafe.Pointer)(unsafe.Pointer(&s.dropData)), unsafe.Pointer(nilDropReason), unsafe.Pointer(&dd)) {
 		s.enqueue(dropSubscriptionEvent)
 	}
 }
@@ -151,7 +153,7 @@ func (s *persistentSubscription) processQueue() {
 		for len(s.queue) > 0 {
 			e := <-s.queue
 			if e == dropSubscriptionEvent {
-				if s.dropData == nil {
+				if s.dropData == nilDropReason {
 					s.dropData = &dropData{
 						reason: client.SubscriptionDropReason_Unknown,
 						err:    errors.New("Drop reason not specified"),
@@ -160,7 +162,7 @@ func (s *persistentSubscription) processQueue() {
 				s.dropSubscription(s.dropData.reason, s.dropData.err)
 				return
 			}
-			if s.dropData != nil {
+			if s.dropData != nilDropReason {
 				s.dropSubscription(s.dropData.reason, s.dropData.err)
 				return
 			}
