@@ -100,6 +100,13 @@ func getConnection(addr string, verbose bool) client.Connection {
 		log.Fatalf("Error creating connection: %v", err)
 	}
 
+	c.Connected().Add(func(evt client.Event) error { log.Printf("Connected: %v", evt); return nil })
+	c.Disconnected().Add(func(evt client.Event) error { log.Printf("Disconnected: %v", evt); return nil })
+	c.Reconnecting().Add(func(evt client.Event) error { log.Printf("Reconnecting: %v", evt); return nil })
+	c.Closed().Add(func(evt client.Event) error { panic("Connection closed") })
+	c.ErrorOccurred().Add(func(evt client.Event) error { log.Printf("Error: %v", evt); return nil })
+	c.AuthenticationFailed().Add(func(evt client.Event) error { log.Printf("Auth failed: %v", evt); return nil })
+
 	return c
 }
 
