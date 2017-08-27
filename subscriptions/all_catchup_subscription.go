@@ -86,8 +86,8 @@ func (s *AllCatchUpSubscription) readEventsCallback(
 	if task.IsFaulted() {
 		err = task.Wait()
 	} else {
-		result := &client.AllEventsSlice{}
-		if err = task.Result(result); err == nil {
+		if err = task.Error(); err == nil {
+			result := task.Result().(*client.AllEventsSlice)
 			if done, err2 := s.processEvents(lastCommitPosition, result); err2 != nil {
 				err = err2
 			} else if !done && !s.shouldStop {

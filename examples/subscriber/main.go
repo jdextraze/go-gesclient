@@ -34,13 +34,13 @@ func main() {
 		log.Fatalf("Error connecting: %v", err)
 	}
 
-	sub := &client.EventStoreSubscription{}
 	task, err := c.SubscribeToStreamAsync(stream, true, eventAppeared, subscriptionDropped, nil)
 	if err != nil {
 		log.Printf("Error occured while subscribing to stream: %v", err)
-	} else if err := task.Result(sub); err != nil {
+	} else if err := task.Error(); err != nil {
 		log.Printf("Error occured while waiting for result of subscribing to stream: %v", err)
 	} else {
+		sub := task.Result().(client.EventStoreSubscription)
 		log.Printf("SubscribeToStream result: %v", sub)
 
 		ch := make(chan os.Signal, 1)
@@ -95,12 +95,12 @@ func getConnection(addr string, verbose bool) client.Connection {
 	return c
 }
 
-func eventAppeared(s *client.EventStoreSubscription, e *client.ResolvedEvent) error {
+func eventAppeared(s client.EventStoreSubscription, e *client.ResolvedEvent) error {
 	log.Printf("event appeared: %d | %s", e.OriginalEventNumber(), string(e.Event().Data()))
 	return nil
 }
 
-func subscriptionDropped(s *client.EventStoreSubscription, r client.SubscriptionDropReason, err error) error {
+func subscriptionDropped(s client.EventStoreSubscription, r client.SubscriptionDropReason, err error) error {
 	log.Printf("subscription dropped: %s, %v", r, err)
 	return nil
 }

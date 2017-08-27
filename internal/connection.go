@@ -332,8 +332,7 @@ func (c *connection) GetStreamMetadataAsync(
 		if t.Error() != nil {
 			return nil, t.Error()
 		}
-		res := &client.EventReadResult{}
-		t.Result(res)
+		res := t.Result().(*client.EventReadResult)
 		switch res.Status() {
 		case client.EventReadStatus_Success:
 			if res.Event() == nil {

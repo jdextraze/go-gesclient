@@ -31,15 +31,15 @@ func main() {
 		log.Fatalf("Error connecting: %v", err)
 	}
 
-	result := &client.StreamMetadataResult{}
 	if t, err := c.GetStreamMetadataAsync(stream, nil); err != nil {
 		log.Fatalf("Failed getting stream metadata: %v", err)
-	} else if err := t.Result(result); err != nil {
+	} else if err := t.Error(); err != nil {
 		log.Fatalf("Failed getting stream metadata result: %v", err)
+	} else {
+		result := t.Result().(*client.StreamMetadataResult)
+		metadata, _ := result.StreamMetadata().MarshalJSON()
+		log.Printf("metadata: %v | %v", result, string(metadata))
 	}
-
-	metadata, _ := result.StreamMetadata().MarshalJSON()
-	log.Printf("metadata: %v | %v", result, string(metadata))
 
 	c.Close()
 }

@@ -50,13 +50,13 @@ func main() {
 		}
 		data, _ := json.Marshal(&TestEvent{})
 		evt := client.NewEventData(uuid.NewV4(), "TestEvent", true, data, nil)
-		result := &client.WriteResult{}
 		task, err := c.AppendToStreamAsync(stream, client.ExpectedVersion_Any, []*client.EventData{evt}, nil)
 		if err != nil {
 			log.Printf("Error occured while appending to stream: %v", err)
-		} else if err := task.Result(result); err != nil {
+		} else if err := task.Error(); err != nil {
 			log.Printf("Error occured while waiting for result of appending to stream: %v", err)
 		} else {
+			result := task.Result().(*client.WriteResult)
 			log.Printf("AppendToStream result: %v", result)
 		}
 		<-time.After(time.Duration(interval) * time.Microsecond)

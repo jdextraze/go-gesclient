@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jdextraze/go-gesclient"
 	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/internal"
 	"log"
 	"net/url"
 	"os"
@@ -83,6 +82,10 @@ func getConnection() client.Connection {
 		log.Fatalf("Error creating connection: %v", err)
 	}
 
+	if err := c.ConnectAsync().Wait(); err != nil {
+		log.Fatalf("Error connecting: %v", err)
+	}
+
 	return c
 }
 
@@ -94,14 +97,14 @@ func closeConnection(c client.Connection) {
 func createPersistentSubscription() {
 	c := getConnection()
 	defer closeConnection(c)
-	res := &client.PersistentSubscriptionCreateResult{}
 	task, err := c.CreatePersistentSubscriptionAsync(stream, groupName, client.DefaultPersistentSubscriptionSettings,
 		nil)
 	if err != nil {
 		log.Printf("Error occured while subscribing to stream: %v", err)
-	} else if err := task.Result(res); err != nil {
+	} else if err := task.Error(); err != nil {
 		log.Printf("Error occured while waiting for result of subscribing to stream: %v", err)
 	} else {
+		res := task.Result().(*client.PersistentSubscriptionCreateResult)
 		log.Printf("CreatePersistentSubscriptionAsync result: %v", res)
 	}
 }
@@ -109,13 +112,13 @@ func createPersistentSubscription() {
 func deletePersistentSubscription() {
 	c := getConnection()
 	defer closeConnection(c)
-	res := &client.PersistentSubscriptionDeleteResult{}
 	task, err := c.DeletePersistentSubscriptionAsync(stream, groupName, nil)
 	if err != nil {
 		log.Printf("Error occured while subscribing to stream: %v", err)
-	} else if err := task.Result(res); err != nil {
+	} else if err := task.Error(); err != nil {
 		log.Printf("Error occured while waiting for result of subscribing to stream: %v", err)
 	} else {
+		res := task.Result().(*client.PersistentSubscriptionDeleteResult)
 		log.Printf("CreatePersistentSubscriptionAsync result: %v", res)
 	}
 }
@@ -123,14 +126,14 @@ func deletePersistentSubscription() {
 func subscribe() {
 	c := getConnection()
 	defer closeConnection(c)
-	sub := internal.NilPersistentSubscription()
 	task, err := c.ConnectToPersistentSubscriptionAsync(stream, groupName, eventAppeared, subscriptionDropped,
 		nil, 10, true)
 	if err != nil {
 		log.Printf("Error occured while subscribing to stream: %v", err)
-	} else if err := task.Result(sub); err != nil {
+	} else if err := task.Error(); err != nil {
 		log.Printf("Error occured while waiting for result of subscribing to stream: %v", err)
 	} else {
+		sub := task.Result().(client.PersistentSubscription)
 		log.Printf("SubscribeToStream result: %v", sub)
 
 		ch := make(chan os.Signal, 1)

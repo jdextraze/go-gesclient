@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-type EventAppearedHandler func(s *EventStoreSubscription, r *ResolvedEvent) error
+type EventAppearedHandler func(s EventStoreSubscription, r *ResolvedEvent) error
 
-type SubscriptionDroppedHandler func(s *EventStoreSubscription, dr SubscriptionDropReason, err error) error
+type SubscriptionDroppedHandler func(s EventStoreSubscription, dr SubscriptionDropReason, err error) error
 
 type CatchUpEventAppearedHandler func(s CatchUpSubscription, r *ResolvedEvent) error
 
@@ -22,13 +22,16 @@ type PersistentSubscriptionDroppedHandler func(s PersistentSubscription, dr Subs
 type Connection interface {
 	Name() string
 
+	// Use Task.Wait()
 	ConnectAsync() *tasks.Task
 
 	Close() error
 
+	// Task.Result() returns *client.DeleteResult
 	DeleteStreamAsync(stream string, expectedVersion int, hardDelete bool, userCredentials *UserCredentials) (
 		*tasks.Task, error)
 
+	// Task.Result() returns *client.WriteResult
 	AppendToStreamAsync(stream string, expectedVersion int, events []*EventData, userCredentials *UserCredentials) (
 		*tasks.Task, error)
 
@@ -37,21 +40,27 @@ type Connection interface {
 
 	//ContinueTransaction(transactionId int64, userCredentials *UserCredentials) (Transaction, error)
 
+	// Task.Result() returns *client.EventReadResult
 	ReadEventAsync(stream string, eventNumber int, resolveTos bool, userCredentials *UserCredentials) (
 		*tasks.Task, error)
 
+	// Task.Result() returns *client.StreamEventsSlice
 	ReadStreamEventsForwardAsync(stream string, start int, max int, resolveLinkTos bool,
 		userCredentials *UserCredentials) (*tasks.Task, error)
 
+	// Task.Result() returns *client.StreamEventsSlice
 	ReadStreamEventsBackwardAsync(stream string, start int, max int, resolveLinkTos bool,
 		userCredentials *UserCredentials) (*tasks.Task, error)
 
+	// Task.Result() returns *client.AllEventsSlice
 	ReadAllEventsForwardAsync(pos *Position, max int, resolveTos bool, userCredentials *UserCredentials) (
 		*tasks.Task, error)
 
+	// Task.Result() returns *client.AllEventsSlice
 	ReadAllEventsBackwardAsync(pos *Position, max int, resolveTos bool, userCredentials *UserCredentials) (
 		*tasks.Task, error)
 
+	// Task.Result() returns client.EventStoreSubscription
 	SubscribeToStreamAsync(
 		stream string,
 		resolveLinkTos bool,
@@ -70,6 +79,7 @@ type Connection interface {
 		userCredentials *UserCredentials,
 	) (CatchUpSubscription, error)
 
+	// Task.Result() returns client.EventStoreSubscription
 	SubscribeToAllAsync(
 		resolveLinkTos bool,
 		eventAppeared EventAppearedHandler,
@@ -77,6 +87,7 @@ type Connection interface {
 		userCredentials *UserCredentials,
 	) (*tasks.Task, error)
 
+	// Task.Result() returns client.PersistentSubscription
 	ConnectToPersistentSubscriptionAsync(
 		stream string,
 		groupName string,
@@ -96,18 +107,23 @@ type Connection interface {
 		userCredentials *UserCredentials,
 	) (CatchUpSubscription, error)
 
+	// Task.Result() returns *client.PersistentSubscriptionUpdateResult
 	UpdatePersistentSubscriptionAsync(stream string, groupName string, settings *PersistentSubscriptionSettings,
 		userCredentials *UserCredentials) (*tasks.Task, error)
 
+	// Task.Result() returns *client.PersistentSubscriptionCreateResult
 	CreatePersistentSubscriptionAsync(stream string, groupName string, settings *PersistentSubscriptionSettings,
 		userCredentials *UserCredentials) (*tasks.Task, error)
 
+	// Task.Result() returns *client.PersistentSubscriptionDeleteResult
 	DeletePersistentSubscriptionAsync(stream string, groupName string,
 		userCredentials *UserCredentials) (*tasks.Task, error)
 
+	// Task.Result() returns *client.WriteResult
 	SetStreamMetadataAsync(stream string, expectedMetastreamVersion int, metadata interface{},
 		userCredentials *UserCredentials) (*tasks.Task, error)
 
+	// Task.Result() returns *client.StreamMetadataResult
 	GetStreamMetadataAsync(stream string, userCredentials *UserCredentials) (*tasks.Task, error)
 
 	//SetSystemSettings(settings SystemSettings, userCredentials *UserCredentials) (<-chan struct{}, error)

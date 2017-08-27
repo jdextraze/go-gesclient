@@ -37,8 +37,6 @@ type persistentSubscription struct {
 	stopped             sync.WaitGroup
 }
 
-func NilPersistentSubscription() *persistentSubscription { return &persistentSubscription{} }
-
 func NewPersistentSubscription(
 	subscriptionId string,
 	streamId string,
@@ -60,6 +58,7 @@ func NewPersistentSubscription(
 		handler:             handler,
 		bufferSize:          bufferSize,
 		autoAck:             autoAck,
+		queue:               make(chan *client.ResolvedEvent, bufferSize),
 	}
 }
 
@@ -70,8 +69,8 @@ func (s *persistentSubscription) Start() *tasks.Task {
 		s.bufferSize, s.userCredentials, s.onEventAppeared, s.onSubscriptionDropped, s.settings.MaxRetries(),
 		s.settings.OperationTimeout()))
 	return source.Task().ContinueWith(func(t *tasks.Task) (interface{}, error) {
-		s.subscription = &client.PersistentEventStoreSubscription{}
-		return s, t.Result(s.subscription)
+		s.subscription, _ = t.Result().(*client.PersistentEventStoreSubscription)
+		return s, t.Error()
 	})
 }
 
@@ -129,12 +128,13 @@ func (s *persistentSubscription) enqueueSubscriptionDropNotification(reason clie
 	}
 }
 
-func (s *persistentSubscription) onEventAppeared(s2 *client.EventStoreSubscription, evt *client.ResolvedEvent) error {
+func (s *persistentSubscription) onEventAppeared(s2 client.EventStoreSubscription, evt *client.ResolvedEvent) error {
+	log.Debug("=====> HERE <=====")
 	s.enqueue(evt)
 	return nil
 }
 
-func (s *persistentSubscription) onSubscriptionDropped(s2 *client.EventStoreSubscription, dr client.SubscriptionDropReason, err error) error {
+func (s *persistentSubscription) onSubscriptionDropped(s2 client.EventStoreSubscription, dr client.SubscriptionDropReason, err error) error {
 	s.enqueueSubscriptionDropNotification(dr, err)
 	return nil
 }

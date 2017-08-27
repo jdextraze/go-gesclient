@@ -35,7 +35,7 @@ type catchUpSubscription struct {
 	subscriptionDropped   client.CatchUpSubscriptionDroppedHandler
 	verbose               bool
 	liveQueue             chan *client.ResolvedEvent
-	subscription          *client.EventStoreSubscription
+	subscription          client.EventStoreSubscription
 	dropData              *dropData
 	allowProcessing       bool
 	isProcessing          int32
@@ -177,10 +177,10 @@ func (s *catchUpSubscription) subscribeToStream() (err error) {
 		}
 		task.ContinueWith(func(t *tasks.Task) (interface{}, error) {
 			return nil, s.handleErrorOrContinue(t, func() error {
-				s.subscription = &client.EventStoreSubscription{}
-				if err := t.Result(s.subscription); err != nil {
+				if err := t.Error(); err != nil {
 					return err
 				}
+				s.subscription = t.Result().(*VolatileEventStoreSubscription).EventStoreSubscription
 				s.readMissedHistoricEvents()
 				return nil
 			})
@@ -254,7 +254,7 @@ func (s *catchUpSubscription) handleErrorOrContinue(t *tasks.Task, continuation 
 	return nil
 }
 
-func (s *catchUpSubscription) enqueuePushedEvent(s2 *client.EventStoreSubscription, e *client.ResolvedEvent) error {
+func (s *catchUpSubscription) enqueuePushedEvent(s2 client.EventStoreSubscription, e *client.ResolvedEvent) error {
 	if s.verbose {
 		s.debug("event appeared (%s, %s, %s @ %s).", e.OriginalStreamId(),
 			e.OriginalEventNumber(), e.OriginalEvent().EventType(), e.OriginalPosition())
@@ -275,7 +275,7 @@ func (s *catchUpSubscription) enqueuePushedEvent(s2 *client.EventStoreSubscripti
 }
 
 func (s *catchUpSubscription) serverSubscriptionDropped(
-	sub *client.EventStoreSubscription,
+	sub client.EventStoreSubscription,
 	reason client.SubscriptionDropReason,
 	err error,
 ) error {

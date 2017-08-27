@@ -38,14 +38,14 @@ func main() {
 		log.Fatalf("Invalid metadata: %v", err)
 	}
 
-	result := &client.WriteResult{}
 	if t, err := c.SetStreamMetadataAsync(stream, client.ExpectedVersion_Any, data, nil); err != nil {
 		log.Fatalf("Failed getting stream metadata: %v", err)
-	} else if err := t.Result(result); err != nil {
+	} else if err := t.Error(); err != nil {
 		log.Fatalf("Failed getting stream metadata result: %v", err)
+	} else {
+		result := t.Result().(*client.WriteResult)
+		log.Printf("result: %v", result)
 	}
-
-	log.Printf("result: %v", result)
 
 	c.Close()
 }
