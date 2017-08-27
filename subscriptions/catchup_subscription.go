@@ -155,8 +155,8 @@ func (s *catchUpSubscription) loadHistoricalEvents() (interface{}, error) {
 		}
 		s.readEventsTillAsync(s.connection, s.resolveLinkTos, s.userCredentials, nil, nil).
 			ContinueWith(func(t *tasks.Task) (interface{}, error) {
-			return nil, s.handleErrorOrContinue(t, s.subscribeToStream)
-		})
+				return nil, s.handleErrorOrContinue(t, s.subscribeToStream)
+			})
 		return nil, nil
 	}
 	return nil, s.dropSubscription(client.SubscriptionDropReason_UserInitiated, nil)

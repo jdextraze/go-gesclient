@@ -21,10 +21,10 @@ func NewStreamAcl(
 	metaWriteRoles []string,
 ) *streamAcl {
 	return &streamAcl{
-		readRoles: readRoles,
-		writeRoles: writeRoles,
-		deleteRoles: deleteRoles,
-		metaReadRoles: metaReadRoles,
+		readRoles:      readRoles,
+		writeRoles:     writeRoles,
+		deleteRoles:    deleteRoles,
+		metaReadRoles:  metaReadRoles,
 		metaWriteRoles: metaWriteRoles,
 	}
 }

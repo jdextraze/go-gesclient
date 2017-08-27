@@ -316,7 +316,7 @@ func (c *connection) SetStreamMetadataAsync(
 		return nil, fmt.Errorf("Unknown metadata type: %v", metadata)
 	}
 	op := operations.NewAppendToStream(source, c.Settings().RequireMaster(), fmt.Sprintf("$$%s", stream),
-		expectedMetastreamVersion, []*client.EventData { metaevent }, userCredentials)
+		expectedMetastreamVersion, []*client.EventData{metaevent}, userCredentials)
 	return source.Task(), c.enqueueOperation(op)
 }
 
@@ -328,7 +328,7 @@ func (c *connection) GetStreamMetadataAsync(
 	if err != nil {
 		return nil, err
 	}
-	return t.ContinueWith(func (t *tasks.Task) (interface{}, error) {
+	return t.ContinueWith(func(t *tasks.Task) (interface{}, error) {
 		if t.Error() != nil {
 			return nil, t.Error()
 		}

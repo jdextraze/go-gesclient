@@ -7,12 +7,12 @@ import (
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/satori/go.uuid"
 	"log"
+	"net"
 	"net/url"
 	"os"
 	"os/signal"
-	"time"
-	"net"
 	"strings"
+	"time"
 )
 
 func main() {

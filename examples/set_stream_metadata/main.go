@@ -1,12 +1,12 @@
 package main
 
 import (
-	"log"
-	"github.com/jdextraze/go-gesclient"
 	"flag"
-	"net/url"
-	"net"
+	"github.com/jdextraze/go-gesclient"
 	"github.com/jdextraze/go-gesclient/client"
+	"log"
+	"net"
+	"net/url"
 	"strings"
 )
 

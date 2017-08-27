@@ -5,12 +5,12 @@ import (
 	"github.com/jdextraze/go-gesclient"
 	"github.com/jdextraze/go-gesclient/client"
 	"log"
+	"net"
 	"net/url"
 	"os"
 	"os/signal"
-	"time"
 	"strings"
-	"net"
+	"time"
 )
 
 func main() {
