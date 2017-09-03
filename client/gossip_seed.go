@@ -1,6 +1,9 @@
 package client
 
-import "net"
+import (
+	"fmt"
+	"net"
+)
 
 type GossipSeed struct {
 	ipEndpoint *net.TCPAddr
@@ -20,4 +23,11 @@ func (gs *GossipSeed) IpEndpoint() *net.TCPAddr {
 
 func (gs *GossipSeed) HostHeader() string {
 	return gs.hostHeader
+}
+
+func (gs *GossipSeed) String() string {
+	return fmt.Sprintf(
+		"GossipSeed{ipEndpoint: %s hostHeader: %s}",
+		gs.ipEndpoint, gs.hostHeader,
+	)
 }

@@ -102,12 +102,12 @@ func getConnection(addr string, verbose bool) client.Connection {
 	return c
 }
 
-func eventAppeared(s client.EventStoreSubscription, e *client.ResolvedEvent) error {
-	log.Printf("event appeared: %d | %s", e.OriginalEventNumber(), string(e.Event().Data()))
+func eventAppeared(_ client.EventStoreSubscription, e *client.ResolvedEvent) error {
+	log.Printf("event appeared: %s | %s", e, string(e.Event().Data()))
 	return nil
 }
 
-func subscriptionDropped(s client.EventStoreSubscription, r client.SubscriptionDropReason, err error) error {
+func subscriptionDropped(_ client.EventStoreSubscription, r client.SubscriptionDropReason, err error) error {
 	log.Printf("subscription dropped: %s, %v", r, err)
 	return nil
 }

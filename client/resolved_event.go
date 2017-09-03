@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"github.com/jdextraze/go-gesclient/messages"
 )
 
@@ -66,4 +67,16 @@ func (e *ResolvedEvent) OriginalStreamId() string {
 
 func (e *ResolvedEvent) OriginalEventNumber() int {
 	return e.OriginalEvent().EventNumber()
+}
+
+func (e *ResolvedEvent) String() string {
+	var originalEvent string
+	if e.link == nil {
+		originalEvent = "<event>"
+	} else {
+		originalEvent = "<link>"
+	}
+	return fmt.Sprintf(
+		"ResolvedEvent{event: %s link: %s originalPosition: %s originalEvent: %s isResolved: %t originalStreamId: %s originalEventNumber: %d}",
+		e.event, e.link, e.originalPosition, originalEvent, e.IsResolved(), e.OriginalStreamId(), e.OriginalEventNumber())
 }

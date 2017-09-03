@@ -1,5 +1,7 @@
 package client
 
+import "fmt"
+
 type PersistentSubscriptionUpdateStatus int
 
 const (
@@ -8,6 +10,17 @@ const (
 	PersistentSubscriptionUpdateStatus_Failure      = 2
 	PersistentSubscriptionUpdateStatus_AccessDenied = 3
 )
+
+var persistentSubscriptionUpdateStatuses = map[int]string{
+	0: "Success",
+	1: "NotFound",
+	2: "Failure",
+	3: "AccessDenied",
+}
+
+func (s PersistentSubscriptionUpdateStatus) String() string {
+	return persistentSubscriptionCreateStatuses[int(s)]
+}
 
 type PersistentSubscriptionUpdateResult struct {
 	status PersistentSubscriptionUpdateStatus
@@ -23,4 +36,8 @@ func NewPersistentSubscriptionUpdateResult(
 
 func (r *PersistentSubscriptionUpdateResult) GetStatus() PersistentSubscriptionUpdateStatus {
 	return r.status
+}
+
+func (r *PersistentSubscriptionUpdateResult) String() string {
+	return fmt.Sprintf("PersistentSubscriptionUpdateResult{status: %s}", r.status)
 }

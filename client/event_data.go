@@ -1,6 +1,8 @@
 package client
 
 import (
+	"fmt"
+	"github.com/jdextraze/go-gesclient/guid"
 	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/satori/go.uuid"
 )
@@ -42,11 +44,18 @@ func (e *EventData) ToNewEvent() *messages.NewEvent {
 		dataContentType = 1
 	}
 	return &messages.NewEvent{
-		EventId:             e.eventId.Bytes(),
+		EventId:             guid.ToBytes(e.eventId),
 		EventType:           &e.typ,
 		DataContentType:     &dataContentType,
 		MetadataContentType: &metadataContentType,
 		Data:                e.data,
 		Metadata:            e.metadata,
 	}
+}
+
+func (e *EventData) String() string {
+	return fmt.Sprintf(
+		"EventData{eventId: %s type: %s isJson: %t data: ... metadata: ...}",
+		e.eventId, e.typ, e.isJson,
+	)
 }

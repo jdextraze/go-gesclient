@@ -3,6 +3,7 @@ package client
 import (
 	"errors"
 	"fmt"
+	"github.com/jdextraze/go-gesclient/guid"
 	"github.com/satori/go.uuid"
 )
 
@@ -68,7 +69,7 @@ func TcpPacketFromBytes(data []byte) (*Package, error) {
 	command := Command(data[PackageCommandOffset])
 	flags := TcpFlag(data[PackageFlagsOffset])
 
-	correlationId, _ := uuid.FromBytes(data[PackageCorrelationOffset:PackageAuthOffset])
+	correlationId := guid.FromBytes(data[PackageCorrelationOffset:PackageAuthOffset])
 
 	var (
 		headerSize int = PackageMandatorySize
@@ -103,7 +104,7 @@ func (p *Package) Bytes() []byte {
 	bytes := make([]byte, contentLength)
 	bytes[PackageCommandOffset] = byte(p.command)
 	bytes[PackageFlagsOffset] = byte(p.flags)
-	copy(bytes[PackageCorrelationOffset:], p.correlationId.Bytes())
+	copy(bytes[PackageCorrelationOffset:], guid.ToBytes(p.correlationId))
 	pos := PackageAuthOffset
 	if p.flags&FlagsAuthenticated != 0 {
 		bytes[pos] = byte(len(p.username))
@@ -138,3 +139,10 @@ func (p *Package) Username() string { return p.username }
 func (p *Package) Password() string { return p.password }
 
 func (p *Package) Data() []byte { return p.data }
+
+func (p *Package) String() string {
+	return fmt.Sprintf(
+		"Package{command: %s flags: %s correlationId: %s username: %s password: %s data: ...}",
+		p.command, p.flags, p.correlationId, p.username, p.password,
+	)
+}

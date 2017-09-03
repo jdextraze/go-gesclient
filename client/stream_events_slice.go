@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"github.com/jdextraze/go-gesclient/messages"
 )
 
@@ -56,3 +57,12 @@ func (s *StreamEventsSlice) NextEventNumber() int { return s.nextEventNumber }
 func (s *StreamEventsSlice) LastEventNumber() int { return s.lastEventNumber }
 
 func (s *StreamEventsSlice) IsEndOfStream() bool { return s.isEndOfStream }
+
+func (s *StreamEventsSlice) String() string {
+	return fmt.Sprintf(
+		"StreamEventsSlice{status: %s stream: %s fromEventNumber: %d readDirection: %s events: %s "+
+			"nextEventNumber: %d lastEventNumber: %d isEndOfStream: %t}",
+		s.status, s.stream, s.fromEventNumber, s.readDirection, s.events, s.nextEventNumber, s.lastEventNumber,
+		s.isEndOfStream,
+	)
+}

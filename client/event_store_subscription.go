@@ -1,6 +1,9 @@
 package client
 
+import "fmt"
+
 type EventStoreSubscription interface {
+	fmt.Stringer
 	IsSubscribedToAll() bool
 	StreamId() string
 	LastCommitPosition() int64
@@ -41,3 +44,9 @@ func (s *eventStoreSubscription) LastEventNumber() *int { return s.lastEventNumb
 func (s *eventStoreSubscription) Close() error { return s.unsubscribe() }
 
 func (s *eventStoreSubscription) Unsubscribe() error { return s.unsubscribe() }
+
+func (s *eventStoreSubscription) String() string {
+	return fmt.Sprintf(
+		"EventStoreSubscription{isSubscribedToAll: %t, streamId: %s, lastCommitPosition: %d, lastEventNumber: %d}",
+		s.IsSubscribedToAll(), s.streamId, s.lastCommitPosition, s.lastEventNumber)
+}

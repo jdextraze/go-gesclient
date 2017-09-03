@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/guid"
 	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"github.com/satori/go.uuid"
@@ -126,7 +127,7 @@ func (s *connectToPersistentSubscription) NotifyEventsProcessed(processedEvents 
 
 	processedEventIds := make([][]byte, len(processedEvents))
 	for i, e := range processedEvents {
-		processedEventIds[i] = e.Bytes()
+		processedEventIds[i] = guid.ToBytes(e)
 	}
 
 	dto := &messages.PersistentSubscriptionAckEvents{
@@ -160,7 +161,7 @@ func (s *connectToPersistentSubscription) NotifyEventsFailed(
 
 	processedEventIds := make([][]byte, len(processedEvents))
 	for i, e := range processedEvents {
-		processedEventIds[i] = e.Bytes()
+		processedEventIds[i] = guid.ToBytes(e)
 	}
 
 	nakAction := messages.PersistentSubscriptionNakEvents_NakAction(action)

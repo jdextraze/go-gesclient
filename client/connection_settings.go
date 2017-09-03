@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -178,4 +179,19 @@ func (cs *ConnectionSettings) GossipTimeout() time.Duration {
 
 func (cs *ConnectionSettings) ClientConnectionTimeout() time.Duration {
 	return cs.clientConnectionTimeout
+}
+
+func (cs *ConnectionSettings) String() string {
+	return fmt.Sprintf(
+		"ConnectionSettings{verboseLogging: %t maxQueueSize: %d maxConcurrentItem: %d maxRetries: %d maxReconnections: %d"+
+			"requireMaster: %t reconnectionDelay: %s operationTimeout: %s operationTimeoutCheckPeriod: %s "+
+			"defaultUserCredentials: %s useSslConnection: %t targetHost: %s validateServer: %t failOnNoServerResponse: %t "+
+			"heartbeatInterval: %s heartbeatTimeout: %s clusterDns: %s maxDiscoverAttempts: %d externalGossipPort: %d "+
+			"gossipSeeds: %v gossipTimeout: %s clientConnectionTimeout: %s}",
+		cs.verboseLogging, cs.maxQueueSize, cs.maxConcurrentItem, cs.maxRetries, cs.maxReconnections, cs.requireMaster,
+		cs.reconnectionDelay, cs.operationTimeout, cs.operationTimeoutCheckPeriod, cs.DefaultUserCredentials,
+		cs.useSslConnection, cs.targetHost, cs.validateServer, cs.failOnNoServerResponse, cs.heartbeatInterval,
+		cs.heartbeatTimeout, cs.clusterDns, cs.maxDiscoverAttempts, cs.externalGossipPort, cs.gossipSeeds,
+		cs.gossipTimeout, cs.clientConnectionTimeout,
+	)
 }

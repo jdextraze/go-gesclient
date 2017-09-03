@@ -1,5 +1,7 @@
 package client
 
+import "fmt"
+
 type StreamMetadataResult struct {
 	stream            string
 	isStreamDeleted   bool
@@ -28,3 +30,10 @@ func (r *StreamMetadataResult) IsStreamDeleted() bool { return r.isStreamDeleted
 func (r *StreamMetadataResult) MetastreamVersion() int { return r.metastreamVersion }
 
 func (r *StreamMetadataResult) StreamMetadata() *StreamMetadata { return r.streamMetadata }
+
+func (r *StreamMetadataResult) String() string {
+	return fmt.Sprintf(
+		"StreamMetadataResult{stream: %s isStreamDeleted: %t metastreamVersion: %d streamMetadata: %s}",
+		r.stream, r.isStreamDeleted, r.metastreamVersion, r.streamMetadata,
+	)
+}

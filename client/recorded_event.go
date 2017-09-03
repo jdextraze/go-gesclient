@@ -1,6 +1,8 @@
 package client
 
 import (
+	"fmt"
+	"github.com/jdextraze/go-gesclient/guid"
 	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/satori/go.uuid"
 	"time"
@@ -21,7 +23,7 @@ type RecordedEvent struct {
 func newRecordedEvent(evt *messages.EventRecord) *RecordedEvent {
 	return &RecordedEvent{
 		eventStreamId: evt.GetEventStreamId(),
-		eventId:       uuid.FromBytesOrNil(evt.GetEventId()),
+		eventId:       guid.FromBytes(evt.GetEventId()),
 		eventNumber:   int(evt.GetEventNumber()),
 		eventType:     evt.GetEventType(),
 		data:          evt.GetData(),
@@ -49,3 +51,9 @@ func (e *RecordedEvent) IsJson() bool { return e.isJson }
 func (e *RecordedEvent) Created() time.Time { return e.created }
 
 func (e *RecordedEvent) CreatedEpoch() time.Time { return e.createdEpoch }
+
+func (e *RecordedEvent) String() string {
+	return fmt.Sprintf(
+		"RecordedEvent{eventStreamId: '%s' eventId: %s eventNumber: %d eventType: '%s' isJson: %t data: ... metadata: ... created: %s}",
+		e.eventStreamId, e.eventId, e.eventNumber, e.eventType, e.isJson, e.created)
+}

@@ -1,6 +1,9 @@
 package client
 
-import "github.com/jdextraze/go-gesclient/messages"
+import (
+	"fmt"
+	"github.com/jdextraze/go-gesclient/messages"
+)
 
 type EventReadResult struct {
 	status      EventReadStatus
@@ -38,4 +41,11 @@ func (r *EventReadResult) EventNumber() int {
 
 func (r *EventReadResult) Event() *ResolvedEvent {
 	return r.event
+}
+
+func (r *EventReadResult) String() string {
+	return fmt.Sprintf(
+		"EventReadResult{status: %s stream: %s eventNumber: %d event: %s}",
+		r.status, r.stream, r.eventNumber, r.event,
+	)
 }

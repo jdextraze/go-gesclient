@@ -1,5 +1,7 @@
 package client
 
+import "fmt"
+
 type DeleteResult struct {
 	logPosition *Position
 }
@@ -11,3 +13,7 @@ func NewDeleteResult(logPosition *Position) *DeleteResult {
 }
 
 func (r *DeleteResult) LogPosition() *Position { return r.logPosition }
+
+func (r *DeleteResult) String() string {
+	return fmt.Sprintf("DeleteResult{logPosition: %s}", r.logPosition)
+}
