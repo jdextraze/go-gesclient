@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/jdextraze/go-gesclient/guid"
 	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/satori/go.uuid"
 	"time"
@@ -21,7 +22,7 @@ type RecordedEvent struct {
 func newRecordedEvent(evt *messages.EventRecord) *RecordedEvent {
 	return &RecordedEvent{
 		eventStreamId: evt.GetEventStreamId(),
-		eventId:       uuid.FromBytesOrNil(evt.GetEventId()),
+		eventId:       guid.FromBytes(evt.GetEventId()),
 		eventNumber:   int(evt.GetEventNumber()),
 		eventType:     evt.GetEventType(),
 		data:          evt.GetData(),
