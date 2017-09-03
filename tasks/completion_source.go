@@ -2,11 +2,16 @@ package tasks
 
 import (
 	"sync"
+	"sync/atomic"
+	"errors"
 )
+
+var AlreadyCompleted = errors.New("Already completed")
 
 type CompletionSource struct {
 	waitGroup *sync.WaitGroup
 	task      *Task
+	completed int32
 	result    interface{}
 	err       error
 }
@@ -25,28 +30,30 @@ func (s *CompletionSource) run() (interface{}, error) {
 	return s.result, s.err
 }
 
-func (s *CompletionSource) SetError(err error) {
-	s.err = err
-	s.waitGroup.Done()
+func (s *CompletionSource) SetError(err error) error {
+	if atomic.CompareAndSwapInt32(&s.completed, 0, 1) {
+		s.err = err
+		s.waitGroup.Done()
+		return nil
+	}
+	return AlreadyCompleted
 }
 
-func (s *CompletionSource) TrySetError(err error) {
-	defer func() {
-		recover()
-	}()
-	s.SetError(err)
+func (s *CompletionSource) TrySetError(err error) bool {
+	return s.SetError(err) == nil
 }
 
-func (s *CompletionSource) SetResult(result interface{}) {
-	s.result = result
-	s.waitGroup.Done()
+func (s *CompletionSource) SetResult(result interface{}) error {
+	if atomic.CompareAndSwapInt32(&s.completed, 0, 1) {
+		s.result = result
+		s.waitGroup.Done()
+		return nil
+	}
+	return AlreadyCompleted
 }
 
-func (s *CompletionSource) TrySetResult(result interface{}) {
-	defer func() {
-		recover()
-	}()
-	s.SetResult(result)
+func (s *CompletionSource) TrySetResult(result interface{}) bool {
+	return s.SetResult(result) == nil
 }
 
 func (s *CompletionSource) Task() *Task {
