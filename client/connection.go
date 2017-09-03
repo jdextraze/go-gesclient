@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"time"
 )
@@ -20,6 +21,8 @@ type PersistentEventAppearedHandler func(s PersistentSubscription, r *ResolvedEv
 type PersistentSubscriptionDroppedHandler func(s PersistentSubscription, dr SubscriptionDropReason, err error) error
 
 type Connection interface {
+	fmt.Stringer
+
 	Name() string
 
 	// Use Task.Wait()

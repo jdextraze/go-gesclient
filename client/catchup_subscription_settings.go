@@ -42,3 +42,10 @@ func (s *CatchUpSubscriptionSettings) ReadBatchSize() int { return s.readBatchSi
 func (s *CatchUpSubscriptionSettings) VerboseLogging() bool { return s.verboseLogging }
 
 func (s *CatchUpSubscriptionSettings) ResolveLinkTos() bool { return s.resolveLinkTos }
+
+func (s *CatchUpSubscriptionSettings) String() string {
+	return fmt.Sprintf(
+		"CatchUpSubscriptionSettings{maxLiveQueueSize: %d readBatchSize: %d verboseLogging: %t resolveLinkTos: %t}",
+		s.maxLiveQueueSize, s.readBatchSize, s.verboseLogging, s.resolveLinkTos,
+	)
+}

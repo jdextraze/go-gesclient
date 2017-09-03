@@ -106,17 +106,17 @@ func getConnection(addr string, verbose bool) client.Connection {
 	return c
 }
 
-func eventAppeared(s client.CatchUpSubscription, e *client.ResolvedEvent) error {
-	log.Printf("event appeared: %v | %s", e.OriginalPosition(), string(e.OriginalEvent().Data()))
+func eventAppeared(_ client.CatchUpSubscription, e *client.ResolvedEvent) error {
+	log.Printf("event appeared: %s | %s", e, string(e.OriginalEvent().Data()))
 	return nil
 }
 
-func liveProcessingStarted(s client.CatchUpSubscription) error {
+func liveProcessingStarted(_ client.CatchUpSubscription) error {
 	log.Println("Live processing started")
 	return nil
 }
 
-func subscriptionDropped(s client.CatchUpSubscription, r client.SubscriptionDropReason, err error) error {
+func subscriptionDropped(_ client.CatchUpSubscription, r client.SubscriptionDropReason, err error) error {
 	log.Printf("subscription dropped: %s, %v", r, err)
 	return nil
 }

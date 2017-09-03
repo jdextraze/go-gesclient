@@ -382,3 +382,10 @@ func (c *connection) ErrorOccurred() client.EventHandlers { return c.handler.Err
 func (c *connection) AuthenticationFailed() client.EventHandlers {
 	return c.handler.AuthenticationFailed()
 }
+
+func (c *connection) String() string {
+	return fmt.Sprintf(
+		"Connection{name: '%s' connectionSettings: %s clusterSettings: %s}",
+		c.name, c.connectionSettings, c.clusterSettings,
+	)
+}

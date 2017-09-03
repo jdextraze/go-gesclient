@@ -1,11 +1,22 @@
 package client
 
+import "fmt"
+
 type PersistentSubscriptionDeleteStatus int
 
 const (
 	PersistentSubscriptionDeleteStatus_Success = 0
 	PersistentSubscriptionDeleteStatus_Failure = 1
 )
+
+var persistentSubscriptionDeleteStatuses = map[int]string{
+	0: "Success",
+	1: "Failure",
+}
+
+func (s PersistentSubscriptionDeleteStatus) String() string {
+	return persistentSubscriptionCreateStatuses[int(s)]
+}
 
 type PersistentSubscriptionDeleteResult struct {
 	status PersistentSubscriptionDeleteStatus
@@ -21,4 +32,8 @@ func NewPersistentSubscriptionDeleteResult(
 
 func (r *PersistentSubscriptionDeleteResult) GetStatus() PersistentSubscriptionDeleteStatus {
 	return r.status
+}
+
+func (r *PersistentSubscriptionDeleteResult) String() string {
+	return fmt.Sprintf("PersistentSubscriptionDeleteResult{status: %s}", r.status)
 }

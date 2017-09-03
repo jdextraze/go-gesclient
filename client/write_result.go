@@ -1,5 +1,7 @@
 package client
 
+import "fmt"
+
 type WriteResult struct {
 	nextExpectedVersion int
 	logPosition         *Position
@@ -18,4 +20,8 @@ func (r *WriteResult) NextExpectedVersion() int {
 
 func (r *WriteResult) LogPosition() *Position {
 	return r.logPosition
+}
+
+func (r *WriteResult) String() string {
+	return fmt.Sprintf("WriteResult{nextExpectedVersion: %d logPosition: %s}", r.nextExpectedVersion, r.logPosition)
 }

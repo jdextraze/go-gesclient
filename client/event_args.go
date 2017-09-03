@@ -1,6 +1,9 @@
 package client
 
-import "net"
+import (
+	"fmt"
+	"net"
+)
 
 type ClientConnectionEventArgs struct {
 	remoteEndpoint net.Addr
@@ -22,6 +25,13 @@ func (a *ClientConnectionEventArgs) RemoteEndpoint() net.Addr { return a.remoteE
 
 func (a *ClientConnectionEventArgs) Connection() Connection { return a.connection }
 
+func (a *ClientConnectionEventArgs) String() string {
+	return fmt.Sprintf(
+		"ClientConnectionEventArgs{remoteEndpoint: %s, connection: %s}",
+		a.remoteEndpoint, a.connection.Name(),
+	)
+}
+
 //
 
 type ClientReconnectingEventArgs struct {
@@ -38,6 +48,13 @@ func NewClientReconnectingEventArgs(
 }
 
 func (a *ClientReconnectingEventArgs) Connection() Connection { return a.connection }
+
+func (a *ClientReconnectingEventArgs) String() string {
+	return fmt.Sprintf(
+		"ClientReconnectiongEventArgs{connection: %s}",
+		a.connection,
+	)
+}
 
 //
 
@@ -60,6 +77,13 @@ func (a *ClientClosedEventArgs) Reason() string { return a.reason }
 
 func (a *ClientClosedEventArgs) Connection() Connection { return a.connection }
 
+func (a *ClientClosedEventArgs) String() string {
+	return fmt.Sprintf(
+		"ClientClosedEventArgs{reason: '%s' connection: %s}",
+		a.reason, a.connection,
+	)
+}
+
 //
 
 type ClientErrorEventArgs struct {
@@ -81,6 +105,13 @@ func (a *ClientErrorEventArgs) Error() error { return a.err }
 
 func (a *ClientErrorEventArgs) Connection() Connection { return a.connection }
 
+func (a *ClientErrorEventArgs) String() string {
+	return fmt.Sprintf(
+		"ClientErrorEventArgs{err: %s, connection: %s}",
+		a.err.Error(), a.connection,
+	)
+}
+
 //
 
 type ClientAuthenticationFailedEventArgs struct {
@@ -101,3 +132,10 @@ func NewClientAuthenticationFailedEventArgs(
 func (a *ClientAuthenticationFailedEventArgs) Reason() string { return a.reason }
 
 func (a *ClientAuthenticationFailedEventArgs) Connection() Connection { return a.connection }
+
+func (a *ClientAuthenticationFailedEventArgs) String() string {
+	return fmt.Sprintf(
+		"ClientAuthenticationFailedEventArgs{reason: '%s', connection: %s}",
+		a.reason, a.connection,
+	)
+}

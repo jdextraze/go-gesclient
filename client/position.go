@@ -43,8 +43,3 @@ func (p *Position) GreaterThanOrEquals(p2 *Position) bool {
 func (p *Position) String() string {
 	return fmt.Sprintf("%d/%d", p.commitPosition, p.preparePosition)
 }
-
-// Implements fmt.GoStringer
-func (p *Position) GoString() string {
-	return p.String()
-}
