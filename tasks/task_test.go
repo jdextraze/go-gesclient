@@ -1,13 +1,13 @@
 package tasks_test
 
 import (
+	"errors"
+	"github.com/jdextraze/go-gesclient/tasks"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/jdextraze/go-gesclient/tasks"
-	"time"
-	"errors"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 var taskError = errors.New("error")
@@ -23,7 +23,7 @@ var _ = Describe("Task", func() {
 			})
 			start := time.Now()
 			task.Result()
-			Expect(time.Now().Sub(start) >= 100 * time.Millisecond).To(BeTrue())
+			Expect(time.Now().Sub(start) >= 100*time.Millisecond).To(BeTrue())
 		})
 
 		It("should return result from callback", func() {
@@ -42,7 +42,7 @@ var _ = Describe("Task", func() {
 			})
 			start := time.Now()
 			task.Error()
-			Expect(time.Now().Sub(start) >= 100 * time.Millisecond).To(BeTrue())
+			Expect(time.Now().Sub(start) >= 100*time.Millisecond).To(BeTrue())
 		})
 
 		It("should return error from callback", func() {
@@ -157,7 +157,7 @@ var _ = Describe("Task", func() {
 			})
 			start := time.Now()
 			task.Wait()
-			Expect(time.Now().Sub(start) >= 100 * time.Millisecond).To(BeTrue())
+			Expect(time.Now().Sub(start) >= 100*time.Millisecond).To(BeTrue())
 		})
 
 		It("should return callback error", func() {
@@ -175,7 +175,7 @@ var _ = Describe("Task", func() {
 			start := time.Now()
 			task.Wait()
 			task.Wait()
-			Expect(time.Now().Sub(start) >= 100 * time.Millisecond).To(BeTrue())
+			Expect(time.Now().Sub(start) >= 100*time.Millisecond).To(BeTrue())
 		})
 	})
 })

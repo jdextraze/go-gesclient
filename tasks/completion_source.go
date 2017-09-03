@@ -1,9 +1,9 @@
 package tasks
 
 import (
+	"errors"
 	"sync"
 	"sync/atomic"
-	"errors"
 )
 
 var AlreadyCompleted = errors.New("Already completed")
