@@ -294,8 +294,7 @@ func (s *subscriptionBase) confirmSubscription(lastCommitPosition int64, lastEve
 		return err
 	}
 	s.subscription = ess
-	s.source.SetResult(sub)
-	return nil
+	return s.source.SetResult(sub)
 }
 
 func (s *subscriptionBase) eventAppeared(event *client.ResolvedEvent) error {

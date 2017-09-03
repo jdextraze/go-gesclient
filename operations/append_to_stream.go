@@ -51,33 +51,34 @@ func (o *appendToStream) createRequestDto() proto.Message {
 	}
 }
 
-func (o *appendToStream) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
+func (o *appendToStream) inspectResponse(message proto.Message) (res *client.InspectionResult, err error) {
 	msg := message.(*messages.WriteEventsCompleted)
 	switch msg.GetResult() {
 	case messages.OperationResult_Success:
 		if o.wasCommitTimeout {
 			log.Debugf("IDEMPOTENT WRITE SUCCEEDED FOR %s.", o)
 		}
-		if err := o.succeed(); err != nil {
-			return nil, err
-		}
+		err = o.succeed()
 	case messages.OperationResult_PrepareTimeout, messages.OperationResult_ForwardTimeout:
-		return client.NewInspectionResult(client.InspectionDecision_Retry, msg.GetResult().String(), nil, nil), nil
+		res = client.NewInspectionResult(client.InspectionDecision_Retry, msg.GetResult().String(), nil, nil)
 	case messages.OperationResult_CommitTimeout:
 		o.wasCommitTimeout = true
-		return client.NewInspectionResult(client.InspectionDecision_Retry, msg.GetResult().String(), nil, nil), nil
+		res = client.NewInspectionResult(client.InspectionDecision_Retry, msg.GetResult().String(), nil, nil)
 	case messages.OperationResult_WrongExpectedVersion:
-		o.Fail(client.WrongExpectedVersion)
+		err = o.Fail(client.WrongExpectedVersion)
 	case messages.OperationResult_StreamDeleted:
-		o.Fail(client.StreamDeleted)
+		err = o.Fail(client.StreamDeleted)
 	case messages.OperationResult_InvalidTransaction:
-		o.Fail(client.InvalidTransaction)
+		err = o.Fail(client.InvalidTransaction)
 	case messages.OperationResult_AccessDenied:
-		o.Fail(client.AccessDenied)
+		err = o.Fail(client.AccessDenied)
 	default:
-		return nil, fmt.Errorf("Unexpected OperationResult: %s", msg.GetResult())
+		err = fmt.Errorf("Unexpected OperationResult: %s", msg.GetResult())
 	}
-	return client.NewInspectionResult(client.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
+	if res == nil && err == nil {
+		res = client.NewInspectionResult(client.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil)
+	}
+	return
 }
 
 func (o *appendToStream) transformResponse(message proto.Message) (interface{}, error) {

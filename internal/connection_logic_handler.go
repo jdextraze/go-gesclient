@@ -124,6 +124,7 @@ func NewConnectionLogicHandler(
 		startTime:            time.Now(),
 		operations:           NewOperationsManager(connection.Name(), settings),
 		subscriptions:        NewSubscriptionManager(connection.Name(), settings),
+		connectingPhase:      connectingPhase_Invalid,
 	}
 
 	queue.RegisterHandler(&startConnectionMessage{}, obj.startConnection)
@@ -178,16 +179,16 @@ func (h *connectionLogicHandler) startConnection(msg message) error {
 		h.state = connectionState_Connecting
 		h.connectingPhase = connectingPhase_Reconnecting
 		h.discoverEndpoint(startConnectionMessage.task)
+		return nil
 	case connectionState_Connecting, connectionState_Connected:
-		startConnectionMessage.task.SetError(fmt.Errorf(
+		return startConnectionMessage.task.SetError(fmt.Errorf(
 			"EventStoreConnection '%s' is already active", h.esConnection.Name()))
 	case connectionState_Closed:
-		startConnectionMessage.task.SetError(fmt.Errorf(
+		return startConnectionMessage.task.SetError(fmt.Errorf(
 			"EventStoreConnection '%s' is closed", h.esConnection.Name()))
 	default:
 		return fmt.Errorf("Unknown state '%v'", h.state)
 	}
-	return nil
 }
 
 func (h *connectionLogicHandler) discoverEndpoint(task *tasks.CompletionSource) {
@@ -216,9 +217,6 @@ func (h *connectionLogicHandler) discoverEndpoint(task *tasks.CompletionSource) 
 				task.SetError(fmt.Errorf("Cannot resolve target endpoint"))
 			}
 		} else {
-			if err := t.Error(); err != nil {
-				return nil, err
-			}
 			nodeEndpoints := t.Result().(*NodeEndpoints)
 			h.EnqueueMessage(newEstablishTcpConnectionMessage(nodeEndpoints))
 			if task != nil {
@@ -244,8 +242,12 @@ func (h *connectionLogicHandler) closeConnection(msg message) error {
 
 	h.timer.Stop()
 	h.timer = nil
-	h.operations.CleanUp()
-	h.subscriptions.CleanUp()
+	if err := h.operations.CleanUp(); err != nil {
+		return err
+	}
+	if err := h.subscriptions.CleanUp(); err != nil {
+		return err
+	}
 	h.closeTcpConnection(m.reason)
 
 	log.Infof("Closed. Reason: %s", m.reason)
@@ -276,20 +278,18 @@ func (h *connectionLogicHandler) startOperation(msg message) error {
 
 	switch h.state {
 	case connectionState_Init:
-		m.operation.Fail(fmt.Errorf("EventStoreConnection '%s' is not active", h.esConnection.Name()))
+		return m.operation.Fail(fmt.Errorf("EventStoreConnection '%s' is not active", h.esConnection.Name()))
 	case connectionState_Connecting:
 		log.Debugf("StartOperation enqueue %s, %d, %s", m.operation, m.maxRetries, m.timeout)
-		h.operations.EnqueueOperation(newOperationItem(m.operation, m.maxRetries, m.timeout))
+		return h.operations.EnqueueOperation(newOperationItem(m.operation, m.maxRetries, m.timeout))
 	case connectionState_Connected:
 		log.Debugf("StartOperation schedule %s, %d, %s", m.operation, m.maxRetries, m.timeout)
-		h.operations.ScheduleOperation(newOperationItem(m.operation, m.maxRetries, m.timeout), h.connection)
+		return h.operations.ScheduleOperation(newOperationItem(m.operation, m.maxRetries, m.timeout), h.connection)
 	case connectionState_Closed:
-		m.operation.Fail(fmt.Errorf("Connection %s is closed", h.esConnection.Name()))
+		return m.operation.Fail(fmt.Errorf("Connection %s is closed", h.esConnection.Name()))
 	default:
 		return fmt.Errorf("Unknown state: %s", h.state)
 	}
-
-	return nil
 }
 
 func (h *connectionLogicHandler) startSubscription(msg message) error {
@@ -297,7 +297,7 @@ func (h *connectionLogicHandler) startSubscription(msg message) error {
 
 	switch h.state {
 	case connectionState_Init:
-		m.source.SetError(fmt.Errorf("EventStoreConnection '%s' is not active.", h.esConnection.Name()))
+		return m.source.SetError(fmt.Errorf("EventStoreConnection '%s' is not active.", h.esConnection.Name()))
 	case connectionState_Connecting, connectionState_Connected:
 		operation := subscriptions.NewVolatileSubscription(m.source, m.streamId, m.resolveLinkTos,
 			m.userCredentials, m.eventAppeared, m.subscriptionDropped, h.settings.VerboseLogging(),
@@ -315,19 +315,19 @@ func (h *connectionLogicHandler) startSubscription(msg message) error {
 		} else {
 			h.subscriptions.StartSubscription(subscription, h.connection)
 		}
+		return nil
 	case connectionState_Closed:
-		m.source.SetError(fmt.Errorf("Object disposed: %s", h.esConnection.Name()))
+		return m.source.SetError(fmt.Errorf("Object disposed: %s", h.esConnection.Name()))
 	default:
 		return fmt.Errorf("Unknown state: %s", h.state)
 	}
-	return nil
 }
 
 func (h *connectionLogicHandler) startPersistentSubscription(msg message) error {
 	m := msg.(*startPersistentSubscriptionMessage)
 	switch h.state {
 	case connectionState_Init:
-		m.source.SetError(fmt.Errorf("EventStoreConnection '%s' is not active.", h.esConnection.Name()))
+		return m.source.SetError(fmt.Errorf("EventStoreConnection '%s' is not active.", h.esConnection.Name()))
 	case connectionState_Connecting, connectionState_Connected:
 		operation := subscriptions.NewConnectToPersistentSubscription(m.source, m.subscriptionId,
 			m.bufferSize, m.streamId, m.userCredentials, m.eventAppeared, m.subscriptionDropped,
@@ -339,12 +339,12 @@ func (h *connectionLogicHandler) startPersistentSubscription(msg message) error 
 		} else {
 			h.subscriptions.StartSubscription(subscription, h.connection)
 		}
+		return nil
 	case connectionState_Closed:
-		m.source.SetError(fmt.Errorf("Object disposed: %s", h.esConnection.Name()))
+		return m.source.SetError(fmt.Errorf("Object disposed: %s", h.esConnection.Name()))
 	default:
 		return fmt.Errorf("Unknown state: %s", h.state)
 	}
-	return nil
 }
 
 func (h *connectionLogicHandler) establishTcpConnection(msg message) error {
@@ -396,21 +396,18 @@ func (h *connectionLogicHandler) tcpConnectionEstablished(msg message) error {
 	if h.settings.DefaultUserCredentials != nil {
 		h.connectingPhase = connectingPhase_Authentication
 		h.authInfo = authInfo{uuid.NewV4(), h.elapsedTime()}
-		h.connection.EnqueueSend(client.NewTcpPackage(
+		return h.connection.EnqueueSend(client.NewTcpPackage(
 			client.Command_Authenticate,
 			client.FlagsAuthenticated,
 			h.authInfo.CorrelationId,
 			nil,
 			h.settings.DefaultUserCredentials,
 		))
-	} else {
-		h.goToConnectedState()
 	}
-
-	return nil
+	return h.goToConnectedState()
 }
 
-func (h *connectionLogicHandler) goToConnectedState() {
+func (h *connectionLogicHandler) goToConnectedState() error {
 	h.state = connectionState_Connected
 	h.connectingPhase = connectingPhase_Connected
 
@@ -419,10 +416,15 @@ func (h *connectionLogicHandler) goToConnectedState() {
 	h.raiseConnected(h.connection.RemoteEndpoint())
 
 	if h.elapsedTime()-h.lastTimeoutsTimestamp >= h.settings.OperationTimeoutCheckPeriod() {
-		h.operations.CheckTimeoutsAndRetry(h.connection)
-		h.subscriptions.CheckTimeoutsAndRetry(h.connection)
+		if err := h.operations.CheckTimeoutsAndRetry(h.connection); err != nil {
+			return err
+		}
+		if err := h.subscriptions.CheckTimeoutsAndRetry(h.connection); err != nil {
+			return err
+		}
 		h.lastTimeoutsTimestamp = h.elapsedTime()
 	}
+	return nil
 }
 
 func (h *connectionLogicHandler) tcpConnectionError(msg message) error {
@@ -515,7 +517,10 @@ func (h *connectionLogicHandler) handleTcpPackage(msg message) error {
 	}
 
 	if found, operation := h.operations.TryGetActiveOperation(correlationId); found {
-		result := operation.operation.InspectPackage(m.pkg)
+		result, err := operation.operation.InspectPackage(m.pkg)
+		if err != nil {
+			return err
+		}
 		log.Debugf("HandleTcpPackage OPERATION DECISION %s (%s), %s", result.Decision(), result.Description(),
 			operation)
 		switch result.Decision() {
@@ -524,15 +529,19 @@ func (h *connectionLogicHandler) handleTcpPackage(msg message) error {
 		case client.InspectionDecision_EndOperation:
 			h.operations.RemoveOperation(operation)
 		case client.InspectionDecision_Retry:
-			h.operations.ScheduleOperationRetry(operation)
+			if err := h.operations.ScheduleOperationRetry(operation); err != nil {
+				return err
+			}
 		case client.InspectionDecision_Reconnect:
 			h.reconnectTo(NewNodeEndpoints(result.TcpEndpoint(), result.SecureTcpEndpoint()))
-			h.operations.ScheduleOperationRetry(operation)
+			if err := h.operations.ScheduleOperationRetry(operation); err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("Unknown InspectionDecision: %s", result.Decision())
 		}
 		if h.state == connectionState_Connected {
-			h.operations.TryScheduleWaitingOperations(m.connection)
+			return h.operations.TryScheduleWaitingOperations(m.connection)
 		}
 	} else if found, subscription := h.subscriptions.TryGetActiveSubscription(correlationId); found {
 		result, err := subscription.Operation().InspectPackage(m.pkg)
@@ -617,8 +626,12 @@ func (h *connectionLogicHandler) timerTick(msg message) error {
 	case connectionState_Connected:
 		if h.elapsedTime()-h.lastTimeoutsTimestamp >= h.settings.OperationTimeoutCheckPeriod() {
 			h.reconInfo = reconnectionInfo{0, h.elapsedTime()}
-			h.operations.CheckTimeoutsAndRetry(h.connection)
-			h.subscriptions.CheckTimeoutsAndRetry(h.connection)
+			if err := h.operations.CheckTimeoutsAndRetry(h.connection); err != nil {
+				return err
+			}
+			if err := h.subscriptions.CheckTimeoutsAndRetry(h.connection); err != nil {
+				return err
+			}
 			h.lastTimeoutsTimestamp = h.elapsedTime()
 		}
 		return h.manageHeartbeats()

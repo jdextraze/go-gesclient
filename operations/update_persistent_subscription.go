@@ -84,23 +84,24 @@ func (o *updatePersistentSubscription) createRequestDto() proto.Message {
 	}
 }
 
-func (o *updatePersistentSubscription) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
+func (o *updatePersistentSubscription) inspectResponse(message proto.Message) (res *client.InspectionResult, err error) {
 	msg := message.(*messages.UpdatePersistentSubscriptionCompleted)
 	switch msg.GetResult() {
 	case messages.UpdatePersistentSubscriptionCompleted_Success:
-		if err := o.succeed(); err != nil {
-			return nil, err
-		}
+		err = o.succeed()
 	case messages.UpdatePersistentSubscriptionCompleted_Fail:
-		o.Fail(fmt.Errorf("Subscription group %s on stream %s failed '%s'", o.groupName, o.stream, *msg.Reason))
+		err = o.Fail(fmt.Errorf("Subscription group %s on stream %s failed '%s'", o.groupName, o.stream, *msg.Reason))
 	case messages.UpdatePersistentSubscriptionCompleted_AccessDenied:
-		o.Fail(client.AccessDenied)
+		err = o.Fail(client.AccessDenied)
 	case messages.UpdatePersistentSubscriptionCompleted_DoesNotExist:
-		o.Fail(fmt.Errorf("Subscription group %s on stream %s does not exists", o.groupName, o.stream))
+		err = o.Fail(fmt.Errorf("Subscription group %s on stream %s does not exists", o.groupName, o.stream))
 	default:
-		return nil, fmt.Errorf("Unexpected Operation result: %v", msg.GetResult())
+		err = fmt.Errorf("Unexpected Operation result: %v", msg.GetResult())
 	}
-	return client.NewInspectionResult(client.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
+	if res == nil && err == nil {
+		res = client.NewInspectionResult(client.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil)
+	}
+	return
 }
 
 func (o *updatePersistentSubscription) transformResponse(message proto.Message) (interface{}, error) {

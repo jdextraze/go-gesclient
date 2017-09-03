@@ -43,25 +43,32 @@ func (m *OperationsManager) TryGetActiveOperation(correlationId uuid.UUID) (bool
 	return ok, item
 }
 
-func (m *OperationsManager) CleanUp() {
+func (m *OperationsManager) CleanUp() error {
 	err := fmt.Errorf("Connection '%s' was closed", m.connectionName)
 	for i, o := range m.activeOperations {
-		o.operation.Fail(err)
+		if err := o.operation.Fail(err); err != nil {
+			return err
+		}
 		delete(m.activeOperations, i)
 	}
 	for len(m.waitingOperations) > 0 {
 		o := <-m.waitingOperations
-		o.operation.Fail(err)
+		if err := o.operation.Fail(err); err != nil {
+			return err
+		}
 	}
 	for i, o := range m.retryPendingOperations {
-		o.operation.Fail(err)
+		if err := o.operation.Fail(err); err != nil {
+			return err
+		}
 		m.retryPendingOperations[i] = nil
 	}
 	m.retryPendingOperations = []*operationItem{}
 	m.totalOperationCount = 0
+	return nil
 }
 
-func (m *OperationsManager) CheckTimeoutsAndRetry(c *client.PackageConnection) {
+func (m *OperationsManager) CheckTimeoutsAndRetry(c *client.PackageConnection) error {
 	if c == nil {
 		panic("connection is nil")
 	}
@@ -77,7 +84,9 @@ func (m *OperationsManager) CheckTimeoutsAndRetry(c *client.PackageConnection) {
 			log.Errorf("%v", err)
 
 			if m.settings.FailOnNoServerResponse() {
-				o.operation.Fail(err)
+				if err := o.operation.Fail(err); err != nil {
+					return nil
+				}
 				removeOperations = append(removeOperations, o)
 			} else {
 				retryOperations = append(retryOperations, o)
@@ -86,7 +95,9 @@ func (m *OperationsManager) CheckTimeoutsAndRetry(c *client.PackageConnection) {
 	}
 
 	for _, s := range retryOperations {
-		m.ScheduleOperationRetry(s)
+		if err := m.ScheduleOperationRetry(s); err != nil {
+			return err
+		}
 	}
 	for _, s := range removeOperations {
 		m.RemoveOperation(s)
@@ -99,24 +110,29 @@ func (m *OperationsManager) CheckTimeoutsAndRetry(c *client.PackageConnection) {
 			s.CorrelationId = uuid.NewV4()
 			s.RetryCount += 1
 			log.Debugf("retrying, old corrId: %s, operation %s.", oldCorrId, s)
-			m.ScheduleOperation(s, c)
+			if err := m.ScheduleOperation(s, c); err != nil {
+				return err
+			}
 		}
 		m.retryPendingOperations = []*operationItem{}
 	}
 
-	m.TryScheduleWaitingOperations(c)
+	return m.TryScheduleWaitingOperations(c)
 }
 
-func (m *OperationsManager) TryScheduleWaitingOperations(c *client.PackageConnection) {
+func (m *OperationsManager) TryScheduleWaitingOperations(c *client.PackageConnection) error {
 	if c == nil {
 		panic("connection is nil")
 	}
 	m.lock.Lock()
 	for len(m.waitingOperations) > 0 && len(m.activeOperations) < m.settings.MaxConcurrentItem() {
-		m.ExecuteOperation(<-m.waitingOperations, c) // TODO handler error
+		if err := m.ExecuteOperation(<-m.waitingOperations, c); err != nil {
+			return err
+		}
 	}
 	m.totalOperationCount = len(m.activeOperations) + len(m.waitingOperations)
 	m.lock.Unlock()
+	return nil
 }
 
 func (m *OperationsManager) ExecuteOperation(o *operationItem, c *client.PackageConnection) error {
@@ -134,20 +150,20 @@ func (m *OperationsManager) ExecuteOperation(o *operationItem, c *client.Package
 
 func (m *OperationsManager) TotalOperationCount() int { return m.totalOperationCount }
 
-func (m *OperationsManager) ScheduleOperationRetry(o *operationItem) {
+func (m *OperationsManager) ScheduleOperationRetry(o *operationItem) error {
 	if !m.RemoveOperation(o) {
 		m.logDebug("RemoveSubscription failed when trying to retry %s", o)
-		return
+		return nil
 	}
 
 	if o.maxRetries >= 0 && o.RetryCount >= o.maxRetries {
 		m.logDebug("RETRIES LIMIT REACHED when trying to retry %s", o)
-		o.operation.Fail(fmt.Errorf("Retries limit of %d reached for %s", o.maxRetries, o))
-		return
+		return o.operation.Fail(fmt.Errorf("Retries limit of %d reached for %s", o.maxRetries, o))
 	}
 
 	m.logDebug("Retrying subscription %s.", o)
 	m.retryPendingOperations = append(m.retryPendingOperations, o)
+	return nil
 }
 
 func (m *OperationsManager) RemoveOperation(o *operationItem) bool {
@@ -168,8 +184,7 @@ func (m *OperationsManager) EnqueueOperation(operation *operationItem) error {
 
 func (m *OperationsManager) ScheduleOperation(operation *operationItem, conn *client.PackageConnection) error {
 	m.waitingOperations <- operation
-	m.TryScheduleWaitingOperations(conn)
-	return nil
+	return m.TryScheduleWaitingOperations(conn)
 }
 
 func (m *OperationsManager) logDebug(format string, args ...interface{}) {
