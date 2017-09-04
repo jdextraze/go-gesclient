@@ -6,6 +6,8 @@ import (
 	"sync/atomic"
 )
 
+var AlreadyRunning = errors.New("Already running")
+
 type TaskCallback func() (interface{}, error)
 type ContinueWithCallback func(*Task) (interface{}, error)
 
@@ -65,7 +67,7 @@ func (t *Task) Start() error {
 		}()
 		return nil
 	}
-	return errors.New("Already running")
+	return AlreadyRunning
 }
 
 func (t *Task) Wait() error {

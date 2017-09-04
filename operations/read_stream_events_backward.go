@@ -51,23 +51,26 @@ func (o *readStreamEventsBackward) createRequestDto() proto.Message {
 	}
 }
 
-func (o *readStreamEventsBackward) inspectResponse(message proto.Message) (*client.InspectionResult, error) {
+func (o *readStreamEventsBackward) inspectResponse(message proto.Message) (res *client.InspectionResult, err error) {
 	msg := message.(*messages.ReadStreamEventsCompleted)
 	switch msg.GetResult() {
 	case messages.ReadStreamEventsCompleted_Success,
 		messages.ReadStreamEventsCompleted_StreamDeleted,
 		messages.ReadStreamEventsCompleted_NoStream:
-		o.succeed()
+		err = o.succeed()
 	case messages.ReadStreamEventsCompleted_Error:
-		o.Fail(client.NewServerError(msg.GetError()))
+		err = o.Fail(client.NewServerError(msg.GetError()))
 	case messages.ReadStreamEventsCompleted_NotModified:
-		o.Fail(client.NewNotModified(o.stream))
+		err = o.Fail(client.NewNotModified(o.stream))
 	case messages.ReadStreamEventsCompleted_AccessDenied:
-		o.Fail(client.AccessDenied)
+		err = o.Fail(client.AccessDenied)
 	default:
-		o.Fail(fmt.Errorf("Unexpected ReadStreamResult: %v", *msg.Result))
+		err = fmt.Errorf("Unexpected ReadStreamResult: %v", *msg.Result)
 	}
-	return client.NewInspectionResult(client.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil), nil
+	if res == nil && err == nil {
+		res = client.NewInspectionResult(client.InspectionDecision_EndOperation, msg.GetResult().String(), nil, nil)
+	}
+	return
 }
 
 func (o *readStreamEventsBackward) transformResponse(message proto.Message) (interface{}, error) {

@@ -69,8 +69,7 @@ func (o *baseOperation) CreateNetworkPackage(correlationId uuid.UUID) (*client.P
 	return client.NewTcpPackage(o.requestCommand, flags, correlationId, data, o.userCredentials), err
 }
 
-func (o *baseOperation) InspectPackage(p *client.Package) (result *client.InspectionResult) {
-	var err error
+func (o *baseOperation) InspectPackage(p *client.Package) (result *client.InspectionResult, err error) {
 	if p.Command() == o.responseCommand {
 		o.response = o.createResponse()
 		if err = proto.Unmarshal(p.Data(), o.response); err == nil {
@@ -79,9 +78,9 @@ func (o *baseOperation) InspectPackage(p *client.Package) (result *client.Inspec
 	} else {
 		switch p.Command() {
 		case client.Command_NotAuthenticated:
-			result = o.inspectNotAuthenticated(p)
+			result, err = o.inspectNotAuthenticated(p)
 		case client.Command_BadRequest:
-			result = o.inspectBadRequest(p)
+			result, err = o.inspectBadRequest(p)
 		case client.Command_NotHandled:
 			result, err = o.inspectNotHandled(p)
 		default:
@@ -89,7 +88,7 @@ func (o *baseOperation) InspectPackage(p *client.Package) (result *client.Inspec
 		}
 	}
 	if err != nil {
-		o.Fail(err)
+		err = o.Fail(err)
 		result = client.NewInspectionResult(client.InspectionDecision_EndOperation, err.Error(), nil, nil)
 	}
 	return
@@ -101,38 +100,38 @@ func (o *baseOperation) succeed() error {
 			if result, err := o.transformResponse(o.response); err != nil {
 				return err
 			} else {
-				o.source.SetResult(result)
+				return o.source.SetResult(result)
 			}
 		} else {
-			o.source.SetError(errors.New("No result"))
+			return o.source.SetError(errors.New("No result"))
 		}
 	}
 	return nil
 }
 
-func (o *baseOperation) Fail(err error) {
+func (o *baseOperation) Fail(err error) error {
 	if atomic.CompareAndSwapInt32(&o.completed, 0, 1) {
-		o.source.SetError(err)
+		return o.source.SetError(err)
 	}
+	return nil
 }
 
-func (o *baseOperation) inspectNotAuthenticated(p *client.Package) *client.InspectionResult {
+func (o *baseOperation) inspectNotAuthenticated(p *client.Package) (*client.InspectionResult, error) {
 	msg := string(p.Data())
 	if msg == "" {
 		msg = "Authentication error"
 	}
-	o.Fail(errors.New(msg))
-	return client.NewInspectionResult(client.InspectionDecision_EndOperation, "NotAuthenticated", nil, nil)
+	return client.NewInspectionResult(client.InspectionDecision_EndOperation, "NotAuthenticated", nil, nil),
+		o.Fail(errors.New(msg))
 }
 
-func (o *baseOperation) inspectBadRequest(p *client.Package) *client.InspectionResult {
+func (o *baseOperation) inspectBadRequest(p *client.Package) (*client.InspectionResult, error) {
 	msg := string(p.Data())
 	if msg == "" {
 		msg = "<no message>"
 	}
-	o.Fail(errors.New(msg))
 	return client.NewInspectionResult(client.InspectionDecision_EndOperation, fmt.Sprintf("BadRequest - %s", msg), nil,
-		nil)
+		nil), o.Fail(errors.New(msg))
 }
 
 func (o *baseOperation) inspectNotHandled(p *client.Package) (*client.InspectionResult, error) {
@@ -186,7 +185,6 @@ Operation (%s): %v,
 TcpPackage data dump: %v`,
 		expectedCommand, p.Command, p.CorrelationId, reflect.TypeOf(o).Name(), o, p.Data,
 	)
-	o.Fail(fmt.Errorf("Command not expected: %s. Expected: %s.", p.Command(), expectedCommand))
 	return client.NewInspectionResult(client.InspectionDecision_EndOperation, fmt.Sprintf("Unexpected command - %s",
-		p.Command()), nil, nil), nil
+		p.Command()), nil, nil), o.Fail(fmt.Errorf("Command not expected: %s. Expected: %s.", p.Command(), expectedCommand))
 }

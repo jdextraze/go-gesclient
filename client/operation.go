@@ -8,6 +8,6 @@ import (
 type Operation interface {
 	fmt.Stringer
 	CreateNetworkPackage(correlationId uuid.UUID) (*Package, error)
-	InspectPackage(p *Package) *InspectionResult
-	Fail(err error)
+	InspectPackage(p *Package) (*InspectionResult, error)
+	Fail(err error) error
 }

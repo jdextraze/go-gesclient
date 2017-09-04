@@ -34,21 +34,28 @@ func (m *SubscriptionsManager) TryGetActiveSubscription(correlationId uuid.UUID)
 	return ok, item
 }
 
-func (m *SubscriptionsManager) CleanUp() {
+func (m *SubscriptionsManager) CleanUp() error {
 	err := fmt.Errorf("Connection '%s' was closed", m.connectionName)
 	for i, s := range m.activeSubscriptions {
-		s.Operation().DropSubscription(client.SubscriptionDropReason_ConnectionClosed, err, nil)
+		if err := s.Operation().DropSubscription(client.SubscriptionDropReason_ConnectionClosed, err, nil); err != nil {
+			return err
+		}
 		delete(m.activeSubscriptions, i)
 	}
 	for len(m.waitingSubscriptions) > 0 {
 		s := <-m.waitingSubscriptions
-		s.Operation().DropSubscription(client.SubscriptionDropReason_ConnectionClosed, err, nil)
+		if err := s.Operation().DropSubscription(client.SubscriptionDropReason_ConnectionClosed, err, nil); err != nil {
+			return err
+		}
 	}
 	for i, s := range m.retryPendingSubscriptions {
-		s.Operation().DropSubscription(client.SubscriptionDropReason_ConnectionClosed, err, nil)
+		if err := s.Operation().DropSubscription(client.SubscriptionDropReason_ConnectionClosed, err, nil); err != nil {
+			return err
+		}
 		m.retryPendingSubscriptions[i] = nil
 	}
 	m.retryPendingSubscriptions = []*SubscriptionItem{}
+	return nil
 }
 
 func (m *SubscriptionsManager) PurgeSubscribedAndDroppedSubscriptions(connectionId uuid.UUID) {
@@ -64,7 +71,7 @@ func (m *SubscriptionsManager) PurgeSubscribedAndDroppedSubscriptions(connection
 	}
 }
 
-func (m *SubscriptionsManager) CheckTimeoutsAndRetry(c *client.PackageConnection) {
+func (m *SubscriptionsManager) CheckTimeoutsAndRetry(c *client.PackageConnection) error {
 	if c == nil {
 		panic("connection is nil")
 	}
@@ -83,7 +90,10 @@ func (m *SubscriptionsManager) CheckTimeoutsAndRetry(c *client.PackageConnection
 			log.Errorf("%v", err)
 
 			if m.settings.FailOnNoServerResponse() {
-				s.Operation().DropSubscription(client.SubscriptionDropReason_SubscribingError, err, nil)
+				err := s.Operation().DropSubscription(client.SubscriptionDropReason_SubscribingError, err, nil)
+				if err != nil {
+					return err
+				}
 				removeSubscriptions = append(removeSubscriptions, s)
 			} else {
 				retrySubscriptions = append(retrySubscriptions, s)
@@ -92,7 +102,9 @@ func (m *SubscriptionsManager) CheckTimeoutsAndRetry(c *client.PackageConnection
 	}
 
 	for _, s := range retrySubscriptions {
-		m.ScheduleSubscriptionRetry(s)
+		if err := m.ScheduleSubscriptionRetry(s); err != nil {
+			return err
+		}
 	}
 	for _, s := range removeSubscriptions {
 		m.RemoveSubscription(s)
@@ -101,21 +113,26 @@ func (m *SubscriptionsManager) CheckTimeoutsAndRetry(c *client.PackageConnection
 	if len(m.retryPendingSubscriptions) > 0 {
 		for _, s := range m.retryPendingSubscriptions {
 			s.RetryCount += 1
-			m.StartSubscription(s, c)
+			if err := m.StartSubscription(s, c); err != nil {
+				return err
+			}
 		}
 		m.retryPendingSubscriptions = []*SubscriptionItem{}
 	}
 
 	for len(m.waitingSubscriptions) > 0 {
-		m.StartSubscription(<-m.waitingSubscriptions, c)
+		if err := m.StartSubscription(<-m.waitingSubscriptions, c); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (m *SubscriptionsManager) EnqueueSubscription(s *SubscriptionItem) {
 	m.waitingSubscriptions <- s
 }
 
-func (m *SubscriptionsManager) StartSubscription(s *SubscriptionItem, c *client.PackageConnection) {
+func (m *SubscriptionsManager) StartSubscription(s *SubscriptionItem, c *client.PackageConnection) error {
 	if c == nil {
 		panic("connection is nil")
 	}
@@ -123,7 +140,7 @@ func (m *SubscriptionsManager) StartSubscription(s *SubscriptionItem, c *client.
 	if s.IsSubscribed {
 		m.logDebug("StartSubscription REMOVING due to already subscribed %s.", s)
 		m.RemoveSubscription(s)
-		return
+		return nil
 	}
 
 	s.CorrelationId = uuid.NewV4()
@@ -134,13 +151,13 @@ func (m *SubscriptionsManager) StartSubscription(s *SubscriptionItem, c *client.
 
 	ok, err := s.Operation().Subscribe(s.CorrelationId, c)
 	if err != nil {
-		// TODO handle error
-		return
+		return err
 	} else if !ok {
 		m.logDebug("StartSubscription REMOVING AS COULD NOT SUBSCRIBE %s.", s)
 	} else {
 		m.logDebug("StartSubscription SUBSCRIBING %s.", s)
 	}
+	return nil
 }
 
 func (m *SubscriptionsManager) RemoveSubscription(s *SubscriptionItem) bool {
@@ -153,21 +170,21 @@ func (m *SubscriptionsManager) RemoveSubscription(s *SubscriptionItem) bool {
 	return true
 }
 
-func (m *SubscriptionsManager) ScheduleSubscriptionRetry(s *SubscriptionItem) {
+func (m *SubscriptionsManager) ScheduleSubscriptionRetry(s *SubscriptionItem) error {
 	if !m.RemoveSubscription(s) {
 		m.logDebug("RemoveSubscription failed when trying to retry %s", s)
-		return
+		return nil
 	}
 
 	if s.MaxRetries() >= 0 && s.RetryCount >= s.MaxRetries() {
 		m.logDebug("RETRIES LIMIT REACHED when trying to retry %s", s)
-		s.Operation().DropSubscription(client.SubscriptionDropReason_SubscribingError,
+		return s.Operation().DropSubscription(client.SubscriptionDropReason_SubscribingError,
 			fmt.Errorf("Retries limit of %d reached for %s", s.MaxRetries(), s), nil)
-		return
 	}
 
 	m.logDebug("Retrying subscription %s.", s)
 	m.retryPendingSubscriptions = append(m.retryPendingSubscriptions, s)
+	return nil
 }
 
 func (m *SubscriptionsManager) logDebug(format string, args ...interface{}) {
