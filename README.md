@@ -36,8 +36,10 @@ MIT. See [LICENSE](https://github.com/jdextraze/go-gesclient/blob/master/LICENSE
 ## TODO
 
 * Complete unit and integration tests
+* Benchmarks
 * Transaction
 * Scavenging database
+* System settings
 
 ## External tools
 
@@ -48,3 +50,9 @@ MIT. See [LICENSE](https://github.com/jdextraze/go-gesclient/blob/master/LICENSE
 
 For examples, look into `examples`. You will need an instance of event store to be running to try it.
 I suggest using [Docker](https://docker.com/) with [Event Store Docker Container](https://hub.docker.com/r/eventstore/eventstore/).
+
+## Other languages client
+
+* [.Net](https://github.com/EventStore/EventStore) (Official)
+* [Java / Scala](https://github.com/EventStore/EventStore.JVM) (Official)
+* [Node.JS](https://github.com/nicdex/node-eventstore-client)

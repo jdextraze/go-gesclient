@@ -38,7 +38,6 @@ type subscriptionBase struct {
 	getConnection       GetConnectionHandler
 	maxQueueSize        int
 	actionQueue         chan ActionHandler
-	actionExecuting     int32
 	subscription        client.EventStoreSubscription
 	unsubscribed        int32
 	correlationId       uuid.UUID
@@ -74,7 +73,7 @@ func newSubscriptionBase(
 		subscriptionDropped = client.SubscriptionDroppedHandler(
 			func(s client.EventStoreSubscription, dr client.SubscriptionDropReason, err error) error { return nil })
 	}
-	return &subscriptionBase{
+	s := &subscriptionBase{
 		source:                    source,
 		streamId:                  streamId,
 		resolveLinkTos:            resolveLinkTos,
@@ -89,6 +88,8 @@ func newSubscriptionBase(
 		inspectPackage:            inspectPackage,
 		createSubscriptionObject:  createSubscriptionObject,
 	}
+	go s.executeActions()
+	return s
 }
 
 func (s *subscriptionBase) enqueueSend(p *client.Package) error {
@@ -322,27 +323,13 @@ func (s *subscriptionBase) executeActionAsync(action ActionHandler) {
 		s.DropSubscription(client.SubscriptionDropReason_UserInitiated, errors.New("client buffer too big"), nil)
 	}
 	s.actionQueue <- action
-	if atomic.CompareAndSwapInt32(&s.actionExecuting, 0, 1) {
-		go s.executeActions()
-	}
 }
 
 func (s *subscriptionBase) executeActions() {
-	for {
-		for len(s.actionQueue) > 0 {
-			action, ok := <-s.actionQueue
-			if !ok {
-				break
-			}
-			if err := action(); err != nil {
-				log.Errorf("Error during user callback execution: %v", err)
-			}
+	for action := range s.actionQueue {
+		if err := action(); err != nil {
+			log.Errorf("Error during user callback execution: %v", err)
 		}
-		atomic.SwapInt32(&s.actionExecuting, 0)
-		if len(s.actionQueue) > 0 && atomic.CompareAndSwapInt32(&s.actionExecuting, 0, 1) {
-			continue
-		}
-		break
 	}
 }
 

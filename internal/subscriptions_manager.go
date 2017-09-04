@@ -24,7 +24,7 @@ func NewSubscriptionManager(connectionName string, settings *client.ConnectionSe
 		connectionName:            connectionName,
 		settings:                  settings,
 		activeSubscriptions:       map[uuid.UUID]*SubscriptionItem{},
-		waitingSubscriptions:      make(chan *SubscriptionItem, 4096), // TODO buffer size
+		waitingSubscriptions:      make(chan *SubscriptionItem, 65536), // TODO buffer size
 		retryPendingSubscriptions: []*SubscriptionItem{},
 	}
 }

@@ -31,7 +31,7 @@ func NewOperationsManager(
 		connectionName:         connectionName,
 		settings:               settings,
 		activeOperations:       map[uuid.UUID]*operationItem{},
-		waitingOperations:      make(chan *operationItem, 4096), // TODO buffer size
+		waitingOperations:      make(chan *operationItem, 65536), // TODO buffer size
 		retryPendingOperations: []*operationItem{},
 		lock:                &sync.Mutex{},
 		totalOperationCount: 0,
