@@ -292,30 +292,23 @@ func (s *catchUpSubscription) ensureProcessingPushQueue() {
 }
 
 func (s *catchUpSubscription) processLiveQueue() {
-	for {
-		for len(s.liveQueue) > 0 {
-			e := <-s.liveQueue
-			if e == dropSubscriptionEvent {
-				if s.dropData == nilDropReason {
-					s.dropData = &dropData{
-						reason: client.SubscriptionDropReason_Unknown,
-						err:    errors.New("Drop reason not specified"),
-					}
+	for e := range s.liveQueue {
+		if e == dropSubscriptionEvent {
+			if s.dropData == nilDropReason {
+				s.dropData = &dropData{
+					reason: client.SubscriptionDropReason_Unknown,
+					err:    errors.New("Drop reason not specified"),
 				}
-				s.dropSubscription(s.dropData.reason, s.dropData.err)
-				atomic.CompareAndSwapInt32(&s.isProcessing, 1, 0)
-				return
 			}
+			s.dropSubscription(s.dropData.reason, s.dropData.err)
+			atomic.CompareAndSwapInt32(&s.isProcessing, 1, 0)
+			break
+		}
 
-			if err := s.tryProcess(e); err != nil {
-				s.dropSubscription(client.SubscriptionDropReason_EventHandlerException, err)
-			}
+		if err := s.tryProcess(e); err != nil {
+			s.dropSubscription(client.SubscriptionDropReason_EventHandlerException, err)
+			break
 		}
-		atomic.CompareAndSwapInt32(&s.isProcessing, 1, 0)
-		if len(s.liveQueue) > 0 && atomic.CompareAndSwapInt32(&s.isProcessing, 0, 1) {
-			continue
-		}
-		break
 	}
 }
 

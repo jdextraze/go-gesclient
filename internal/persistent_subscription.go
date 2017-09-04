@@ -33,7 +33,6 @@ type persistentSubscription struct {
 	autoAck             bool
 	subscription        *client.PersistentEventStoreSubscription
 	queue               chan *client.ResolvedEvent
-	isProcessing        int32
 	dropData            *dropData
 	isDropped           int32
 	stopped             sync.WaitGroup
@@ -50,7 +49,7 @@ func NewPersistentSubscription(
 	bufferSize int,
 	autoAck bool,
 ) *persistentSubscription {
-	return &persistentSubscription{
+	s := &persistentSubscription{
 		subscriptionId:      subscriptionId,
 		streamId:            streamId,
 		eventAppeared:       eventAppeared,
@@ -63,6 +62,8 @@ func NewPersistentSubscription(
 		queue:               make(chan *client.ResolvedEvent, bufferSize),
 		dropData:            nilDropReason,
 	}
+	go s.processQueue()
+	return s
 }
 
 func (s *persistentSubscription) Start() *tasks.Task {
@@ -131,7 +132,6 @@ func (s *persistentSubscription) enqueueSubscriptionDropNotification(reason clie
 }
 
 func (s *persistentSubscription) onEventAppeared(s2 client.EventStoreSubscription, evt *client.ResolvedEvent) error {
-	log.Debug("=====> HERE <=====")
 	s.enqueue(evt)
 	return nil
 }
@@ -143,50 +143,39 @@ func (s *persistentSubscription) onSubscriptionDropped(s2 client.EventStoreSubsc
 
 func (s *persistentSubscription) enqueue(evt *client.ResolvedEvent) {
 	s.queue <- evt
-	if atomic.CompareAndSwapInt32(&s.isProcessing, 0, 1) {
-		go s.processQueue()
-	}
 }
 
 func (s *persistentSubscription) processQueue() {
-	for {
-		for len(s.queue) > 0 {
-			e := <-s.queue
-			if e == dropSubscriptionEvent {
-				if s.dropData == nilDropReason {
-					s.dropData = &dropData{
-						reason: client.SubscriptionDropReason_Unknown,
-						err:    errors.New("Drop reason not specified"),
-					}
-				}
-				s.dropSubscription(s.dropData.reason, s.dropData.err)
-				return
-			}
-			if s.dropData != nilDropReason {
-				s.dropSubscription(s.dropData.reason, s.dropData.err)
-				return
-			}
-			err := s.eventAppeared(s, e)
-			if err == nil {
-				if s.autoAck {
-					err = s.subscription.NotifyEventsProcessed([]uuid.UUID{e.OriginalEvent().EventId()})
-				}
-				if s.settings.VerboseLogging() {
-					log.Debugf("Persistent Subscription to %s: processed event (%s, %d, %s @ %s).",
-						s.streamId, e.OriginalEvent().EventStreamId(), e.OriginalEvent().EventNumber(),
-						e.OriginalEvent().EventType(), e.OriginalEventNumber())
+	for e := range s.queue {
+		if e == dropSubscriptionEvent {
+			if s.dropData == nilDropReason {
+				s.dropData = &dropData{
+					reason: client.SubscriptionDropReason_Unknown,
+					err:    errors.New("Drop reason not specified"),
 				}
 			}
-			if err != nil {
-				s.dropSubscription(client.SubscriptionDropReason_EventHandlerException, err)
-				return
+			s.dropSubscription(s.dropData.reason, s.dropData.err)
+			return
+		}
+		if s.dropData != nilDropReason {
+			s.dropSubscription(s.dropData.reason, s.dropData.err)
+			return
+		}
+		err := s.eventAppeared(s, e)
+		if err == nil {
+			if s.autoAck {
+				err = s.subscription.NotifyEventsProcessed([]uuid.UUID{e.OriginalEvent().EventId()})
+			}
+			if s.settings.VerboseLogging() {
+				log.Debugf("Persistent Subscription to %s: processed event (%s, %d, %s @ %s).",
+					s.streamId, e.OriginalEvent().EventStreamId(), e.OriginalEvent().EventNumber(),
+					e.OriginalEvent().EventType(), e.OriginalEventNumber())
 			}
 		}
-		atomic.CompareAndSwapInt32(&s.isProcessing, 1, 0)
-		if len(s.queue) > 0 && atomic.CompareAndSwapInt32(&s.isProcessing, 0, 1) {
-			continue
+		if err != nil {
+			s.dropSubscription(client.SubscriptionDropReason_EventHandlerException, err)
+			return
 		}
-		break
 	}
 }
 

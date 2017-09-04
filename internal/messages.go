@@ -6,9 +6,13 @@ import (
 	"time"
 )
 
-type message interface{}
+type message interface {
+	MessageID() int
+}
 
 type timerTickMessage struct{}
+
+func (m *timerTickMessage) MessageID() int { return 0 }
 
 type startConnectionMessage struct {
 	task               *tasks.CompletionSource
@@ -33,6 +37,7 @@ func newStartConnectionMessage(
 
 func (m *startConnectionMessage) Task() *tasks.CompletionSource          { return m.task }
 func (m *startConnectionMessage) EndpointDiscoverer() EndpointDiscoverer { return m.endpointDiscoverer }
+func (m *startConnectionMessage) MessageID() int                         { return 1 }
 
 type closeConnectionMessage struct {
 	reason string
@@ -51,6 +56,7 @@ func newCloseConnectionMessage(
 
 func (m *closeConnectionMessage) Reason() string { return m.reason }
 func (m *closeConnectionMessage) Error() error   { return m.error }
+func (m *closeConnectionMessage) MessageID() int { return 2 }
 
 type establishTcpConnectionMessage struct {
 	endpoints *NodeEndpoints
@@ -63,6 +69,7 @@ func newEstablishTcpConnectionMessage(endpoints *NodeEndpoints) *establishTcpCon
 }
 
 func (m *establishTcpConnectionMessage) Endpoints() *NodeEndpoints { return m.endpoints }
+func (m *establishTcpConnectionMessage) MessageID() int            { return 3 }
 
 type tcpConnectionEstablishedMessage struct {
 	connection *client.PackageConnection
@@ -78,6 +85,7 @@ func newTcpConnectionEstablishedMessage(connection *client.PackageConnection) *t
 }
 
 func (m *tcpConnectionEstablishedMessage) Connection() *client.PackageConnection { return m.connection }
+func (m *tcpConnectionEstablishedMessage) MessageID() int                        { return 4 }
 
 type tcpConnectionClosedMessage struct {
 	connection  *client.PackageConnection
@@ -99,12 +107,15 @@ func newTcpConnectionClosedMessage(
 
 func (m *tcpConnectionClosedMessage) Connection() *client.PackageConnection { return m.connection }
 func (m *tcpConnectionClosedMessage) SocketError() error                    { return m.socketError }
+func (m *tcpConnectionClosedMessage) MessageID() int                        { return 5 }
 
 type startOperationMessage struct {
 	operation  client.Operation
 	maxRetries int
 	timeout    time.Duration
 }
+
+func (m *startOperationMessage) MessageID() int { return 6 }
 
 type startSubscriptionMessage struct {
 	source              *tasks.CompletionSource
@@ -117,6 +128,8 @@ type startSubscriptionMessage struct {
 	timeout             time.Duration
 }
 
+func (m *startSubscriptionMessage) MessageID() int { return 7 }
+
 type startPersistentSubscriptionMessage struct {
 	source              *tasks.CompletionSource
 	subscriptionId      string
@@ -128,6 +141,8 @@ type startPersistentSubscriptionMessage struct {
 	maxRetries          int
 	timeout             time.Duration
 }
+
+func (m *startPersistentSubscriptionMessage) MessageID() int { return 8 }
 
 func NewStartPersistentSubscriptionMessage(
 	source *tasks.CompletionSource,
@@ -158,7 +173,11 @@ type handleTcpPackageMessage struct {
 	pkg        *client.Package
 }
 
+func (m *handleTcpPackageMessage) MessageID() int { return 9 }
+
 type tcpConnectionErrorMessage struct {
 	connection *client.PackageConnection
 	error      error
 }
+
+func (m *tcpConnectionErrorMessage) MessageID() int { return 10 }

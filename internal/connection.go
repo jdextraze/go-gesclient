@@ -9,6 +9,7 @@ import (
 	"github.com/jdextraze/go-gesclient/tasks"
 	"github.com/satori/go.uuid"
 	"strings"
+	"time"
 )
 
 type connection struct {
@@ -358,6 +359,12 @@ func (c *connection) GetStreamMetadataAsync(
 }
 
 func (c *connection) enqueueOperation(op client.Operation) error {
+	for {
+		if c.handler.TotalOperationCount() <= c.Settings().MaxQueueSize() {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
 	return c.handler.EnqueueMessage(&startOperationMessage{
 		operation:  op,
 		maxRetries: c.connectionSettings.MaxReconnections(),

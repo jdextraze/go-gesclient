@@ -109,7 +109,7 @@ func NewConnectionLogicHandler(
 		panic("settings is nil")
 	}
 
-	queue := newSimpleQueuedHandler(settings.MaxQueueSize())
+	queue := newSimpleQueuedHandler()
 
 	obj := &connectionLogicHandler{
 		connected:            newEventHandlers(),
@@ -360,7 +360,7 @@ func (h *connectionLogicHandler) establishTcpConnection(msg message) error {
 		tcpEndpoint = establishTcpConnection.endpoints.tcpEndpoint
 	}
 	if tcpEndpoint == nil {
-		h.closeConnection(closeConnectionMessage{
+		h.closeConnection(&closeConnectionMessage{
 			reason: "No endpoint to node specified.",
 		})
 	}
@@ -581,7 +581,9 @@ func (h *connectionLogicHandler) reconnectTo(endpoints *NodeEndpoints) {
 		endPoint = endpoints.TcpEndpoint()
 	}
 	if endPoint == nil {
-		h.closeConnection("No end point is specified while trying to reconnect.")
+		h.closeConnection(&closeConnectionMessage{
+			reason: "No end point is specified while trying to reconnect.",
+		})
 		return
 	}
 	if h.state != connectionState_Connected || h.connection.RemoteEndpoint().String() == endPoint.String() {
