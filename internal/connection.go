@@ -181,16 +181,9 @@ func (c *connection) SubscribeToStreamAsync(
 		panic("eventAppeared is nil")
 	}
 	source := tasks.NewCompletionSource()
-	return source.Task(), c.handler.EnqueueMessage(&startSubscriptionMessage{
-		source:              source,
-		streamId:            stream,
-		resolveLinkTos:      resolveLinkTos,
-		userCredentials:     userCredentials,
-		eventAppeared:       eventAppeared,
-		subscriptionDropped: subscriptionDropped,
-		maxRetries:          c.connectionSettings.MaxReconnections(),
-		timeout:             c.connectionSettings.OperationTimeout(),
-	})
+	return source.Task(), c.handler.EnqueueMessage(newStartSubscriptionMessage(source, stream, resolveLinkTos,
+		userCredentials, eventAppeared, subscriptionDropped, c.connectionSettings.MaxReconnections(),
+		c.connectionSettings.OperationTimeout()))
 }
 
 func (c *connection) SubscribeToAllAsync(
@@ -203,16 +196,9 @@ func (c *connection) SubscribeToAllAsync(
 		panic("eventAppeared is nil")
 	}
 	source := tasks.NewCompletionSource()
-	return source.Task(), c.handler.EnqueueMessage(&startSubscriptionMessage{
-		source:              source,
-		streamId:            "",
-		resolveLinkTos:      resolveLinkTos,
-		userCredentials:     userCredentials,
-		eventAppeared:       eventAppeared,
-		subscriptionDropped: subscriptionDropped,
-		maxRetries:          c.Settings().MaxRetries(),
-		timeout:             c.Settings().OperationTimeout(),
-	})
+	return source.Task(), c.handler.EnqueueMessage(newStartSubscriptionMessage(source, "", resolveLinkTos,
+		userCredentials, eventAppeared, subscriptionDropped, c.Settings().MaxRetries(),
+		c.Settings().OperationTimeout()))
 }
 
 func (c *connection) SubscribeToStreamFrom(
@@ -365,11 +351,8 @@ func (c *connection) enqueueOperation(op client.Operation) error {
 		}
 		time.Sleep(time.Millisecond)
 	}
-	return c.handler.EnqueueMessage(&startOperationMessage{
-		operation:  op,
-		maxRetries: c.connectionSettings.MaxReconnections(),
-		timeout:    c.connectionSettings.OperationTimeout(),
-	})
+	return c.handler.EnqueueMessage(newStartOperationMessage(op, c.connectionSettings.MaxReconnections(),
+		c.connectionSettings.OperationTimeout()))
 }
 
 func (c *connection) Settings() *client.ConnectionSettings {

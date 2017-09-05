@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/binary"
 	"errors"
-	log "github.com/jdextraze/go-gesclient/logger"
 	"github.com/satori/go.uuid"
 	"io"
 	"net"
@@ -60,7 +59,7 @@ func NewPackageConnection(
 		errorHandler:          errorHandler,
 		connectionEstablished: connectionEstablished,
 		connectionClosed:      connectionClosed,
-		sendQueue:             make(chan *Package, 4096),
+		sendQueue:             make(chan *Package, 65536), // TODO buffer size
 	}
 	c.connect()
 	return c
@@ -162,7 +161,6 @@ func (c *PackageConnection) onData(data []byte) {
 	if dataLength == packetSize {
 		p, _ := TcpPacketFromBytes(data[tcpPacketContentLengthSize:])
 		c.packageHandler(c, p)
-		//c.errorHandler(c, err)
 	} else if dataLength > packetSize {
 		c.onData(data[:packetSize])
 		c.onData(data[packetSize:])

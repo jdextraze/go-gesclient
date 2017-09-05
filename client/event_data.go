@@ -1,10 +1,10 @@
 package client
 
 import (
-	"fmt"
 	"github.com/jdextraze/go-gesclient/guid"
 	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/satori/go.uuid"
+	"fmt"
 )
 
 type EventData struct {
@@ -54,8 +54,5 @@ func (e *EventData) ToNewEvent() *messages.NewEvent {
 }
 
 func (e *EventData) String() string {
-	return fmt.Sprintf(
-		"EventData{eventId: %s type: %s isJson: %t data: ... metadata: ...}",
-		e.eventId, e.typ, e.isJson,
-	)
+	return fmt.Sprintf("&{eventId:%s type:%s isJson:%t data:[...] metadata:[...]}", e.eventId, e.typ, e.isJson)
 }

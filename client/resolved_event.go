@@ -77,6 +77,6 @@ func (e *ResolvedEvent) String() string {
 		originalEvent = "<link>"
 	}
 	return fmt.Sprintf(
-		"ResolvedEvent{event: %s link: %s originalPosition: %s originalEvent: %s isResolved: %t originalStreamId: %s originalEventNumber: %d}",
+		"&{event:%+v link:%+v originalPosition:%+v originalEvent:%s isResolved:%t originalStreamId:%s originalEventNumber:%d}",
 		e.event, e.link, e.originalPosition, originalEvent, e.IsResolved(), e.OriginalStreamId(), e.OriginalEventNumber())
 }

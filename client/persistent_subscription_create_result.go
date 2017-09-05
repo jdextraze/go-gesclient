@@ -1,7 +1,5 @@
 package client
 
-import "fmt"
-
 type PersistentSubscriptionCreateStatus int
 
 const (
@@ -34,8 +32,4 @@ func NewPersistentSubscriptionCreateResult(
 
 func (r *PersistentSubscriptionCreateResult) GetStatus() PersistentSubscriptionCreateStatus {
 	return r.status
-}
-
-func (r *PersistentSubscriptionCreateResult) String() string {
-	return fmt.Sprintf("PersistentSubscriptionCreateResult{status: %s}", r.status)
 }

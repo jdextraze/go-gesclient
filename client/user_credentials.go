@@ -1,7 +1,5 @@
 package client
 
-import "fmt"
-
 type UserCredentials struct {
 	username string
 	password string
@@ -17,8 +15,4 @@ func (uc *UserCredentials) Username() string {
 
 func (uc *UserCredentials) Password() string {
 	return uc.password
-}
-
-func (uc *UserCredentials) String() string {
-	return fmt.Sprintf("UserCredentials{username: %s password: %s}", uc.username, uc.password)
 }

@@ -50,7 +50,7 @@ func main() {
 		}
 		data, _ := json.Marshal(&TestEvent{})
 		evt := client.NewEventData(uuid.NewV4(), "TestEvent", true, data, nil)
-		log.Printf("-> '%s': %s", stream, evt)
+		log.Printf("-> '%s': %+v", stream, evt)
 		task, err := c.AppendToStreamAsync(stream, client.ExpectedVersion_Any, []*client.EventData{evt}, nil)
 		if err != nil {
 			log.Printf("Error occured while appending to stream: %v", err)
@@ -58,7 +58,7 @@ func main() {
 			log.Printf("Error occured while waiting for result of appending to stream: %v", err)
 		} else {
 			result := task.Result().(*client.WriteResult)
-			log.Printf("<- %v", result)
+			log.Printf("<- %+v", result)
 		}
 		<-time.After(time.Duration(interval) * time.Microsecond)
 	}
@@ -101,12 +101,12 @@ func getConnection(addr string, verbose bool) client.Connection {
 		log.Fatalf("Error creating connection: %v", err)
 	}
 
-	c.Connected().Add(func(evt client.Event) error { log.Printf("Connected: %v", evt); return nil })
-	c.Disconnected().Add(func(evt client.Event) error { log.Printf("Disconnected: %v", evt); return nil })
-	c.Reconnecting().Add(func(evt client.Event) error { log.Printf("Reconnecting: %v", evt); return nil })
-	c.Closed().Add(func(evt client.Event) error { panic("Connection closed") })
-	c.ErrorOccurred().Add(func(evt client.Event) error { log.Printf("Error: %v", evt); return nil })
-	c.AuthenticationFailed().Add(func(evt client.Event) error { log.Printf("Auth failed: %v", evt); return nil })
+	c.Connected().Add(func(evt client.Event) error { log.Printf("Connected: %+v", evt); return nil })
+	c.Disconnected().Add(func(evt client.Event) error { log.Printf("Disconnected: %+v", evt); return nil })
+	c.Reconnecting().Add(func(evt client.Event) error { log.Printf("Reconnecting: %+v", evt); return nil })
+	c.Closed().Add(func(evt client.Event) error { log.Fatalf("Connection closed: %+v", evt); return nil })
+	c.ErrorOccurred().Add(func(evt client.Event) error { log.Printf("Error: %+v", evt); return nil })
+	c.AuthenticationFailed().Add(func(evt client.Event) error { log.Printf("Auth failed: %+v", evt); return nil })
 
 	return c
 }

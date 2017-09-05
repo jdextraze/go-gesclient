@@ -33,7 +33,7 @@ func (r *StreamMetadataResult) StreamMetadata() *StreamMetadata { return r.strea
 
 func (r *StreamMetadataResult) String() string {
 	return fmt.Sprintf(
-		"StreamMetadataResult{stream: %s isStreamDeleted: %t metastreamVersion: %d streamMetadata: %s}",
+		"&{stream:%s isStreamDeleted:%t metastreamVersion:%d streamMetadata:%+v}",
 		r.stream, r.isStreamDeleted, r.metastreamVersion, r.streamMetadata,
 	)
 }

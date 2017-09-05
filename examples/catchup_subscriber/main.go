@@ -47,7 +47,7 @@ func main() {
 	if err != nil {
 		log.Printf("Error occured while subscribing to stream: %v", err)
 	} else {
-		log.Printf("SubscribeToStreamFrom result: %v", sub)
+		log.Printf("SubscribeToStreamFrom result: %+v", sub)
 
 		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, os.Interrupt)
@@ -97,18 +97,18 @@ func getConnection(addr string, verbose bool) client.Connection {
 		log.Fatalf("Error creating connection: %v", err)
 	}
 
-	c.Connected().Add(func(evt client.Event) error { log.Printf("Connected: %v", evt); return nil })
-	c.Disconnected().Add(func(evt client.Event) error { log.Printf("Disconnected: %v", evt); return nil })
-	c.Reconnecting().Add(func(evt client.Event) error { log.Printf("Reconnecting: %v", evt); return nil })
-	c.Closed().Add(func(evt client.Event) error { panic("Connection closed") })
-	c.ErrorOccurred().Add(func(evt client.Event) error { log.Printf("Error: %v", evt); return nil })
-	c.AuthenticationFailed().Add(func(evt client.Event) error { log.Printf("Auth failed: %v", evt); return nil })
+	c.Connected().Add(func(evt client.Event) error { log.Printf("Connected: %+v", evt); return nil })
+	c.Disconnected().Add(func(evt client.Event) error { log.Printf("Disconnected: %+v", evt); return nil })
+	c.Reconnecting().Add(func(evt client.Event) error { log.Printf("Reconnecting: %+v", evt); return nil })
+	c.Closed().Add(func(evt client.Event) error { log.Fatalf("Connection closed: %+v", evt); return nil })
+	c.ErrorOccurred().Add(func(evt client.Event) error { log.Printf("Error: %+v", evt); return nil })
+	c.AuthenticationFailed().Add(func(evt client.Event) error { log.Printf("Auth failed: %+v", evt); return nil })
 
 	return c
 }
 
 func eventAppeared(_ client.CatchUpSubscription, e *client.ResolvedEvent) error {
-	log.Printf("event appeared: %s | %s", e, string(e.OriginalEvent().Data()))
+	log.Printf("event appeared: %+v | %s", e, string(e.OriginalEvent().Data()))
 	return nil
 }
 

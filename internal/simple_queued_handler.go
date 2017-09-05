@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	log "github.com/jdextraze/go-gesclient/logger"
 )
 
 type messageHandler func(message message) error
@@ -36,10 +35,10 @@ func (h *simpleQueuedHandler) processQueue() {
 		msgID := msg.MessageID()
 		msgHandler, found := h.handlers[msgID]
 		if !found {
-			panic(fmt.Errorf("No handler registered for message %s", msgID))
+			panic(fmt.Sprintf("No handler registered for message %d", msgID))
 		}
 		if err := msgHandler(msg); err != nil {
-			log.Errorf("Error handling %s: %v", msgID, err) // TODO panic?
+			log.Errorf("Error handling %d: %v", msgID, err) // TODO panic?
 		}
 	}
 }

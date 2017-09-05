@@ -44,8 +44,7 @@ func (r *EventReadResult) Event() *ResolvedEvent {
 }
 
 func (r *EventReadResult) String() string {
-	return fmt.Sprintf(
-		"EventReadResult{status: %s stream: %s eventNumber: %d event: %s}",
+	return fmt.Sprintf("&{status:%s stream:%s eventNumber:%d event:%+v}",
 		r.status, r.stream, r.eventNumber, r.event,
 	)
 }

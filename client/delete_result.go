@@ -15,5 +15,5 @@ func NewDeleteResult(logPosition *Position) *DeleteResult {
 func (r *DeleteResult) LogPosition() *Position { return r.logPosition }
 
 func (r *DeleteResult) String() string {
-	return fmt.Sprintf("DeleteResult{logPosition: %s}", r.logPosition)
+	return fmt.Sprintf("&{logPosition:%+v}", r.logPosition)
 }

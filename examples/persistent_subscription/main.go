@@ -86,12 +86,12 @@ func getConnection() client.Connection {
 		log.Fatalf("Error connecting: %v", err)
 	}
 
-	c.Connected().Add(func(evt client.Event) error { log.Printf("Connected: %v", evt); return nil })
-	c.Disconnected().Add(func(evt client.Event) error { log.Printf("Disconnected: %v", evt); return nil })
-	c.Reconnecting().Add(func(evt client.Event) error { log.Printf("Reconnecting: %v", evt); return nil })
-	c.Closed().Add(func(evt client.Event) error { panic("Connection closed") })
-	c.ErrorOccurred().Add(func(evt client.Event) error { log.Printf("Error: %v", evt); return nil })
-	c.AuthenticationFailed().Add(func(evt client.Event) error { log.Printf("Auth failed: %v", evt); return nil })
+	c.Connected().Add(func(evt client.Event) error { log.Printf("Connected: %+v", evt); return nil })
+	c.Disconnected().Add(func(evt client.Event) error { log.Printf("Disconnected: %+v", evt); return nil })
+	c.Reconnecting().Add(func(evt client.Event) error { log.Printf("Reconnecting: %+v", evt); return nil })
+	c.Closed().Add(func(evt client.Event) error { log.Fatalf("Connection closed: %+v", evt); return nil })
+	c.ErrorOccurred().Add(func(evt client.Event) error { log.Printf("Error: %+v", evt); return nil })
+	c.AuthenticationFailed().Add(func(evt client.Event) error { log.Printf("Auth failed: %+v", evt); return nil })
 
 	return c
 }
@@ -112,7 +112,7 @@ func createPersistentSubscription() {
 		log.Printf("Error occured while waiting for result of subscribing to stream: %v", err)
 	} else {
 		res := task.Result().(*client.PersistentSubscriptionCreateResult)
-		log.Printf("CreatePersistentSubscriptionAsync result: %v", res)
+		log.Printf("CreatePersistentSubscriptionAsync result: %+v", res)
 	}
 }
 
@@ -126,7 +126,7 @@ func deletePersistentSubscription() {
 		log.Printf("Error occured while waiting for result of subscribing to stream: %v", err)
 	} else {
 		res := task.Result().(*client.PersistentSubscriptionDeleteResult)
-		log.Printf("CreatePersistentSubscriptionAsync result: %v", res)
+		log.Printf("CreatePersistentSubscriptionAsync result: %+v", res)
 	}
 }
 
@@ -141,7 +141,7 @@ func subscribe() {
 		log.Printf("Error occured while waiting for result of subscribing to stream: %v", err)
 	} else {
 		sub := task.Result().(client.PersistentSubscription)
-		log.Printf("SubscribeToStream result: %v", sub)
+		log.Printf("SubscribeToStream result: %+v", sub)
 
 		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, os.Interrupt)
@@ -152,7 +152,7 @@ func subscribe() {
 }
 
 func eventAppeared(_ client.PersistentSubscription, e *client.ResolvedEvent) error {
-	log.Printf("event appeared: %s | %s", e, string(e.Event().Data()))
+	log.Printf("event appeared: %+v | %s", e, string(e.Event().Data()))
 	return nil
 }
 

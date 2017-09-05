@@ -54,6 +54,6 @@ func (e *RecordedEvent) CreatedEpoch() time.Time { return e.createdEpoch }
 
 func (e *RecordedEvent) String() string {
 	return fmt.Sprintf(
-		"RecordedEvent{eventStreamId: '%s' eventId: %s eventNumber: %d eventType: '%s' isJson: %t data: ... metadata: ... created: %s}",
+		"&{eventStreamId:%s eventId:%s eventNumber:%d eventType:%s isJson:%t data:[...] metadata:[...] created:%s}",
 		e.eventStreamId, e.eventId, e.eventNumber, e.eventType, e.isJson, e.created)
 }

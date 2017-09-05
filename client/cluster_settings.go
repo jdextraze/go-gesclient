@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -48,10 +47,3 @@ func (cs *ClusterSettings) ExternalGossipPort() int { return cs.externalGossipPo
 func (cs *ClusterSettings) GossipSeeds() []*GossipSeed { return cs.gossipSeeds }
 
 func (cs *ClusterSettings) GossipTimeout() time.Duration { return cs.gossipTimeout }
-
-func (cs *ClusterSettings) String() string {
-	return fmt.Sprintf(
-		"ClusterSettings{clusterDns: '%s' maxDiscoverAttempts: %d externalGossipPort: %d gossipSeeds: %v, gossipTimeout: %s}",
-		cs.clusterDns, cs.maxDiscoverAttempts, cs.externalGossipPort, cs.gossipSeeds, cs.gossipTimeout,
-	)
-}
