@@ -1,13 +1,13 @@
 package subscriptions_test
 
 import (
-	"github.com/jdextraze/go-gesclient/client"
-	"time"
 	"github.com/jdextraze/go-gesclient"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/tasks"
+	"github.com/satori/go.uuid"
 	"net/url"
 	"testing"
-	"github.com/satori/go.uuid"
-	"github.com/jdextraze/go-gesclient/tasks"
+	"time"
 )
 
 var es client.Connection
@@ -70,7 +70,10 @@ func BenchmarkSubscribeToStream(b *testing.B) {
 		c := make(chan *client.ResolvedEvent, 100000)
 		task, _ := es.SubscribeToStreamAsync(stream, true,
 			func(s client.EventStoreSubscription, r *client.ResolvedEvent) error { c <- r; return nil },
-			func(s client.EventStoreSubscription, dr client.SubscriptionDropReason, err error) error { close(c); return nil },
+			func(s client.EventStoreSubscription, dr client.SubscriptionDropReason, err error) error {
+				close(c)
+				return nil
+			},
 			nil,
 		)
 		s := task.Result().(client.EventStoreSubscription)
@@ -89,7 +92,10 @@ func BenchmarkSubscribeToStreamPerEvent(b *testing.B) {
 	c := make(chan *client.ResolvedEvent, b.N)
 	task, _ := es.SubscribeToStreamAsync(stream, true,
 		func(s client.EventStoreSubscription, r *client.ResolvedEvent) error { c <- r; return nil },
-		func(s client.EventStoreSubscription, dr client.SubscriptionDropReason, err error) error { close(c); return nil },
+		func(s client.EventStoreSubscription, dr client.SubscriptionDropReason, err error) error {
+			close(c)
+			return nil
+		},
 		nil,
 	)
 	s := task.Result().(client.EventStoreSubscription)

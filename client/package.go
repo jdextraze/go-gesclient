@@ -22,7 +22,7 @@ const (
 	FlagsAuthenticated TcpFlag = 0x01
 )
 
-var tcpFlags = map[byte]string {
+var tcpFlags = map[byte]string{
 	0x00: "None",
 	0x01: "Authenticated",
 }
