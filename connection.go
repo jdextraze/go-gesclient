@@ -6,7 +6,6 @@ import (
 	"github.com/jdextraze/go-gesclient/internal"
 	"net"
 	"net/url"
-	"strconv"
 )
 
 func Create(settings *client.ConnectionSettings, uri *url.URL, name string) (client.Connection, error) {
@@ -32,9 +31,8 @@ func Create(settings *client.ConnectionSettings, uri *url.URL, name string) (cli
 
 	var endPointDiscoverer internal.EndpointDiscoverer
 	if scheme == "discover" {
-		port, _ := strconv.Atoi(uri.Port())
-		clusterSettings := client.NewClusterSettings(uri.Hostname(), connectionSettings.MaxDiscoverAttempts(), port,
-			nil, connectionSettings.GossipTimeout())
+		clusterSettings := client.NewClusterSettings(getUrlHostname(uri), connectionSettings.MaxDiscoverAttempts(),
+			getUrlPort(uri), nil, connectionSettings.GossipTimeout())
 
 		endPointDiscoverer = internal.NewClusterDnsEndPointDiscoverer(
 			clusterSettings.ClusterDns(),

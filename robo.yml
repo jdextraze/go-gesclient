@@ -43,3 +43,12 @@ generate_protobuf:
   summary: Generate protobuf
   command: |
     protoc -I$GOPATH/src --go_out=$GOPATH/src $GOPATH/src/github.com/jdextraze/go-gesclient/messages/ClientMessageDtos.proto
+
+bct:
+  summary: Backward compatibility test
+  usage: "[go-version] [example]"
+  examples:
+    - description: Start EventStore. Run publisher with go 1.4. Stop EventStore.
+      command: robo start_es && robo bct 1.4 publisher && robo stop_es
+  command: |
+    docker run --rm -v /$(PWD)/../../../://go/src --link eventstore golang:$1-alpine go run //go/src/github.com/jdextraze/go-gesclient/examples/$2/main.go -endpoint tcp://eventstore:1113/
