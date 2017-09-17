@@ -12,7 +12,7 @@ API is still under development and could change.
 
 ## Requirements
 
-- Go 1.8+
+- Go 1.4+
 
 ## License
 
