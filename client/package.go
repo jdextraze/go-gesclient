@@ -22,6 +22,15 @@ const (
 	FlagsAuthenticated TcpFlag = 0x01
 )
 
+var tcpFlags = map[byte]string{
+	0x00: "None",
+	0x01: "Authenticated",
+}
+
+func (f TcpFlag) String() string {
+	return tcpFlags[byte(f)]
+}
+
 type Package struct {
 	command       Command
 	flags         TcpFlag
@@ -142,7 +151,7 @@ func (p *Package) Data() []byte { return p.data }
 
 func (p *Package) String() string {
 	return fmt.Sprintf(
-		"Package{command: %s flags: %s correlationId: %s username: %s password: %s data: ...}",
+		"&{command:%s flags:%s correlationId:%s username:%s password:%s data:[...]}",
 		p.command, p.flags, p.correlationId, p.username, p.password,
 	)
 }

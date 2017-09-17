@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jdextraze/go-gesclient/client"
-	log "github.com/jdextraze/go-gesclient/logger"
 	"github.com/jdextraze/go-gesclient/subscriptions"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"github.com/satori/go.uuid"
@@ -269,7 +268,7 @@ func (h *connectionLogicHandler) closeTcpConnection(reason string) {
 
 	log.Debug("CloseTcpConnection")
 	h.connection.Close(reason)
-	h.tcpConnectionClosed(&tcpConnectionClosedMessage{h.connection, nil})
+	h.tcpConnectionClosed(newTcpConnectionClosedMessage(h.connection, nil))
 	h.connection = nil
 }
 
@@ -360,9 +359,7 @@ func (h *connectionLogicHandler) establishTcpConnection(msg message) error {
 		tcpEndpoint = establishTcpConnection.endpoints.tcpEndpoint
 	}
 	if tcpEndpoint == nil {
-		h.closeConnection(&closeConnectionMessage{
-			reason: "No endpoint to node specified.",
-		})
+		h.closeConnection(newCloseConnectionMessage("No endpoint to node specified.", nil))
 	}
 	if h.state != connectionState_Connecting {
 		return nil
@@ -373,10 +370,19 @@ func (h *connectionLogicHandler) establishTcpConnection(msg message) error {
 	h.connectingPhase = connectingPhase_ConnectionEstablishing
 	h.connection = client.NewPackageConnection(tcpEndpoint, uuid.NewV4(), h.settings.UseSslConnection(),
 		h.settings.TargetHost(), h.settings.ValidateService(), h.settings.ClientConnectionTimeout(),
-		func(c *client.PackageConnection, p *client.Package) { h.EnqueueMessage(&handleTcpPackageMessage{c, p}) },
-		func(c *client.PackageConnection, err error) { h.EnqueueMessage(&tcpConnectionErrorMessage{c, err}) },
-		func(c *client.PackageConnection) { h.EnqueueMessage(&tcpConnectionEstablishedMessage{c}) },
-		func(c *client.PackageConnection, err error) { h.EnqueueMessage(&tcpConnectionClosedMessage{c, err}) })
+		func(c *client.PackageConnection, p *client.Package) {
+			h.EnqueueMessage(newHandleTcpPackageMessage(c, p))
+		},
+		func(c *client.PackageConnection, err error) {
+			h.EnqueueMessage(newTcpConnectionErrorMessage(c, err))
+		},
+		func(c *client.PackageConnection) {
+			h.EnqueueMessage(newTcpConnectionEstablishedMessage(c))
+		},
+		func(c *client.PackageConnection, err error) {
+			h.EnqueueMessage(newTcpConnectionClosedMessage(c, err))
+		},
+	)
 	return h.connection.StartReceiving()
 }
 
@@ -510,10 +516,10 @@ func (h *connectionLogicHandler) handleTcpPackage(msg message) error {
 		if message == "" {
 			message = "<no message>"
 		}
-		return h.closeConnection(&closeConnectionMessage{
-			reason: "Connection-wide bad request received. Too dangerous to continue.",
-			error:  fmt.Errorf("Bad request received from server. Error: %s", message),
-		})
+		return h.closeConnection(newCloseConnectionMessage(
+			"Connection-wide bad request received. Too dangerous to continue.",
+			fmt.Errorf("Bad request received from server. Error: %s", message),
+		))
 	}
 
 	if found, operation := h.operations.TryGetActiveOperation(correlationId); found {
@@ -581,9 +587,7 @@ func (h *connectionLogicHandler) reconnectTo(endpoints *NodeEndpoints) {
 		endPoint = endpoints.TcpEndpoint()
 	}
 	if endPoint == nil {
-		h.closeConnection(&closeConnectionMessage{
-			reason: "No end point is specified while trying to reconnect.",
-		})
+		h.closeConnection(newCloseConnectionMessage("No end point is specified while trying to reconnect.", nil))
 		return
 	}
 	if h.state != connectionState_Connected || h.connection.RemoteEndpoint().String() == endPoint.String() {
@@ -598,7 +602,7 @@ func (h *connectionLogicHandler) reconnectTo(endpoints *NodeEndpoints) {
 
 	h.state = connectionState_Connecting
 	h.connectingPhase = connectingPhase_EndpointDiscovery
-	h.establishTcpConnection(&establishTcpConnectionMessage{endpoints})
+	h.establishTcpConnection(newEstablishTcpConnectionMessage(endpoints))
 }
 
 func (h *connectionLogicHandler) timerTick(msg message) error {
@@ -611,7 +615,7 @@ func (h *connectionLogicHandler) timerTick(msg message) error {
 
 			h.reconInfo = reconnectionInfo{h.reconInfo.ReconnectionAttempt + 1, h.elapsedTime()}
 			if h.settings.MaxReconnections() >= 0 && h.reconInfo.ReconnectionAttempt > h.settings.MaxReconnections() {
-				h.closeConnection(&closeConnectionMessage{"Reconnection limit reached.", nil})
+				h.closeConnection(newCloseConnectionMessage("Reconnection limit reached.", nil))
 			} else {
 				h.raiseReconnecting()
 				h.discoverEndpoint(nil)

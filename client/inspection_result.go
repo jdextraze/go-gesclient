@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"net"
 )
 
@@ -42,10 +41,3 @@ func (r *InspectionResult) Description() string { return r.description }
 func (r *InspectionResult) TcpEndpoint() net.Addr { return r.tcpEndpoint }
 
 func (r *InspectionResult) SecureTcpEndpoint() net.Addr { return r.secureTcpEndpoint }
-
-func (r *InspectionResult) String() string {
-	return fmt.Sprintf(
-		"InspectionResult{decision: %s, description: '%s', tcpEndpoint: %s, secureTcpEndpoint: %s}",
-		r.decision, r.description, r.tcpEndpoint, r.secureTcpEndpoint,
-	)
-}

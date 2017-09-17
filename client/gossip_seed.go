@@ -26,8 +26,5 @@ func (gs *GossipSeed) HostHeader() string {
 }
 
 func (gs *GossipSeed) String() string {
-	return fmt.Sprintf(
-		"GossipSeed{ipEndpoint: %s hostHeader: %s}",
-		gs.ipEndpoint, gs.hostHeader,
-	)
+	return fmt.Sprintf("&{ipEndpoint:%+v hostHeader:%s}", gs.ipEndpoint, gs.hostHeader)
 }

@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"github.com/jdextraze/go-gesclient/common"
 	"time"
 )
@@ -69,17 +68,6 @@ func (s *PersistentSubscriptionSettings) MinCheckPointCount() int32 { return s.m
 func (s *PersistentSubscriptionSettings) MaxCheckPointCount() int32 { return s.maxCheckPointCount }
 
 func (s *PersistentSubscriptionSettings) MaxSubscriberCount() int32 { return s.maxSubscriberCount }
-
-func (s *PersistentSubscriptionSettings) String() string {
-	return fmt.Sprintf(
-		"PersistentSubscriptionSettings{resolveLinkTos: %t startFrom: %d extraStatistics: %t mesageTimeout: %s "+
-			"maxRetryCount: %d liveBufferSize: %d readBatchSize: %d historyBufferSize: %d checkPointAfter: %s"+
-			"minCheckPointCount: %d maxCheckPointCount: %d maxSubscriberCount: %d namedConsumerStrategy: %s}",
-		s.resolveLinkTos, s.startFrom, s.extraStatistics, s.messageTimeout, s.MaxRetryCount, s.LiveBufferSize,
-		s.ReadBatchSize, s.HistoryBufferSize, s.checkPointAfter, s.minCheckPointCount, s.maxCheckPointCount,
-		s.maxSubscriberCount, s.NamedConsumerStrategy,
-	)
-}
 
 var DefaultPersistentSubscriptionSettings = NewPersistentSubscriptionSettings(false, -1, false, 30*time.Second,
 	500, 500, 10, 20, 2*time.Second, 10, 1000, 0, common.SystemConsumerStrategies_RoundRobin)

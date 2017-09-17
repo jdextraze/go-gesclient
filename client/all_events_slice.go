@@ -42,7 +42,7 @@ func (s *AllEventsSlice) IsEndOfStream() bool { return len(s.events) == 0 }
 
 func (s *AllEventsSlice) String() string {
 	return fmt.Sprintf(
-		"AllEventsSlice{readDirection: %s, fromPosition: %s, nextPosition: %s, events: [...], isEndOfStream: %t}",
+		"&{readDirection:%s, fromPosition:%+v, nextPosition:%+v, events:[...], isEndOfStream:%t}",
 		s.readDirection, s.fromPosition, s.nextPosition, s.IsEndOfStream(),
 	)
 }

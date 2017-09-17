@@ -137,6 +137,13 @@ func (d *StreamMetadata) MarshalJSON() ([]byte, error) {
 	return json.Marshal(data)
 }
 
+func (d *StreamMetadata) String() string {
+	return fmt.Sprintf(
+		"&{maxCount:%d maxAge:%s truncateBefore:%d cacheControl:%s acl:%+v customMetadata:%+v}",
+		d.maxCount, d.maxAge, d.truncateBefore, d.cacheControl, d.acl, d.customMetadata,
+	)
+}
+
 func CreateStreamMetadata(
 	maxCount *int,
 	maxAge *time.Duration,

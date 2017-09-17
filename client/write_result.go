@@ -23,5 +23,5 @@ func (r *WriteResult) LogPosition() *Position {
 }
 
 func (r *WriteResult) String() string {
-	return fmt.Sprintf("WriteResult{nextExpectedVersion: %d logPosition: %s}", r.nextExpectedVersion, r.logPosition)
+	return fmt.Sprintf("&{nextExpectedVersion:%d logPosition:%+v}", r.nextExpectedVersion, r.logPosition)
 }

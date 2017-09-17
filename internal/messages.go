@@ -115,6 +115,18 @@ type startOperationMessage struct {
 	timeout    time.Duration
 }
 
+func newStartOperationMessage(
+	operation client.Operation,
+	maxRetries int,
+	timeout time.Duration,
+) *startOperationMessage {
+	return &startOperationMessage{
+		operation:  operation,
+		maxRetries: maxRetries,
+		timeout:    timeout,
+	}
+}
+
 func (m *startOperationMessage) MessageID() int { return 6 }
 
 type startSubscriptionMessage struct {
@@ -126,6 +138,28 @@ type startSubscriptionMessage struct {
 	subscriptionDropped client.SubscriptionDroppedHandler
 	maxRetries          int
 	timeout             time.Duration
+}
+
+func newStartSubscriptionMessage(
+	source *tasks.CompletionSource,
+	streamId string,
+	resolveLinkTos bool,
+	userCredentials *client.UserCredentials,
+	eventAppeared client.EventAppearedHandler,
+	subscriptionDropped client.SubscriptionDroppedHandler,
+	maxRetries int,
+	timeout time.Duration,
+) *startSubscriptionMessage {
+	return &startSubscriptionMessage{
+		source:              source,
+		streamId:            streamId,
+		resolveLinkTos:      resolveLinkTos,
+		userCredentials:     userCredentials,
+		eventAppeared:       eventAppeared,
+		subscriptionDropped: subscriptionDropped,
+		maxRetries:          maxRetries,
+		timeout:             timeout,
+	}
 }
 
 func (m *startSubscriptionMessage) MessageID() int { return 7 }
@@ -173,11 +207,43 @@ type handleTcpPackageMessage struct {
 	pkg        *client.Package
 }
 
+func newHandleTcpPackageMessage(
+	connection *client.PackageConnection,
+	pkg *client.Package,
+) *handleTcpPackageMessage {
+	if connection == nil {
+		panic("connection is nil")
+	}
+	if pkg == nil {
+		panic("connection is nil")
+	}
+	return &handleTcpPackageMessage{
+		connection: connection,
+		pkg:        pkg,
+	}
+}
+
 func (m *handleTcpPackageMessage) MessageID() int { return 9 }
 
 type tcpConnectionErrorMessage struct {
 	connection *client.PackageConnection
 	error      error
+}
+
+func newTcpConnectionErrorMessage(
+	connection *client.PackageConnection,
+	err error,
+) *tcpConnectionErrorMessage {
+	if connection == nil {
+		panic("connection is nil")
+	}
+	if err == nil {
+		panic("error is nil")
+	}
+	return &tcpConnectionErrorMessage{
+		connection: connection,
+		error:      err,
+	}
 }
 
 func (m *tcpConnectionErrorMessage) MessageID() int { return 10 }
