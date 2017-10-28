@@ -13,14 +13,19 @@ import (
 func main() {
 	var debug bool
 	var addr string
-	var stream string
 	var verbose bool
+	var settingsJsonBytes []byte
 
 	flag.BoolVar(&debug, "debug", false, "Debug")
 	flag.StringVar(&addr, "endpoint", "tcp://127.0.0.1:1113", "EventStore address")
-	flag.StringVar(&stream, "stream", "Default", "Stream ID")
 	flag.BoolVar(&verbose, "verbose", false, "Verbose logging (Requires debug)")
 	flag.Parse()
+
+	if flag.NArg() != 1 {
+		flag.Usage()
+		return
+	}
+	settingsJsonBytes = []byte(flag.Arg(0))
 
 	if debug {
 		gesclient.Debug()
@@ -31,14 +36,18 @@ func main() {
 		log.Fatalf("Error connecting: %v", err)
 	}
 
-	if t, err := c.GetStreamMetadataAsync(stream, nil); err != nil {
-		log.Fatalf("Failed getting stream metadata: %v", err)
+	systemSettings, err := client.SystemSettingsFromJsonBytes(settingsJsonBytes)
+	if err != nil {
+		log.Fatalf("Invalid metadata: %v", err)
+	}
+
+	if t, err := c.SetSystemSettings(systemSettings, nil); err != nil {
+		log.Fatalf("Failed seting system settings: %v", err)
 	} else if err := t.Error(); err != nil {
-		log.Fatalf("Failed getting stream metadata result: %v", err)
+		log.Fatalf("Failed getting result for seting system settings: %v", err)
 	} else {
-		result := t.Result().(*client.StreamMetadataResult)
-		metadata := result.StreamMetadata()
-		log.Printf("metadata: %+v | %v", result, metadata)
+		result := t.Result().(*client.WriteResult)
+		log.Printf("result: %+v", result)
 	}
 
 	c.Close()

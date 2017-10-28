@@ -51,4 +51,4 @@ bct:
     - description: Start EventStore. Run publisher with go 1.4. Stop EventStore.
       command: robo start_es && robo bct 1.4 publisher && robo stop_es
   command: |
-    docker run --rm -v /$(PWD)/../../../://go/src --link eventstore golang:$1-alpine go run //go/src/github.com/jdextraze/go-gesclient/examples/$2/main.go -endpoint tcp://eventstore:1113/
+    docker run --rm -v /$(PWD)/../../../://go/src --link eventstore golang:$1-alpine go run //go/src/github.com/jdextraze/go-gesclient/examples/$2/main.go -endpoint tcp://admin:changeit@eventstore:1113/ "$3"

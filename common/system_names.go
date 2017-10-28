@@ -1,5 +1,7 @@
 package common
 
+import "strings"
+
 type SystemConsumerStrategies string
 
 const (
@@ -17,14 +19,28 @@ func (s SystemConsumerStrategies) ToString() string {
 }
 
 const (
-	SystemMetadata_MaxAge         = "$maxAge"
-	SystemMetadata_MaxCount       = "$maxCount"
-	SystemMetadata_TruncateBefore = "$tb"
-	SystemMetadata_CacheControl   = "$cacheControl"
-	SystemMetadata_Acl            = "$acl"
-	SystemMetadata_AclRead        = "$r"
-	SystemMetadata_AclWrite       = "$w"
-	SystemMetadata_AclDelete      = "$d"
-	SystemMetadata_AclMetaRead    = "$mr"
-	SystemMetadata_AclMetaWrite   = "$mw"
+	SystemMetadata_UserStreamAcl   = "$userStreamAcl"
+	SystemMetadata_SystemStreamAcl = "$systemStreamAcl"
+
+	SystemStreams_StreamsStream     = "$streams"
+	SystemStreams_SettingsStream    = "$settings"
+	SystemStreams_StatsStreamPrefix = "$stats"
+
+	SystemEventTypes_StreamDeleted   = "$streamDeleted"
+	SystemEventTypes_StatsCollection = "$statsCollected"
+	SystemEventTypes_LinkTo          = "$>"
+	SystemEventTypes_StreamMetadata  = "$metadata"
+	SystemEventTypes_Settings        = "$settings"
 )
+
+func SystemStreams_MetastreamOf(stream string) string {
+	return "$$" + stream
+}
+
+func SystemStreams_IsMetastream(stream string) bool {
+	return strings.HasPrefix(stream, "$$")
+}
+
+func SystemStreams_OriginalStreamOf(stream string) string {
+	return stream[2:]
+}

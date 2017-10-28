@@ -6,14 +6,14 @@ type StreamMetadataResult struct {
 	stream            string
 	isStreamDeleted   bool
 	metastreamVersion int
-	streamMetadata    *StreamMetadata
+	streamMetadata    StreamMetadata
 }
 
 func NewStreamMetadataResult(
 	stream string,
 	isStreamDeleted bool,
 	metastreamVersion int,
-	streamMetadata *StreamMetadata,
+	streamMetadata StreamMetadata,
 ) *StreamMetadataResult {
 	return &StreamMetadataResult{
 		stream:            stream,
@@ -29,7 +29,7 @@ func (r *StreamMetadataResult) IsStreamDeleted() bool { return r.isStreamDeleted
 
 func (r *StreamMetadataResult) MetastreamVersion() int { return r.metastreamVersion }
 
-func (r *StreamMetadataResult) StreamMetadata() *StreamMetadata { return r.streamMetadata }
+func (r *StreamMetadataResult) StreamMetadata() StreamMetadata { return r.streamMetadata }
 
 func (r *StreamMetadataResult) String() string {
 	return fmt.Sprintf(

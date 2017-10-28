@@ -126,7 +126,8 @@ type Connection interface {
 	// Task.Result() returns *client.StreamMetadataResult
 	GetStreamMetadataAsync(stream string, userCredentials *UserCredentials) (*tasks.Task, error)
 
-	//SetSystemSettings(settings SystemSettings, userCredentials *UserCredentials) (<-chan struct{}, error)
+	// Task.Result() returns *client.WriteResult
+	SetSystemSettings(settings *SystemSettings, userCredentials *UserCredentials) (*tasks.Task, error)
 
 	Connected() EventHandlers
 
