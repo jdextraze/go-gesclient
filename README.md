@@ -1,6 +1,6 @@
 # Event Store Go Client
 
-A [Go](https://golang.org/) port of the .Net client for [Event Store](https://geteventstore.com/).
+A [Go](https://golang.org/) port of the .Net client for [Event Store](https://eventstore.org/).
 
 ## Status
 
@@ -32,14 +32,13 @@ MIT. See [LICENSE](https://github.com/jdextraze/go-gesclient/blob/master/LICENSE
 * Cluster connection
 * Global authentication
 * Get/Set stream metadata
+* Set system settings
 
 ## TODO
 
 * Complete unit and integration tests
 * Benchmarks
 * Transaction
-* Scavenging database
-* System settings
 
 ## External tools
 
