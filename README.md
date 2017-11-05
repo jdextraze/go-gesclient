@@ -33,12 +33,13 @@ MIT. See [LICENSE](https://github.com/jdextraze/go-gesclient/blob/master/LICENSE
 * Global authentication
 * Get/Set stream metadata
 * Set system settings
+* Transaction
 
 ## TODO
 
 * Complete unit and integration tests
 * Benchmarks
-* Transaction
+* Projections Management
 
 ## External tools
 

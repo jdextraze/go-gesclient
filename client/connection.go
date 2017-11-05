@@ -35,10 +35,11 @@ type Connection interface {
 	AppendToStreamAsync(stream string, expectedVersion int, events []*EventData, userCredentials *UserCredentials) (
 		*tasks.Task, error)
 
-	//StartTransactionAsync(stream string, expectedVersion int, userCredentials *UserCredentials) (
-	//	<-chan Transaction, error)
+	// Task.Result() returns *client.Transaction
+	StartTransactionAsync(stream string, expectedVersion int, userCredentials *UserCredentials) (
+		*tasks.Task, error)
 
-	//ContinueTransaction(transactionId int64, userCredentials *UserCredentials) (Transaction, error)
+	ContinueTransaction(transactionId int64, userCredentials *UserCredentials) *Transaction
 
 	// Task.Result() returns *client.EventReadResult
 	ReadEventAsync(stream string, eventNumber int, resolveTos bool, userCredentials *UserCredentials) (
