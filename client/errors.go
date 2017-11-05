@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// TODO review those
 var (
 	WrongExpectedVersion = errors.New("Wrong expected version")
 	StreamDeleted        = errors.New("Stream deleted")

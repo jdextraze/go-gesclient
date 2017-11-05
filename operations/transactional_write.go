@@ -1,11 +1,11 @@
 package operations
 
 import (
-	"github.com/jdextraze/go-gesclient/tasks"
-	"github.com/jdextraze/go-gesclient/client"
-	"github.com/golang/protobuf/proto"
-	"github.com/jdextraze/go-gesclient/messages"
 	"fmt"
+	"github.com/golang/protobuf/proto"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/messages"
+	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type TransactionalWrite struct {
@@ -36,7 +36,7 @@ func (o *TransactionalWrite) createRequestDto() proto.Message {
 	events := make([]*messages.NewEvent, len(o.events))
 	for i, e := range o.events {
 		var (
-			dataContentType int32
+			dataContentType     int32
 			metadataContentType int32
 		)
 		eventType := e.Type()
@@ -44,18 +44,18 @@ func (o *TransactionalWrite) createRequestDto() proto.Message {
 			dataContentType = 1
 		}
 		events[i] = &messages.NewEvent{
-			EventId: e.EventId().Bytes(),
-			EventType: &eventType,
-			DataContentType: &dataContentType,
+			EventId:             e.EventId().Bytes(),
+			EventType:           &eventType,
+			DataContentType:     &dataContentType,
 			MetadataContentType: &metadataContentType,
-			Data: e.Data(),
-			Metadata: e.Metadata(),
+			Data:                e.Data(),
+			Metadata:            e.Metadata(),
 		}
 	}
 	return &messages.TransactionWrite{
 		TransactionId: &o.transactionId,
 		RequireMaster: &o.requireMaster,
-		Events: events,
+		Events:        events,
 	}
 }
 

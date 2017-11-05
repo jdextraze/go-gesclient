@@ -1,16 +1,16 @@
 package client
 
 import (
-	"github.com/jdextraze/go-gesclient/tasks"
 	"errors"
+	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type Transaction struct {
-	transactionId int64
+	transactionId   int64
 	userCredentials *UserCredentials
-	connection TransactionConnection
-	isRolledBack bool
-	isCommitted bool
+	connection      TransactionConnection
+	isRolledBack    bool
+	isCommitted     bool
 }
 
 type TransactionConnection interface {
@@ -20,7 +20,7 @@ type TransactionConnection interface {
 
 var (
 	CannotCommitRolledBackTransaction = errors.New("cannot commit a rolled back transaction")
-	TransactionIsAlreadyCommitted = errors.New("transaction is already committed")
+	TransactionIsAlreadyCommitted     = errors.New("transaction is already committed")
 )
 
 func NewTransaction(
@@ -33,9 +33,9 @@ func NewTransaction(
 	}
 
 	return &Transaction{
-		transactionId: transactionId,
+		transactionId:   transactionId,
 		userCredentials: userCredentials,
-		connection: connection,
+		connection:      connection,
 	}
 }
 

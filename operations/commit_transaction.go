@@ -1,11 +1,11 @@
 package operations
 
 import (
-	"github.com/jdextraze/go-gesclient/tasks"
-	"github.com/jdextraze/go-gesclient/client"
-	"github.com/golang/protobuf/proto"
-	"github.com/jdextraze/go-gesclient/messages"
 	"fmt"
+	"github.com/golang/protobuf/proto"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/messages"
+	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type CommitTransaction struct {
