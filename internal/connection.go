@@ -94,6 +94,57 @@ func (c *connection) AppendToStreamAsync(
 	return source.Task(), c.enqueueOperation(op)
 }
 
+func (c *connection) StartTransactionAsync(
+	stream string,
+	expectedVersion int,
+	userCredentials *client.UserCredentials,
+) (*tasks.Task, error) {
+	if stream == "" {
+		panic("stream is empty")
+	}
+	source := tasks.NewCompletionSource()
+	op := operations.NewStartTransaction(source, c.connectionSettings.RequireMaster(), stream, expectedVersion, c,
+		userCredentials)
+	return source.Task(), c.enqueueOperation(op)
+}
+
+func (c *connection) ContinueTransaction(
+	transactionId int64,
+	userCredentials *client.UserCredentials,
+) *client.Transaction {
+	return client.NewTransaction(transactionId, userCredentials, c)
+}
+
+func (c *connection) TransactionalWriteAsync(
+	transaction *client.Transaction,
+	events []*client.EventData,
+	userCredentials *client.UserCredentials,
+) (*tasks.Task, error) {
+	if transaction == nil {
+		panic("transaction is nil")
+	}
+	if events == nil {
+		panic("events is nil")
+	}
+	source := tasks.NewCompletionSource()
+	op := operations.NewTransactionalWrite(source, c.connectionSettings.RequireMaster(), transaction.TransactionId(),
+		events, userCredentials)
+	return source.Task(), c.enqueueOperation(op)
+}
+
+func (c *connection) CommitTransactionAsync(
+	transaction *client.Transaction,
+	userCredentials *client.UserCredentials,
+) (*tasks.Task, error) {
+	if transaction == nil {
+		panic("transaction is nil")
+	}
+	source := tasks.NewCompletionSource()
+	op := operations.NewCommitTransaction(source, c.connectionSettings.RequireMaster(), transaction.TransactionId(),
+		userCredentials)
+	return source.Task(), c.enqueueOperation(op)
+}
+
 func (c *connection) ReadEventAsync(
 	stream string,
 	eventNumber int,
