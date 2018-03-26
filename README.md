@@ -10,11 +10,7 @@ Original code is released under the [Event Store License](https://github.com/Eve
 
 ## Status
 
-This project is considered at a beta stage. *Use in production at your own risk.*
-
-### Warning
-
-API is still under development and could change.
+This project is considered ready for production.
 
 ### Implemented
 
@@ -76,10 +72,9 @@ or if you installed robo
 
 `robo start_es 4.1.0`
 
-## Examples
+### Examples
 
-For examples, look into `examples`. You will need an instance of event store to be running to try it.
-I suggest using [Docker](https://docker.com/) with [Event Store Docker Container](https://hub.docker.com/r/eventstore/eventstore/).
+For examples, look into the `examples` folder.
 
 ## Other languages client
 
