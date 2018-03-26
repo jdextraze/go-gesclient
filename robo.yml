@@ -4,7 +4,13 @@ build:
 
 start_es:
   summary: Start eventstore
-  command: docker run --rm --name eventstore -d -p 1113:1113 -p 2113:2113 eventstore/eventstore:release-3.9.3
+  usage: "[version]"
+  examples:
+    - description: Start EventStore version 3.9.3
+      command: robo start_es 3.9.3
+  command: |
+    if [ "$1" == "" ]; then exit 2; fi
+    docker run --rm --name eventstore -d -p 1113:1113 -p 2113:2113 eventstore/eventstore:release-$1
 
 stop_es:
   summary: Stop eventstore
@@ -12,11 +18,16 @@ stop_es:
 
 start_es_cluster:
   summary: Start eventstore cluster
+  usage: "[version]"
+  examples:
+    - description: Start a cluster of EventStore version 3.9.3
+      command: robo start_es_cluster 3.9.3
   command: |
+    if [ "$1" == "" ]; then exit 2; fi
     docker network create --attachable --subnet 172.30.0.0/24 esnet
-    docker run --rm --name eventstore1 --network esnet --network-alias escluster.net --ip 172.30.0.2 -d -p 2113:2113 -e EVENTSTORE_INT_IP=172.30.0.2 -e EVENTSTORE_EXT_IP=172.30.0.2 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-3.9.3
-    docker run --rm --name eventstore2 --network esnet --network-alias escluster.net --ip 172.30.0.3 -d -e EVENTSTORE_INT_IP=172.30.0.3 -e EVENTSTORE_EXT_IP=172.30.0.3 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-3.9.3
-    docker run --rm --name eventstore3 --network esnet --network-alias escluster.net --ip 172.30.0.4 -d -e EVENTSTORE_INT_IP=172.30.0.4 -e EVENTSTORE_EXT_IP=172.30.0.4 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-3.9.3
+    docker run --rm --name eventstore1 --network esnet --network-alias escluster.net --ip 172.30.0.2 -d -p 2113:2113 -e EVENTSTORE_INT_IP=172.30.0.2 -e EVENTSTORE_EXT_IP=172.30.0.2 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-$1
+    docker run --rm --name eventstore2 --network esnet --network-alias escluster.net --ip 172.30.0.3 -d -e EVENTSTORE_INT_IP=172.30.0.3 -e EVENTSTORE_EXT_IP=172.30.0.3 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-$1
+    docker run --rm --name eventstore3 --network esnet --network-alias escluster.net --ip 172.30.0.4 -d -e EVENTSTORE_INT_IP=172.30.0.4 -e EVENTSTORE_EXT_IP=172.30.0.4 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-$1
 
 stop_es_cluster:
   summary: Stop eventstore cluster
@@ -39,16 +50,11 @@ stop_cluster_test:
     docker stop publisher catchup_subscriber
     rm publisher catchup_subscriber
 
-generate_protobuf:
-  summary: Generate protobuf
-  command: |
-    protoc -I$GOPATH/src --go_out=$GOPATH/src $GOPATH/src/github.com/jdextraze/go-gesclient/messages/ClientMessageDtos.proto
-
 bct:
   summary: Backward compatibility test
   usage: "[go-version] [example]"
   examples:
     - description: Start EventStore. Run publisher with go 1.4. Stop EventStore.
-      command: robo start_es && robo bct 1.4 publisher && robo stop_es
+      command: robo start_es 3.9.3 && robo bct 1.4 publisher && robo stop_es
   command: |
     docker run --rm -v /$(PWD)/../../../://go/src --link eventstore golang:$1-alpine go run //go/src/github.com/jdextraze/go-gesclient/examples/$2/main.go -endpoint tcp://admin:changeit@eventstore:1113/ "$3"
