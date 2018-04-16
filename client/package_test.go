@@ -12,7 +12,7 @@ var _ = Describe("Package", func() {
 	payload := []byte{1, 2, 3, 4, 5}
 
 	Context("when no flags are set", func() {
-		flags := byte(0)
+		flags := client.FlagsNone
 
 		Describe("getting bytes", func() {
 			It("should return byte representation", func() {
@@ -23,8 +23,8 @@ var _ = Describe("Package", func() {
 					payload,
 					nil,
 				).Bytes()).To(Equal([]byte{
-					client.Command_BadRequest,
-					flags,
+					(byte)(client.Command_BadRequest),
+					(byte)(flags),
 					4, 3, 2, 1, 6, 5, 8, 7, 9, 10, 11, 12, 13, 14, 15, 16,
 					1, 2, 3, 4, 5,
 				}))
@@ -46,8 +46,8 @@ var _ = Describe("Package", func() {
 		Describe("build from bytes", func() {
 			It("should return TcpPackage", func() {
 				tcpPackage, _ := client.TcpPacketFromBytes([]byte{
-					client.Command_BadRequest,
-					flags,
+					(byte)(client.Command_BadRequest),
+					(byte)(flags),
 					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 					1, 2, 3, 4, 5,
 				})
@@ -58,7 +58,7 @@ var _ = Describe("Package", func() {
 	})
 
 	Context("when authenticated flags is set", func() {
-		flags := byte(1)
+		flags := client.FlagsAuthenticated
 
 		Describe("getting bytes", func() {
 			It("should return byte representation", func() {
@@ -69,8 +69,8 @@ var _ = Describe("Package", func() {
 					payload,
 					client.NewUserCredentials("test", "!test!"),
 				).Bytes()).To(Equal([]byte{
-					client.Command_BadRequest,
-					flags,
+					(byte)(client.Command_BadRequest),
+					(byte)(flags),
 					4, 3, 2, 1, 6, 5, 8, 7, 9, 10, 11, 12, 13, 14, 15, 16,
 					4, 116, 101, 115, 116, 6, 33, 116, 101, 115, 116, 33,
 					1, 2, 3, 4, 5,

@@ -5,79 +5,79 @@ type Command byte
 const (
 	_ Command = 0x00
 
-	Command_HeartbeatRequestCommand  = 0x01
-	Command_HeartbeatResponseCommand = 0x02
+	Command_HeartbeatRequestCommand  Command = 0x01
+	Command_HeartbeatResponseCommand Command = 0x02
 
-	Command_Ping = 0x03
-	Command_Pong = 0x04
+	Command_Ping Command = 0x03
+	Command_Pong Command = 0x04
 
-	Command_PrepareAck = 0x05
-	Command_CommitAck  = 0x06
+	Command_PrepareAck Command = 0x05
+	Command_CommitAck  Command = 0x06
 
-	Command_SlaveAssignment = 0x07
-	Command_CloneAssignment = 0x08
+	Command_SlaveAssignment Command = 0x07
+	Command_CloneAssignment Command = 0x08
 
-	Command_SubscribeReplica         = 0x10
-	Command_ReplicaLogPositionAck    = 0x11
-	Command_CreateChunk              = 0x12
-	Command_RawChunkBulk             = 0x13
-	Command_DataChunkBulk            = 0x14
-	Command_ReplicaSubscriptionRetry = 0x15
-	Command_ReplicaSubscribed        = 0x16
+	Command_SubscribeReplica         Command = 0x10
+	Command_ReplicaLogPositionAck    Command = 0x11
+	Command_CreateChunk              Command = 0x12
+	Command_RawChunkBulk             Command = 0x13
+	Command_DataChunkBulk            Command = 0x14
+	Command_ReplicaSubscriptionRetry Command = 0x15
+	Command_ReplicaSubscribed        Command = 0x16
 
 	// CLIENT COMMANDS
-	//    Command_CreateStream = 0x80
-	//    Command_CreateStreamCompleted = 0x81
+	//    Command_CreateStream Command = 0x80
+	//    Command_CreateStreamCompleted Command = 0x81
 
-	Command_WriteEvents          = 0x82
-	Command_WriteEventsCompleted = 0x83
+	Command_WriteEvents          Command = 0x82
+	Command_WriteEventsCompleted Command = 0x83
 
-	Command_TransactionStart           = 0x84
-	Command_TransactionStartCompleted  = 0x85
-	Command_TransactionWrite           = 0x86
-	Command_TransactionWriteCompleted  = 0x87
-	Command_TransactionCommit          = 0x88
-	Command_TransactionCommitCompleted = 0x89
+	Command_TransactionStart           Command = 0x84
+	Command_TransactionStartCompleted  Command = 0x85
+	Command_TransactionWrite           Command = 0x86
+	Command_TransactionWriteCompleted  Command = 0x87
+	Command_TransactionCommit          Command = 0x88
+	Command_TransactionCommitCompleted Command = 0x89
 
-	Command_DeleteStream          = 0x8A
-	Command_DeleteStreamCompleted = 0x8B
+	Command_DeleteStream          Command = 0x8A
+	Command_DeleteStreamCompleted Command = 0x8B
 
-	Command_ReadEvent                         = 0xB0
-	Command_ReadEventCompleted                = 0xB1
-	Command_ReadStreamEventsForward           = 0xB2
-	Command_ReadStreamEventsForwardCompleted  = 0xB3
-	Command_ReadStreamEventsBackward          = 0xB4
-	Command_ReadStreamEventsBackwardCompleted = 0xB5
-	Command_ReadAllEventsForward              = 0xB6
-	Command_ReadAllEventsForwardCompleted     = 0xB7
-	Command_ReadAllEventsBackward             = 0xB8
-	Command_ReadAllEventsBackwardCompleted    = 0xB9
+	Command_ReadEvent                         Command = 0xB0
+	Command_ReadEventCompleted                Command = 0xB1
+	Command_ReadStreamEventsForward           Command = 0xB2
+	Command_ReadStreamEventsForwardCompleted  Command = 0xB3
+	Command_ReadStreamEventsBackward          Command = 0xB4
+	Command_ReadStreamEventsBackwardCompleted Command = 0xB5
+	Command_ReadAllEventsForward              Command = 0xB6
+	Command_ReadAllEventsForwardCompleted     Command = 0xB7
+	Command_ReadAllEventsBackward             Command = 0xB8
+	Command_ReadAllEventsBackwardCompleted    Command = 0xB9
 
-	Command_SubscribeToStream                         = 0xC0
-	Command_SubscriptionConfirmation                  = 0xC1
-	Command_StreamEventAppeared                       = 0xC2
-	Command_UnsubscribeFromStream                     = 0xC3
-	Command_SubscriptionDropped                       = 0xC4
-	Command_ConnectToPersistentSubscription           = 0xC5
-	Command_PersistentSubscriptionConfirmation        = 0xC6
-	Command_PersistentSubscriptionStreamEventAppeared = 0xC7
-	Command_CreatePersistentSubscription              = 0xC8
-	Command_CreatePersistentSubscriptionCompleted     = 0xC9
-	Command_DeletePersistentSubscription              = 0xCA
-	Command_DeletePersistentSubscriptionCompleted     = 0xCB
-	Command_PersistentSubscriptionAckEvents           = 0xCC
-	Command_PersistentSubscriptionNakEvents           = 0xCD
-	Command_UpdatePersistentSubscription              = 0xCE
-	Command_UpdatePersistentSubscriptionCompleted     = 0xCF
+	Command_SubscribeToStream                         Command = 0xC0
+	Command_SubscriptionConfirmation                  Command = 0xC1
+	Command_StreamEventAppeared                       Command = 0xC2
+	Command_UnsubscribeFromStream                     Command = 0xC3
+	Command_SubscriptionDropped                       Command = 0xC4
+	Command_ConnectToPersistentSubscription           Command = 0xC5
+	Command_PersistentSubscriptionConfirmation        Command = 0xC6
+	Command_PersistentSubscriptionStreamEventAppeared Command = 0xC7
+	Command_CreatePersistentSubscription              Command = 0xC8
+	Command_CreatePersistentSubscriptionCompleted     Command = 0xC9
+	Command_DeletePersistentSubscription              Command = 0xCA
+	Command_DeletePersistentSubscriptionCompleted     Command = 0xCB
+	Command_PersistentSubscriptionAckEvents           Command = 0xCC
+	Command_PersistentSubscriptionNakEvents           Command = 0xCD
+	Command_UpdatePersistentSubscription              Command = 0xCE
+	Command_UpdatePersistentSubscriptionCompleted     Command = 0xCF
 
-	Command_ScavengeDatabase          = 0xD0
-	Command_ScavengeDatabaseCompleted = 0xD1
+	Command_ScavengeDatabase          Command = 0xD0
+	Command_ScavengeDatabaseCompleted Command = 0xD1
 
-	Command_BadRequest       = 0xF0
-	Command_NotHandled       = 0xF1
-	Command_Authenticate     = 0xF2
-	Command_Authenticated    = 0xF3
-	Command_NotAuthenticated = 0xF4
+	Command_BadRequest       Command = 0xF0
+	Command_NotHandled       Command = 0xF1
+	Command_Authenticate     Command = 0xF2
+	Command_Authenticated    Command = 0xF3
+	Command_NotAuthenticated Command = 0xF4
 )
 
 var commands = map[byte]string{

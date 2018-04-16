@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/jdextraze/go-gesclient/guid"
 	"github.com/jdextraze/go-gesclient/messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -11,17 +12,17 @@ import (
 var _ = Describe("RecordedEvent", func() {
 	var (
 		evt                 *RecordedEvent
-		streamId            string    = "Test"
-		id                  []byte    = uuid.NewV4().Bytes()
-		number              int32     = 123
-		typ                 string    = "Type"
-		data                []byte    = []byte{1, 2, 3}
-		metadata            []byte    = []byte{4, 5, 6}
-		dataContentType     int32     = 1
-		metadataContentType int32     = 0
-		now                 time.Time = time.Now()
-		created             int64     = now.UnixNano()/tick + ticksSinceEpoch
-		createdEpoch        int64     = now.Round(time.Millisecond).UnixNano() / int64(time.Millisecond)
+		streamId                  = "Test"
+		id                        = uuid.NewV4().Bytes()
+		number              int32 = 123
+		typ                       = "Type"
+		data                      = []byte{1, 2, 3}
+		metadata                  = []byte{4, 5, 6}
+		dataContentType     int32 = 1
+		metadataContentType int32 = 0
+		now                       = time.Now()
+		created                   = now.UnixNano()/tick + ticksSinceEpoch
+		createdEpoch              = now.Round(time.Millisecond).UnixNano() / int64(time.Millisecond)
 	)
 
 	BeforeEach(func() {
@@ -47,7 +48,7 @@ var _ = Describe("RecordedEvent", func() {
 
 	Describe("getting event id", func() {
 		It("should return mapped value", func() {
-			Expect(evt.EventId()).To(Equal(uuid.FromBytesOrNil(id)))
+			Expect(evt.EventId()).To(Equal(guid.FromBytes(id)))
 		})
 	})
 
@@ -83,7 +84,7 @@ var _ = Describe("RecordedEvent", func() {
 
 	Describe("getting created", func() {
 		It("should return mapped value", func() {
-			Expect(evt.Created().String()).To(Equal(now.String()))
+			Expect(evt.Created().String()).To(Equal(now.Round(time.Duration(tick)).String()))
 		})
 	})
 
