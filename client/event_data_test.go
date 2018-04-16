@@ -14,11 +14,11 @@ var _ = Describe("EventData", func() {
 	eventType := "Test"
 	isJson := true
 	data := []byte("{}")
-	metadata := []byte{}
+	var metadata []byte
 	var eventData *client.EventData
 
 	BeforeEach(func() {
-		eventData = eventData
+		eventData = client.NewEventData(id, eventType, isJson, data, metadata)
 	})
 
 	Describe("getting event id", func() {
