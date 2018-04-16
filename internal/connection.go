@@ -441,7 +441,7 @@ func (c *connection) AuthenticationFailed() client.EventHandlers {
 
 func (c *connection) String() string {
 	return fmt.Sprintf(
-		"Connection{name: '%s' connectionSettings: %s clusterSettings: %s}",
+		"Connection{name: '%s' connectionSettings: %+v clusterSettings: %+v}",
 		c.name, c.connectionSettings, c.clusterSettings,
 	)
 }

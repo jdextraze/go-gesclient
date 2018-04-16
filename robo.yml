@@ -4,17 +4,32 @@ build:
 
 start_es:
   summary: Start eventstore
-  usage: "[version]"
+  usage: "[version] [ssl]"
   examples:
     - description: Start EventStore version 3.9.3
       command: robo start_es 3.9.3
+    - description: Start EventStore version 3.9.3 with SSL
+      command: robo start_es 3.9.3 ssl
   command: |
     if [ "$1" == "" ]; then exit 2; fi
-    docker run --rm --name eventstore -d -p 1113:1113 -p 2113:2113 eventstore/eventstore:release-$1
+    if [ "$2" == "ssl" ]; then
+      SSL="-v /$(PWD)/eventstore-with-ssl/eventstore.conf://etc/eventstore/eventstore.conf";
+      SSL="$SSL -v /$(PWD)/eventstore-with-ssl/eventstore.p12://etc/eventstore/eventstore.p12";
+    else SSL=''; fi
+    docker run --rm --name eventstore -d -p 1113:1113 -p 2113:2113 $SSL eventstore/eventstore:release-$1
 
 stop_es:
   summary: Stop eventstore
   command: docker stop eventstore
+
+install_certificate:
+  summary: Install CSR in certificate store
+  command: |
+    case "$(uname -s)" in
+      Linux*)  cp eventstore-with-ssl/*.crt /usr/local/share/ca-certificates/; sudo update-ca-certificates;;
+      Darwin*) printf "Sorry. Not implemented.";;
+      MINGW*)  certutil -addstore -user -f "Root" eventstore-with-ssl/eventstore.crt; certutil -addstore -user -f "Root" eventstore-with-ssl/escluster.crt;;
+    esac
 
 start_es_cluster:
   summary: Start eventstore cluster
@@ -24,10 +39,14 @@ start_es_cluster:
       command: robo start_es_cluster 3.9.3
   command: |
     if [ "$1" == "" ]; then exit 2; fi
+    if [ "$2" == "ssl" ]; then
+      SSL="-v /$(PWD)/eventstore-with-ssl/eventstore.conf://etc/eventstore/eventstore.conf";
+      SSL="$SSL -v /$(PWD)/eventstore-with-ssl/escluster.p12://etc/eventstore/eventstore.p12";
+    else SSL=''; fi
     docker network create --attachable --subnet 172.30.0.0/24 esnet
-    docker run --rm --name eventstore1 --network esnet --network-alias escluster.net --ip 172.30.0.2 -d -p 2113:2113 -e EVENTSTORE_INT_IP=172.30.0.2 -e EVENTSTORE_EXT_IP=172.30.0.2 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-$1
-    docker run --rm --name eventstore2 --network esnet --network-alias escluster.net --ip 172.30.0.3 -d -e EVENTSTORE_INT_IP=172.30.0.3 -e EVENTSTORE_EXT_IP=172.30.0.3 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-$1
-    docker run --rm --name eventstore3 --network esnet --network-alias escluster.net --ip 172.30.0.4 -d -e EVENTSTORE_INT_IP=172.30.0.4 -e EVENTSTORE_EXT_IP=172.30.0.4 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-$1
+    docker run --rm --name eventstore1 --network esnet --network-alias escluster.net --ip 172.30.0.2 -d $SSL -p 2113:2113 -e EVENTSTORE_INT_IP=172.30.0.2 -e EVENTSTORE_EXT_IP=172.30.0.2 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-$1
+    docker run --rm --name eventstore2 --network esnet --network-alias escluster.net --ip 172.30.0.3 -d $SSL -e EVENTSTORE_INT_IP=172.30.0.3 -e EVENTSTORE_EXT_IP=172.30.0.3 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-$1
+    docker run --rm --name eventstore3 --network esnet --network-alias escluster.net --ip 172.30.0.4 -d $SSL -e EVENTSTORE_INT_IP=172.30.0.4 -e EVENTSTORE_EXT_IP=172.30.0.4 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_CLUSTER_DNS=escluster.net -e EVENTSTORE_CLUSTER_GOSSIP_PORT=2112 eventstore/eventstore:release-$1
 
 stop_es_cluster:
   summary: Stop eventstore cluster

@@ -40,7 +40,13 @@ func Create(settings *client.ConnectionSettings, uri *url.URL, name string) (cli
 			clusterSettings.ExternalGossipPort(),
 			clusterSettings.GossipSeeds(),
 			clusterSettings.GossipTimeout())
-	} else if scheme == "tcp" {
+	} else if scheme == "tcp" || scheme == "ssl" {
+		if scheme == "ssl" {
+			connectionSettings = client.ConnectionSettingsBuilderFrom(connectionSettings).
+				UseSslConnection(getUrlHostname(uri), true).
+				Build()
+		}
+
 		tcpEndpoint, err := net.ResolveTCPAddr("tcp", uri.Host)
 		if err != nil {
 			return nil, err

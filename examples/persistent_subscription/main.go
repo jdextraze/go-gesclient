@@ -6,29 +6,22 @@ import (
 	"github.com/jdextraze/go-gesclient"
 	"github.com/jdextraze/go-gesclient/client"
 	"log"
-	"net"
-	"net/url"
 	"os"
 	"os/signal"
-	"strings"
 	"time"
+	"github.com/jdextraze/go-gesclient/flags"
 )
 
-var debug bool
-var addr string
 var stream string
 var groupName string
-var verbose bool
 
 func main() {
-	flag.BoolVar(&debug, "debug", false, "Debug")
-	flag.StringVar(&addr, "endpoint", "tcp://127.0.0.1:1113", "EventStore address")
+	flags.Init(flag.CommandLine)
 	flag.StringVar(&stream, "stream", "Default", "Stream ID")
 	flag.StringVar(&groupName, "group", "Default", "Group name")
-	flag.BoolVar(&verbose, "verbose", false, "Verbose logging (Requires debug)")
 	flag.Parse()
 
-	if debug {
+	if flags.Debug() {
 		gesclient.Debug()
 	}
 
@@ -46,38 +39,7 @@ func main() {
 }
 
 func getConnection() client.Connection {
-	settingsBuilder := client.CreateConnectionSettings()
-
-	var uri *url.URL
-	var err error
-	if !strings.Contains(addr, "://") {
-		gossipSeeds := strings.Split(addr, ",")
-		endpoints := make([]*net.TCPAddr, len(gossipSeeds))
-		for i, gossipSeed := range gossipSeeds {
-			endpoints[i], err = net.ResolveTCPAddr("tcp", gossipSeed)
-			if err != nil {
-				log.Fatalf("Error resolving: %v", gossipSeed)
-			}
-		}
-		settingsBuilder.SetGossipSeedEndPoints(endpoints)
-	} else {
-		uri, err = url.Parse(addr)
-		if err != nil {
-			log.Fatalf("Error parsing address: %v", err)
-		}
-
-		if uri.User != nil {
-			username := uri.User.Username()
-			password, _ := uri.User.Password()
-			settingsBuilder.SetDefaultUserCredentials(client.NewUserCredentials(username, password))
-		}
-	}
-
-	if verbose {
-		settingsBuilder.EnableVerboseLogging()
-	}
-
-	c, err := gesclient.Create(settingsBuilder.Build(), uri, "AllCatchUpSubscriber")
+	c, err := flags.CreateConnection("AllCatchupSubscriber")
 	if err != nil {
 		log.Fatalf("Error creating connection: %v", err)
 	}
