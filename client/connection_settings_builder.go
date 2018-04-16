@@ -57,6 +57,33 @@ func CreateConnectionSettings() *ConnectionSettingsBuilder {
 	}
 }
 
+func ConnectionSettingsBuilderFrom(o *ConnectionSettings) *ConnectionSettingsBuilder {
+	return &ConnectionSettingsBuilder{
+		verboseLogging:              o.verboseLogging,
+		maxQueueSize:                o.maxQueueSize,
+		maxConcurrentItem:           o.maxConcurrentItem,
+		maxRetries:                  o.maxRetries,
+		maxReconnections:            o.maxReconnections,
+		requireMaster:               o.requireMaster,
+		reconnectionDelay:           o.reconnectionDelay,
+		operationTimeout:            o.operationTimeout,
+		operationTimeoutCheckPeriod: o.operationTimeoutCheckPeriod,
+		defaultUserCredentials:      o.DefaultUserCredentials,
+		useSslConnection:            o.useSslConnection,
+		targetHost:                  o.targetHost,
+		validateServer:              o.validateServer,
+		failOnNoServerResponse:      o.failOnNoServerResponse,
+		heartbeatInterval:           o.heartbeatInterval,
+		heartbeatTimeout:            o.heartbeatTimeout,
+		clusterDns:                  o.clusterDns,
+		maxDiscoverAttempts:         o.maxDiscoverAttempts,
+		externalGossipPort:          o.externalGossipPort,
+		gossipSeeds:                 o.gossipSeeds,
+		gossipTimeout:               o.gossipTimeout,
+		clientConnectionTimeout:     o.clientConnectionTimeout,
+	}
+}
+
 func (csb *ConnectionSettingsBuilder) EnableVerboseLogging() *ConnectionSettingsBuilder {
 	csb.verboseLogging = true
 	return csb

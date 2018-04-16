@@ -21,7 +21,7 @@ type PackageConnection struct {
 	connectionId          uuid.UUID
 	ssl                   bool
 	targetHost            string
-	validateService       bool
+	validateServer        bool
 	timeout               time.Duration
 	packageHandler        func(conn *PackageConnection, packet *Package)
 	errorHandler          func(conn *PackageConnection, err error)
@@ -41,7 +41,7 @@ func NewPackageConnection(
 	connectionId uuid.UUID,
 	ssl bool,
 	targetHost string,
-	validateService bool,
+	validateServer bool,
 	timeout time.Duration,
 	packageHandler func(conn *PackageConnection, packet *Package),
 	errorHandler func(conn *PackageConnection, err error),
@@ -53,7 +53,7 @@ func NewPackageConnection(
 		connectionId:          connectionId,
 		ssl:                   ssl,
 		targetHost:            targetHost,
-		validateService:       validateService,
+		validateServer:        validateServer,
 		timeout:               timeout,
 		packageHandler:        packageHandler,
 		errorHandler:          errorHandler,
@@ -72,8 +72,8 @@ func (c *PackageConnection) connect() {
 	var err error
 
 	if c.ssl {
-		conn, err = tls.DialWithDialer(&net.Dialer{Timeout: c.timeout}, c.ipEndpoint.Network(),
-			c.ipEndpoint.String(), &tls.Config{})
+		conn, err = tls.DialWithDialer(&net.Dialer{Timeout: c.timeout}, c.ipEndpoint.Network(), c.ipEndpoint.String(),
+			&tls.Config{ServerName: c.targetHost, InsecureSkipVerify: !c.validateServer})
 	} else {
 		conn, err = net.DialTimeout(c.ipEndpoint.Network(), c.ipEndpoint.String(), c.timeout)
 	}

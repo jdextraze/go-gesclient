@@ -28,6 +28,7 @@ This project is considered ready for production.
 * Get/Set stream metadata
 * Set system settings
 * Transaction
+* SSL connection
 
 ### Missing
 
@@ -42,7 +43,7 @@ This project is considered ready for production.
 
 ### Known issues
 
-* SSL connection are not working
+* None at the moment
 
 ## Getting started
 
@@ -70,11 +71,26 @@ See https://eventstore.org/docs/introduction/4.1.0/
 
 or if you installed robo
 
-`robo start_es 4.1.0`
+* Start a node: `robo start_es 4.1.0`
+* Start a node with SSL: `robo start_es 3.9.3 ssl`
+* Stop the node: `robo stop_es`
+* Start a cluster: `robo start_es_cluster 3.9.3`
+* Stop the cluster: `robo stop_es_cluster`
 
 ### Examples
 
-For examples, look into the `examples` folder.
+For examples, look into the `examples` folder. All examples connect to `tcp://localhost:1113` by default.
+
+#### Building
+
+To build all examples, use `robo build`.
+
+#### Using SSL
+
+To use SSL in examples, add `-ssl-host localhost -ssl-skip-verify` to the command line.
+
+You can also add the example certificates to your local store by running `robo install_certificate`.
+Then you don't need to add `-ssl-skip-verify`.
 
 ## Other languages client
 
