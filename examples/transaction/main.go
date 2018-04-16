@@ -5,9 +5,9 @@ import (
 	"flag"
 	"github.com/jdextraze/go-gesclient"
 	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/flags"
 	"github.com/satori/go.uuid"
 	"log"
-	"github.com/jdextraze/go-gesclient/flags"
 )
 
 func main() {

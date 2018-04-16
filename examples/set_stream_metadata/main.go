@@ -4,8 +4,8 @@ import (
 	"flag"
 	"github.com/jdextraze/go-gesclient"
 	"github.com/jdextraze/go-gesclient/client"
-	"log"
 	"github.com/jdextraze/go-gesclient/flags"
+	"log"
 )
 
 func main() {
