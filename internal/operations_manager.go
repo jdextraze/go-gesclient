@@ -6,8 +6,8 @@ import (
 	"github.com/satori/go.uuid"
 	"sort"
 	"sync"
-	"time"
 	"sync/atomic"
+	"time"
 )
 
 const maxWaitingOperations = 65536
@@ -35,8 +35,8 @@ func NewOperationsManager(
 		activeOperations:       map[uuid.UUID]*operationItem{},
 		waitingOperations:      make(chan *operationItem, maxWaitingOperations),
 		retryPendingOperations: []*operationItem{},
-		lock:                   &sync.Mutex{},
-		totalOperationCount:    0,
+		lock:                &sync.Mutex{},
+		totalOperationCount: 0,
 	}
 }
 
@@ -132,7 +132,7 @@ func (m *OperationsManager) TryScheduleWaitingOperations(c *client.PackageConnec
 			return err
 		}
 	}
-	atomic.StoreInt32(&m.totalOperationCount, int32(len(m.activeOperations) + len(m.waitingOperations)))
+	atomic.StoreInt32(&m.totalOperationCount, int32(len(m.activeOperations)+len(m.waitingOperations)))
 	m.lock.Unlock()
 	return nil
 }
@@ -177,7 +177,7 @@ func (m *OperationsManager) RemoveOperation(o *operationItem) bool {
 		return false
 	}
 	delete(m.activeOperations, o.CorrelationId)
-	atomic.StoreInt32(&m.totalOperationCount, int32(len(m.activeOperations) + len(m.waitingOperations)))
+	atomic.StoreInt32(&m.totalOperationCount, int32(len(m.activeOperations)+len(m.waitingOperations)))
 	return true
 }
 
