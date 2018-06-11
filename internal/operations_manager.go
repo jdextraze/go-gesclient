@@ -6,8 +6,11 @@ import (
 	"github.com/satori/go.uuid"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 )
+
+const maxWaitingOperations = 65536
 
 type OperationsManager struct {
 	connectionName         string
@@ -16,7 +19,7 @@ type OperationsManager struct {
 	waitingOperations      chan *operationItem
 	retryPendingOperations []*operationItem
 	lock                   sync.Locker
-	totalOperationCount    int
+	totalOperationCount    int32
 }
 
 func NewOperationsManager(
@@ -30,7 +33,7 @@ func NewOperationsManager(
 		connectionName:         connectionName,
 		settings:               settings,
 		activeOperations:       map[uuid.UUID]*operationItem{},
-		waitingOperations:      make(chan *operationItem, 65536), // TODO buffer size
+		waitingOperations:      make(chan *operationItem, maxWaitingOperations),
 		retryPendingOperations: []*operationItem{},
 		lock:                &sync.Mutex{},
 		totalOperationCount: 0,
@@ -63,7 +66,7 @@ func (m *OperationsManager) CleanUp() error {
 		m.retryPendingOperations[i] = nil
 	}
 	m.retryPendingOperations = []*operationItem{}
-	m.totalOperationCount = 0
+	atomic.StoreInt32(&m.totalOperationCount, 0)
 	return nil
 }
 
@@ -72,8 +75,8 @@ func (m *OperationsManager) CheckTimeoutsAndRetry(c *client.PackageConnection) e
 		panic("connection is nil")
 	}
 
-	removeOperations := []*operationItem{}
-	retryOperations := []*operationItem{}
+	var removeOperations []*operationItem
+	var retryOperations []*operationItem
 	for _, o := range m.activeOperations {
 		if o.ConnectionId != c.ConnectionId() {
 			retryOperations = append(retryOperations, o)
@@ -129,7 +132,7 @@ func (m *OperationsManager) TryScheduleWaitingOperations(c *client.PackageConnec
 			return err
 		}
 	}
-	m.totalOperationCount = len(m.activeOperations) + len(m.waitingOperations)
+	atomic.StoreInt32(&m.totalOperationCount, int32(len(m.activeOperations)+len(m.waitingOperations)))
 	m.lock.Unlock()
 	return nil
 }
@@ -147,7 +150,9 @@ func (m *OperationsManager) ExecuteOperation(o *operationItem, c *client.Package
 	return c.EnqueueSend(pkg)
 }
 
-func (m *OperationsManager) TotalOperationCount() int { return m.totalOperationCount }
+func (m *OperationsManager) TotalOperationCount() int {
+	return int(atomic.LoadInt32(&m.totalOperationCount))
+}
 
 func (m *OperationsManager) ScheduleOperationRetry(o *operationItem) error {
 	if !m.RemoveOperation(o) {
@@ -172,6 +177,7 @@ func (m *OperationsManager) RemoveOperation(o *operationItem) bool {
 		return false
 	}
 	delete(m.activeOperations, o.CorrelationId)
+	atomic.StoreInt32(&m.totalOperationCount, int32(len(m.activeOperations)+len(m.waitingOperations)))
 	return true
 }
 
