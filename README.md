@@ -29,10 +29,10 @@ This project is considered ready for production.
 * Set system settings
 * Transaction
 * SSL connection
+* Projections Management
 
 ### Missing
 
-* Projections Management
 * 64bit event number support
 
 ### Need Improvements
