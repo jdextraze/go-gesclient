@@ -1,5 +1,7 @@
 package projections
 
+import "fmt"
+
 type ProjectionDetails struct {
 	CoreProcessingTime                 int64
 	Version                            int
@@ -16,16 +18,20 @@ type ProjectionDetails struct {
 	Progress                           float32
 	LastCheckpoint                     string
 	EventsProcessedAfterRestart        int
-	StatusUrl                          string //*url.URL // TODO url
-	StateUrl                           string //*url.URL
-	ResultUrl                          string //*url.URL
-	QueryUrl                           string //*url.URL
-	EnableCommandUrl                   string //*url.URL
-	DisableCommandUrl                  string //*url.URL
+	StatusUrl                          string
+	StateUrl                           string
+	ResultUrl                          string
+	QueryUrl                           string
+	EnableCommandUrl                   string
+	DisableCommandUrl                  string
 	CheckpointStatus                   string
 	BufferedEvents                     int
 	WritePendingEventsBeforeCheckpoint int
 	WritePendingEventsAfterCheckpoint  int
+}
+
+func (d *ProjectionDetails) String() string {
+	return fmt.Sprintf("Name: %s Status: %s Mode: %s", d.Name, d.Status, d.Mode)
 }
 
 type ListResult struct {
