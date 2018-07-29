@@ -214,7 +214,7 @@ func (s *subscriptionBase) InspectPackage(p *client.Package) (*client.Inspection
 					masterInfo.GetExternalTcpPort()))
 				secureTcpEndpoint, err = net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d",
 					masterInfo.GetExternalSecureTcpAddress(), masterInfo.GetExternalSecureTcpPort()))
-				return client.NewInspectionResult(client.InspectionDecision_Retry, "NotHandled - NotMaster",
+				return client.NewInspectionResult(client.InspectionDecision_Reconnect, "NotHandled - NotMaster",
 					tcpEndpoint, secureTcpEndpoint), nil
 			default:
 				log.Errorf("Unknown NotHandledReason: %s.", dto.Reason)
