@@ -54,14 +54,13 @@ This project is considered ready for production.
 ### Install
 
 1. Install using `go get -u github.com/jdextraze/go-gesclient`.
-2. Install *govendor* with `go get -u github.com/kardianos/govendor`.
+2. Install [govendor](https://github.com/kardianos/govendor) with `go get -u github.com/kardianos/govendor`.
 3. Install vendor packages with `govendor sync`
 
 ### Optional Tools
 
 * [Robo](https://github.com/tj/robo) (`go get github.com/tj/robo`)
 * [Docker](https://www.docker.com/get-docker)
-* [Dep](https://github.com/golang/dep)
 
 ### Running EventStore on local machine
 
