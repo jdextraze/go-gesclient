@@ -1,12 +1,12 @@
 package client_test
 
 import (
+	"github.com/gofrs/uuid"
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/guid"
 	"github.com/jdextraze/go-gesclient/messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/satori/go.uuid"
 )
 
 var _ = Describe("EventData", func() {

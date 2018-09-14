@@ -1,19 +1,20 @@
 package client
 
 import (
+	"time"
+
+	"github.com/gofrs/uuid"
 	"github.com/jdextraze/go-gesclient/guid"
 	"github.com/jdextraze/go-gesclient/messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/satori/go.uuid"
-	"time"
 )
 
 var _ = Describe("RecordedEvent", func() {
 	var (
 		evt                 *RecordedEvent
 		streamId                  = "Test"
-		id                        = uuid.NewV4().Bytes()
+		id                        = uuid.Must(uuid.NewV4()).Bytes()
 		number              int32 = 123
 		typ                       = "Type"
 		data                      = []byte{1, 2, 3}

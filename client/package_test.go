@@ -1,10 +1,10 @@
 package client_test
 
 import (
+	"github.com/gofrs/uuid"
 	"github.com/jdextraze/go-gesclient/client"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/satori/go.uuid"
 )
 
 var _ = Describe("Package", func() {

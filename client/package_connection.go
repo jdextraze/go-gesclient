@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/binary"
 	"errors"
-	"github.com/satori/go.uuid"
 	"io"
 	"net"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/gofrs/uuid"
 )
 
 type PackageConnection struct {

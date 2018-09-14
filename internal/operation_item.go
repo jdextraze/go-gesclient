@@ -2,10 +2,11 @@ package internal
 
 import (
 	"fmt"
-	"github.com/jdextraze/go-gesclient/client"
-	"github.com/satori/go.uuid"
 	"sync/atomic"
 	"time"
+
+	"github.com/gofrs/uuid"
+	"github.com/jdextraze/go-gesclient/client"
 )
 
 var operationItemNextSeqNo int64 = -1
@@ -29,7 +30,7 @@ func newOperationItem(operation client.Operation, maxRetries int, timeout time.D
 		maxRetries:    maxRetries,
 		timeout:       timeout,
 		createdTime:   time.Now().UTC(),
-		CorrelationId: uuid.NewV4(),
+		CorrelationId: uuid.Must(uuid.NewV4()),
 		RetryCount:    0,
 		LastUpdated:   time.Now().UTC(),
 	}

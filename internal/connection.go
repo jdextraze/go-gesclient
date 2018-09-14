@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
+	"github.com/gofrs/uuid"
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/common"
 	"github.com/jdextraze/go-gesclient/operations"
 	"github.com/jdextraze/go-gesclient/subscriptions"
 	"github.com/jdextraze/go-gesclient/tasks"
-	"github.com/satori/go.uuid"
-	"time"
 )
 
 type connection struct {
@@ -35,7 +36,7 @@ func NewConnection(
 	}
 
 	if name == "" {
-		name = fmt.Sprintf("ES-%s", uuid.NewV4())
+		name = fmt.Sprintf("ES-%s", uuid.Must(uuid.NewV4()))
 	}
 
 	c := &connection{
@@ -344,14 +345,14 @@ func (c *connection) SetStreamMetadataAsync(
 	var metaevent *client.EventData
 	switch metadata.(type) {
 	case []byte:
-		metaevent = client.NewEventData(uuid.NewV4(), common.SystemEventTypes_StreamMetadata, true, metadata.([]byte),
+		metaevent = client.NewEventData(uuid.Must(uuid.NewV4()), common.SystemEventTypes_StreamMetadata, true, metadata.([]byte),
 			nil)
 	case client.StreamMetadata, *client.StreamMetadata:
 		data, err := json.Marshal(metadata)
 		if err != nil {
 			return nil, err
 		}
-		metaevent = client.NewEventData(uuid.NewV4(), common.SystemEventTypes_StreamMetadata, true, data, nil)
+		metaevent = client.NewEventData(uuid.Must(uuid.NewV4()), common.SystemEventTypes_StreamMetadata, true, data, nil)
 	default:
 		return nil, fmt.Errorf("Unknown metadata type: %v", metadata)
 	}
@@ -405,7 +406,7 @@ func (c *connection) SetSystemSettings(
 	if err != nil {
 		return nil, err
 	}
-	evt := client.NewEventData(uuid.NewV4(), common.SystemEventTypes_Settings, true, data, nil)
+	evt := client.NewEventData(uuid.Must(uuid.NewV4()), common.SystemEventTypes_Settings, true, data, nil)
 	return c.AppendToStreamAsync(common.SystemStreams_SettingsStream, client.ExpectedVersion_Any,
 		[]*client.EventData{evt}, userCredentials)
 }
