@@ -2,9 +2,10 @@ package internal
 
 import (
 	"fmt"
-	"github.com/jdextraze/go-gesclient/subscriptions"
-	"github.com/satori/go.uuid"
 	"time"
+
+	"github.com/gofrs/uuid"
+	"github.com/jdextraze/go-gesclient/subscriptions"
 )
 
 type SubscriptionItem struct {
@@ -32,7 +33,7 @@ func NewSubscriptionItem(
 		maxRetries:    maxRetries,
 		timeout:       timeout,
 		createdTime:   time.Now().UTC(),
-		CorrelationId: uuid.NewV4(),
+		CorrelationId: uuid.Must(uuid.NewV4()),
 		RetryCount:    0,
 		LastUpdated:   time.Now().UTC(),
 	}

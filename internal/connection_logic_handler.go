@@ -3,14 +3,15 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/subscriptions"
-	"github.com/jdextraze/go-gesclient/tasks"
-	"github.com/satori/go.uuid"
 	"net"
 	"reflect"
 	"sync/atomic"
 	"time"
+
+	"github.com/gofrs/uuid"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/subscriptions"
+	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type ConnectionLogicHandler interface {
@@ -368,7 +369,7 @@ func (h *connectionLogicHandler) establishTcpConnection(msg message) error {
 		return nil
 	}
 	h.connectingPhase = connectingPhase_ConnectionEstablishing
-	h.connection = client.NewPackageConnection(tcpEndpoint, uuid.NewV4(), h.settings.UseSslConnection(),
+	h.connection = client.NewPackageConnection(tcpEndpoint, uuid.Must(uuid.NewV4()), h.settings.UseSslConnection(),
 		h.settings.TargetHost(), h.settings.ValidateService(), h.settings.ClientConnectionTimeout(),
 		func(c *client.PackageConnection, p *client.Package) {
 			h.EnqueueMessage(newHandleTcpPackageMessage(c, p))
@@ -401,7 +402,7 @@ func (h *connectionLogicHandler) tcpConnectionEstablished(msg message) error {
 
 	if h.settings.DefaultUserCredentials != nil {
 		h.connectingPhase = connectingPhase_Authentication
-		h.authInfo = authInfo{uuid.NewV4(), h.elapsedTime()}
+		h.authInfo = authInfo{uuid.Must(uuid.NewV4()), h.elapsedTime()}
 		return h.connection.EnqueueSend(client.NewTcpPackage(
 			client.Command_Authenticate,
 			client.FlagsAuthenticated,
@@ -671,7 +672,7 @@ func (h *connectionLogicHandler) manageHeartbeats() error {
 
 	if h.heartbeatInfo.IsIntervalStage {
 		h.connection.EnqueueSend(client.NewTcpPackage(client.Command_HeartbeatRequestCommand, client.FlagsNone,
-			uuid.NewV4(), nil, nil))
+			uuid.Must(uuid.NewV4()), nil, nil))
 		h.heartbeatInfo = heartbeatInfo{h.heartbeatInfo.LastPackageNumber, false, h.elapsedTime()}
 	} else {
 		msg := fmt.Sprintf(

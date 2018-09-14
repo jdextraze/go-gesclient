@@ -1,10 +1,12 @@
 package internal
 
 import (
+	"bytes"
 	"fmt"
-	"github.com/jdextraze/go-gesclient/client"
-	"github.com/satori/go.uuid"
 	"time"
+
+	"github.com/gofrs/uuid"
+	"github.com/jdextraze/go-gesclient/client"
 )
 
 type SubscriptionsManager struct {
@@ -59,12 +61,12 @@ func (m *SubscriptionsManager) CleanUp() error {
 
 func (m *SubscriptionsManager) PurgeSubscribedAndDroppedSubscriptions(connectionId uuid.UUID) {
 	for _, s := range m.activeSubscriptions {
-		if s.IsSubscribed && uuid.Equal(s.ConnectionId, connectionId) {
+		if s.IsSubscribed && bytes.Equal(s.ConnectionId.Bytes(), connectionId.Bytes()) {
 			s.Operation().ConnectionClosed()
 		}
 	}
 	for i, s := range m.activeSubscriptions {
-		if s.IsSubscribed && uuid.Equal(s.ConnectionId, connectionId) {
+		if s.IsSubscribed && bytes.Equal(s.ConnectionId.Bytes(), connectionId.Bytes()) {
 			delete(m.activeSubscriptions, i)
 		}
 	}
@@ -142,7 +144,7 @@ func (m *SubscriptionsManager) StartSubscription(s *SubscriptionItem, c *client.
 		return nil
 	}
 
-	s.CorrelationId = uuid.NewV4()
+	s.CorrelationId = uuid.Must(uuid.NewV4())
 	s.ConnectionId = c.ConnectionId()
 	s.LastUpdated = time.Now().UTC()
 

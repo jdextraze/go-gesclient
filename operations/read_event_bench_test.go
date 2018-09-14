@@ -1,16 +1,17 @@
 package operations_test
 
 import (
+	"testing"
+
+	"github.com/gofrs/uuid"
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/tasks"
-	"github.com/satori/go.uuid"
-	"testing"
 )
 
 func init() {
 	ensureConnection()
 	t, err := es.AppendToStreamAsync("BenchmarkReadEvent", client.ExpectedVersion_Any, []*client.EventData{
-		client.NewEventData(uuid.NewV4(), "Benchmark", true, []byte(`{}`), []byte(`{}`)),
+		client.NewEventData(uuid.Must(uuid.NewV4()), "Benchmark", true, []byte(`{}`), []byte(`{}`)),
 	}, nil)
 	if err != nil {
 		panic(err)

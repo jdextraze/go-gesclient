@@ -3,14 +3,15 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"github.com/jdextraze/go-gesclient"
-	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/flags"
-	"github.com/satori/go.uuid"
 	"log"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/gofrs/uuid"
+	"github.com/jdextraze/go-gesclient"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/flags"
 )
 
 func main() {
@@ -53,7 +54,7 @@ func main() {
 		default:
 		}
 		data, _ := json.Marshal(&TestEvent{})
-		evt := client.NewEventData(uuid.NewV4(), "TestEvent", true, data, nil)
+		evt := client.NewEventData(uuid.Must(uuid.NewV4()), "TestEvent", true, data, nil)
 		log.Printf("-> '%s': %+v", stream, evt)
 		task, err := c.AppendToStreamAsync(stream, client.ExpectedVersion_Any, []*client.EventData{evt}, nil)
 		if err != nil {
