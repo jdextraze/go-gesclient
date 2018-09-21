@@ -17,7 +17,7 @@ func BenchmarkAppendToStreamSync(b *testing.B) {
 			"BenchmarkAppendToStreamSync",
 			client.ExpectedVersion_Any,
 			[]*client.EventData{
-				client.NewEventData(uuid.NewV4(), "Benchmark", true, []byte(`{}`), []byte(``)),
+				client.NewEventData(uuid.Must(uuid.NewV4()), "Benchmark", true, []byte(`{}`), []byte(``)),
 			},
 			nil,
 		)
@@ -40,7 +40,7 @@ func BenchmarkAppendToStreamAsync(b *testing.B) {
 			"BenchmarkAppendToStreamAsync",
 			client.ExpectedVersion_Any,
 			[]*client.EventData{
-				client.NewEventData(uuid.NewV4(), "Benchmark", true, []byte(`{}`), []byte(``)),
+				client.NewEventData(uuid.Must(uuid.NewV4()), "Benchmark", true, []byte(`{}`), []byte(``)),
 			},
 			nil,
 		)
@@ -61,7 +61,7 @@ func AppendToStreamBatchSync(batchSize int, b *testing.B) {
 	events := make([]*client.EventData, batchSize)
 	for n := 0; n < b.N; n += batchSize {
 		for i := 0; i < batchSize; i++ {
-			events[i] = client.NewEventData(uuid.NewV4(), "Benchmark", true, []byte(`{}`), []byte(``))
+			events[i] = client.NewEventData(uuid.Must(uuid.NewV4()), "Benchmark", true, []byte(`{}`), []byte(``))
 		}
 		t, err := es.AppendToStreamAsync(
 			"AppendToStreamBatchSync",
@@ -88,13 +88,13 @@ func BenchmarkAppendToStreamBatchSync_1000(b *testing.B) { AppendToStreamBatchSy
 
 func AppendToStreamBatchAsync(batchSize int, b *testing.B) {
 	var err error
-	stream := "AppendToStreamBatchAsync-" + uuid.NewV4().String()
+	stream := "AppendToStreamBatchAsync-" + uuid.Must(uuid.NewV4()).String()
 	_tasks := make([]*tasks.Task, (b.N/batchSize)+1)
 	events := make([]*client.EventData, batchSize)
 	c := 0
 	for n := 0; n < b.N; n += batchSize {
 		for i := 0; i < batchSize; i++ {
-			events[i] = client.NewEventData(uuid.NewV4(), "Benchmark", true, []byte(`{}`), []byte(``))
+			events[i] = client.NewEventData(uuid.Must(uuid.NewV4()), "Benchmark", true, []byte(`{}`), []byte(``))
 		}
 		_tasks[c], err = es.AppendToStreamAsync(
 			stream,
@@ -126,13 +126,13 @@ func BenchmarkAppendToStreamBatchAsync_500(b *testing.B)  { AppendToStreamBatchA
 func BenchmarkAppendToStreamBatchAsync_1000(b *testing.B) { AppendToStreamBatchAsync(1000, b) }
 
 func BenchmarkAppendToStreamSyncWithExpectedVersion(b *testing.B) {
-	stream := "BenchmarkAppendToStreamSyncWithExpectedVersion-" + uuid.NewV4().String()
+	stream := "BenchmarkAppendToStreamSyncWithExpectedVersion-" + uuid.Must(uuid.NewV4()).String()
 	for n := 0; n < b.N; n++ {
 		t, err := es.AppendToStreamAsync(
 			stream,
 			n-1,
 			[]*client.EventData{
-				client.NewEventData(uuid.NewV4(), "Benchmark", true, []byte(`{}`), []byte(``)),
+				client.NewEventData(uuid.Must(uuid.NewV4()), "Benchmark", true, []byte(`{}`), []byte(``)),
 			},
 			nil,
 		)
@@ -148,7 +148,7 @@ func BenchmarkAppendToStreamSyncWithExpectedVersion(b *testing.B) {
 }
 
 func BenchmarkAppendToStreamAsyncWithExpectedVersion(b *testing.B) {
-	stream := "BenchmarkAppendToStreamAsyncWithExpectedVersion-" + uuid.NewV4().String()
+	stream := "BenchmarkAppendToStreamAsyncWithExpectedVersion-" + uuid.Must(uuid.NewV4()).String()
 	var err error
 	_tasks := make([]*tasks.Task, b.N)
 	for n := 0; n < b.N; n++ {
@@ -156,7 +156,7 @@ func BenchmarkAppendToStreamAsyncWithExpectedVersion(b *testing.B) {
 			stream,
 			n-1,
 			[]*client.EventData{
-				client.NewEventData(uuid.NewV4(), "Benchmark", true, []byte(`{}`), []byte(``)),
+				client.NewEventData(uuid.Must(uuid.NewV4()), "Benchmark", true, []byte(`{}`), []byte(``)),
 			},
 			nil,
 		)
@@ -174,11 +174,11 @@ func BenchmarkAppendToStreamAsyncWithExpectedVersion(b *testing.B) {
 }
 
 func AppendToStreamBatchSyncWithExpectedVersion(batchSize int, b *testing.B) {
-	stream := "BenchmarkAppendToStreamBatchSyncWithExpectedVersion-" + uuid.NewV4().String()
+	stream := "BenchmarkAppendToStreamBatchSyncWithExpectedVersion-" + uuid.Must(uuid.NewV4()).String()
 	events := make([]*client.EventData, batchSize)
 	for n := 0; n < b.N; n += batchSize {
 		for i := 0; i < batchSize; i++ {
-			events[i] = client.NewEventData(uuid.NewV4(), "Benchmark", true, []byte(`{}`), []byte(``))
+			events[i] = client.NewEventData(uuid.Must(uuid.NewV4()), "Benchmark", true, []byte(`{}`), []byte(``))
 		}
 		t, err := es.AppendToStreamAsync(
 			stream,
@@ -215,13 +215,13 @@ func BenchmarkAppendToStreamBatchWithExpectedVersionSync_1000(b *testing.B) {
 
 func AppendToStreamBatchAsyncWithExpectedVersion(batchSize int, b *testing.B) {
 	var err error
-	stream := "AppendToStreamBatchAsync-" + uuid.NewV4().String()
+	stream := "AppendToStreamBatchAsync-" + uuid.Must(uuid.NewV4()).String()
 	_tasks := make([]*tasks.Task, (b.N/batchSize)+1)
 	events := make([]*client.EventData, batchSize)
 	c := 0
 	for n := 0; n < b.N; n += batchSize {
 		for i := 0; i < batchSize; i++ {
-			events[i] = client.NewEventData(uuid.NewV4(), "Benchmark", true, []byte(`{}`), []byte(``))
+			events[i] = client.NewEventData(uuid.Must(uuid.NewV4()), "Benchmark", true, []byte(`{}`), []byte(``))
 		}
 		_tasks[c], err = es.AppendToStreamAsync(
 			stream,

@@ -13,7 +13,7 @@ var _ = Describe("RecordedEvent", func() {
 	var (
 		evt                 *RecordedEvent
 		streamId                  = "Test"
-		id                        = uuid.NewV4().Bytes()
+		id                        = uuid.Must(uuid.NewV4()).Bytes()
 		number              int32 = 123
 		typ                       = "Type"
 		data                      = []byte{1, 2, 3}

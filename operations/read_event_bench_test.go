@@ -10,7 +10,7 @@ import (
 func init() {
 	ensureConnection()
 	t, err := es.AppendToStreamAsync("BenchmarkReadEvent", client.ExpectedVersion_Any, []*client.EventData{
-		client.NewEventData(uuid.NewV4(), "Benchmark", true, []byte(`{}`), []byte(`{}`)),
+		client.NewEventData(uuid.Must(uuid.NewV4()), "Benchmark", true, []byte(`{}`), []byte(`{}`)),
 	}, nil)
 	if err != nil {
 		panic(err)

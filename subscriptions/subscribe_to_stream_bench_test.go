@@ -40,7 +40,7 @@ func appendToStreamBatchAsync(stream string, batchSize int, size int) error {
 	c := 0
 	for n := 0; n < size; n += batchSize {
 		for i := 0; i < batchSize; i++ {
-			events[i] = client.NewEventData(uuid.NewV4(), "Benchmark", true, []byte(`{}`), []byte(``))
+			events[i] = client.NewEventData(uuid.Must(uuid.NewV4()), "Benchmark", true, []byte(`{}`), []byte(``))
 		}
 		_tasks[c], err = es.AppendToStreamAsync(
 			stream,
@@ -66,7 +66,7 @@ func appendToStreamBatchAsync(stream string, batchSize int, size int) error {
 
 func BenchmarkSubscribeToStream(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		stream := "AppendToStreamBatchAsync-" + uuid.NewV4().String()
+		stream := "AppendToStreamBatchAsync-" + uuid.Must(uuid.NewV4()).String()
 		c := make(chan *client.ResolvedEvent, 100000)
 		task, _ := es.SubscribeToStreamAsync(stream, true,
 			func(s client.EventStoreSubscription, r *client.ResolvedEvent) error { c <- r; return nil },
@@ -88,7 +88,7 @@ func BenchmarkSubscribeToStream(b *testing.B) {
 }
 
 func BenchmarkSubscribeToStreamPerEvent(b *testing.B) {
-	stream := "AppendToStreamBatchAsync-" + uuid.NewV4().String()
+	stream := "AppendToStreamBatchAsync-" + uuid.Must(uuid.NewV4()).String()
 	c := make(chan *client.ResolvedEvent, b.N)
 	task, _ := es.SubscribeToStreamAsync(stream, true,
 		func(s client.EventStoreSubscription, r *client.ResolvedEvent) error { c <- r; return nil },
