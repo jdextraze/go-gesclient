@@ -72,7 +72,7 @@ type TestEvent struct{}
 func write(t *client.Transaction) {
 	log.Printf("Writing to transaction #%d", t.TransactionId())
 	data, _ := json.Marshal(&TestEvent{})
-	evt := client.NewEventData(uuid.NewV4(), "TestEvent", true, data, nil)
+	evt := client.NewEventData(uuid.Must(uuid.NewV4()), "TestEvent", true, data, nil)
 	task, err := t.WriteAsync([]*client.EventData{evt})
 	if err != nil {
 		log.Printf("Error occured while writing to transaction: %v", err)

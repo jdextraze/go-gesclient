@@ -142,7 +142,7 @@ func (m *SubscriptionsManager) StartSubscription(s *SubscriptionItem, c *client.
 		return nil
 	}
 
-	s.CorrelationId = uuid.NewV4()
+	s.CorrelationId = uuid.Must(uuid.NewV4())
 	s.ConnectionId = c.ConnectionId()
 	s.LastUpdated = time.Now().UTC()
 

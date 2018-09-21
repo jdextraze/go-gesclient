@@ -32,7 +32,7 @@ func NewSubscriptionItem(
 		maxRetries:    maxRetries,
 		timeout:       timeout,
 		createdTime:   time.Now().UTC(),
-		CorrelationId: uuid.NewV4(),
+		CorrelationId: uuid.Must(uuid.NewV4()),
 		RetryCount:    0,
 		LastUpdated:   time.Now().UTC(),
 	}

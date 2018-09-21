@@ -53,7 +53,7 @@ func main() {
 		default:
 		}
 		data, _ := json.Marshal(&TestEvent{})
-		evt := client.NewEventData(uuid.NewV4(), "TestEvent", true, data, nil)
+		evt := client.NewEventData(uuid.Must(uuid.NewV4()), "TestEvent", true, data, nil)
 		log.Printf("-> '%s': %+v", stream, evt)
 		task, err := c.AppendToStreamAsync(stream, client.ExpectedVersion_Any, []*client.EventData{evt}, nil)
 		if err != nil {
