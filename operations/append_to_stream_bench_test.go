@@ -87,12 +87,15 @@ func BenchmarkAppendToStreamBatchSync_500(b *testing.B)  { AppendToStreamBatchSy
 func BenchmarkAppendToStreamBatchSync_1000(b *testing.B) { AppendToStreamBatchSync(1000, b) }
 
 func AppendToStreamBatchAsync(batchSize int, b *testing.B) {
+	if batchSize > b.N {
+		batchSize = b.N
+	}
 	var err error
 	stream := "AppendToStreamBatchAsync-" + uuid.Must(uuid.NewV4()).String()
 	_tasks := make([]*tasks.Task, (b.N/batchSize)+1)
-	events := make([]*client.EventData, batchSize)
 	c := 0
 	for n := 0; n < b.N; n += batchSize {
+		events := make([]*client.EventData, batchSize)
 		for i := 0; i < batchSize; i++ {
 			events[i] = client.NewEventData(uuid.Must(uuid.NewV4()), "Benchmark", true, []byte(`{}`), []byte(``))
 		}
@@ -104,8 +107,7 @@ func AppendToStreamBatchAsync(batchSize int, b *testing.B) {
 		)
 		c++
 		if err != nil {
-			b.Error(err)
-			return
+			b.Fatal(err)
 		}
 	}
 	for _, task := range _tasks {
