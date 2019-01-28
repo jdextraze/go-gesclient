@@ -2,7 +2,6 @@ package flags
 
 import (
 	"flag"
-	"github.com/jdextraze/go-gesclient"
 	"github.com/jdextraze/go-gesclient/client"
 	"log"
 	"net"
@@ -37,12 +36,25 @@ func SslSkipVerify() bool { return sslSkipVerify }
 func Verbose() bool { return verbose }
 
 func CreateConnection(name string) (client.Connection, error) {
+	return makeConnection(name, "", sslHost, sslSkipVerify, verbose)
+}
+
+func EndpointConnection(name, endpoints, sslHost string, sslSkipVerify, verbose bool) (client.Connection, error) {
+	return makeConnection(name, endpoints, sslHost, sslSkipVerify, verbose)
+}
+
+func makeConnection(name, endpoints, sslHost string, sslSkipVerify, verbose bool) (client.Connection, error) {
 	settingsBuilder := client.CreateConnectionSettings()
+
+	endpointsList := endpoint
+	if endpoints != "" {
+		endpointsList = endpoints
+	}
 
 	var uri *url.URL
 	var err error
-	if !strings.Contains(endpoint, "://") {
-		gossipSeeds := strings.Split(endpoint, ",")
+	if !strings.Contains(endpointsList, "://") {
+		gossipSeeds := strings.Split(endpointsList, ",")
 		endpoints := make([]*net.TCPAddr, len(gossipSeeds))
 		for i, gossipSeed := range gossipSeeds {
 			endpoints[i], err = net.ResolveTCPAddr("tcp", gossipSeed)
@@ -52,7 +64,7 @@ func CreateConnection(name string) (client.Connection, error) {
 		}
 		settingsBuilder.SetGossipSeedEndPoints(endpoints)
 	} else {
-		uri, err = url.Parse(endpoint)
+		uri, err = url.Parse(endpointsList)
 		if err != nil {
 			log.Fatalf("Error parsing address: %v", err)
 		}
