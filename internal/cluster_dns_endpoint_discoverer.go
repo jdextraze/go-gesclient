@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/log"
 	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"io/ioutil"

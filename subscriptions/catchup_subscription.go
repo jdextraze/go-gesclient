@@ -3,6 +3,7 @@ package subscriptions
 import (
 	"errors"
 	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/log"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"sync"
 	"sync/atomic"

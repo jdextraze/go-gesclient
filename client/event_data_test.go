@@ -1,87 +1,84 @@
 package client_test
 
 import (
+	"bytes"
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/guid"
-	"github.com/jdextraze/go-gesclient/messages"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/satori/go.uuid"
+	"testing"
 )
 
-var _ = Describe("EventData", func() {
-	id, _ := uuid.FromString("12345678-1234-1234-1234-1234567890AB")
-	eventType := "Test"
+func TestNewEventData(t *testing.T) {
+	eventId := uuid.Must(uuid.NewV4())
+	eventType := "type"
 	isJson := true
-	data := []byte("{}")
-	var metadata []byte
-	var eventData *client.EventData
+	data := []byte(`{}`)
+	metadata := []byte(`{}`)
 
-	BeforeEach(func() {
-		eventData = client.NewEventData(id, eventType, isJson, data, metadata)
-	})
+	d := client.NewEventData(eventId, eventType, isJson, data, metadata)
 
-	Describe("getting event id", func() {
-		It("should return provided value", func() {
-			Expect(eventData.EventId()).To(Equal(id))
-		})
-	})
+	if d == nil {
+		t.Fatal("NewEventData returned nil")
+	}
+	if !uuid.Equal(d.EventId(), eventId) {
+		t.Errorf("EventId doesn't match: %s != %s", d.EventId().String(), eventId.String())
+	}
+	if d.Type() != eventType {
+		t.Errorf("Type doesn't match: %s != %s", d.Type(), eventType)
+	}
+	if d.IsJson() != isJson {
+		t.Errorf("IsJson doesn't match: %t != %t", d.IsJson(), isJson)
+	}
+	if bytes.Compare(d.Data(), data) != 0 {
+		t.Errorf("Data doesn't match: %v != %v", d.Data(), data)
+	}
+	if bytes.Compare(d.Metadata(), metadata) != 0 {
+		t.Errorf("Metadata doesn't match: %v != %v", d.Metadata(), metadata)
+	}
+}
 
-	Describe("getting type", func() {
-		It("should return provided value", func() {
-			Expect(eventData.Type()).To(Equal(eventType))
-		})
-	})
+func TestEventData_ToNewEvent(t *testing.T) {
+	d := client.NewEventData(uuid.Must(uuid.NewV4()), "type", true, []byte(`{}`), []byte(`{}`))
+	m := d.ToNewEvent()
 
-	Describe("getting is json", func() {
-		It("should return provided value", func() {
-			Expect(eventData.IsJson()).To(Equal(isJson))
-		})
-	})
+	if !bytes.Equal(m.EventId, guid.ToBytes(d.EventId())) {
+		t.Errorf("EventId doesn't match: %v != %v", m.EventId, d.EventId().Bytes())
+	}
+	if *m.EventType != d.Type() {
+		t.Errorf("Type doesn't match: %s != %s", *m.EventType, d.Type())
+	}
+	if *m.DataContentType != 1 {
+		t.Error("DataContentType should be 1 for JSON")
+	}
+	if *m.MetadataContentType != 0 {
+		t.Error("MetadataContentType should be 0")
+	}
+	if bytes.Compare(m.Data, d.Data()) != 0 {
+		t.Errorf("Data doesn't match: %v != %v", m.Data, d.Data())
+	}
+	if bytes.Compare(m.Metadata, d.Metadata()) != 0 {
+		t.Errorf("Metadata doesn't match: %v != %v", m.Metadata, d.Metadata())
+	}
 
-	Describe("getting data", func() {
-		It("should return provided value", func() {
-			Expect(eventData.Data()).To(Equal(data))
-		})
-	})
+	d = client.NewEventData(uuid.Must(uuid.NewV4()), "type", false, []byte(`{}`), []byte(`{}`))
+	m = d.ToNewEvent()
 
-	Describe("getting metadata", func() {
-		It("should return provided value", func() {
-			Expect(eventData.Metadata()).To(Equal(metadata))
-		})
-	})
-
-	Describe("to new event", func() {
-		Context("when is json", func() {
-			It("should return mapped value", func() {
-				dataContentType := int32(1)
-				metaDataContentType := int32(0)
-				Expect(eventData.ToNewEvent()).To(
-					Equal(&messages.NewEvent{
-						EventId:             guid.ToBytes(id),
-						EventType:           &eventType,
-						DataContentType:     &dataContentType,
-						MetadataContentType: &metaDataContentType,
-						Data:                data,
-						Metadata:            metadata,
-					}))
-			})
-		})
-
-		Context("when is not json", func() {
-			It("should return mapped value", func() {
-				dataContentType := int32(0)
-				metaDataContentType := int32(0)
-				Expect(client.NewEventData(id, eventType, false, data, metadata).ToNewEvent()).To(
-					Equal(&messages.NewEvent{
-						EventId:             guid.ToBytes(id),
-						EventType:           &eventType,
-						DataContentType:     &dataContentType,
-						MetadataContentType: &metaDataContentType,
-						Data:                data,
-						Metadata:            metadata,
-					}))
-			})
-		})
-	})
-})
+	if !bytes.Equal(m.EventId, guid.ToBytes(d.EventId())) {
+		t.Errorf("EventId doesn't match: %v != %v", m.EventId, d.EventId().Bytes())
+	}
+	if *m.EventType != d.Type() {
+		t.Errorf("Type doesn't match: %s != %s", *m.EventType, d.Type())
+	}
+	if *m.DataContentType != 0 {
+		t.Error("DataContentType should be 0")
+	}
+	if *m.MetadataContentType != 0 {
+		t.Error("MetadataContentType should be 0")
+	}
+	if bytes.Compare(m.Data, d.Data()) != 0 {
+		t.Errorf("Data doesn't match: %v != %v", m.Data, d.Data())
+	}
+	if bytes.Compare(m.Metadata, d.Metadata()) != 0 {
+		t.Errorf("Metadata doesn't match: %v != %v", m.Metadata, d.Metadata())
+	}
+}

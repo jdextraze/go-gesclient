@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/log"
 	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"github.com/satori/go.uuid"
@@ -182,7 +183,7 @@ func (o *baseOperation) inspectUnexpectedCommand(
 Expected: %v, Actual: %v, CorrelationId: %v
 Operation (%s): %v,
 TcpPackage data dump: %v`,
-		expectedCommand, p.Command, p.CorrelationId, reflect.TypeOf(o).Name(), o, p.Data,
+		expectedCommand, p.Command(), p.CorrelationId(), reflect.TypeOf(o).Name(), o, p.Data(),
 	)
 	return client.NewInspectionResult(client.InspectionDecision_EndOperation, fmt.Sprintf("Unexpected command - %s",
 		p.Command()), nil, nil), o.Fail(fmt.Errorf("Command not expected: %s. Expected: %s.", p.Command(), expectedCommand))

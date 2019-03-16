@@ -21,6 +21,9 @@ type Task struct {
 }
 
 func New(cb TaskCallback) *Task {
+	if cb == nil {
+		panic("cb is nil")
+	}
 	return &Task{
 		fn:        cb,
 		waitGroup: &sync.WaitGroup{},

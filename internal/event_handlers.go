@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/log"
 	"reflect"
 )
 

@@ -3,6 +3,7 @@ package internal
 import (
 	"errors"
 	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/log"
 	"github.com/jdextraze/go-gesclient/tasks"
 	"github.com/satori/go.uuid"
 	"sync"
@@ -166,7 +167,7 @@ func (s *persistentSubscription) processQueue() {
 				err = s.subscription.NotifyEventsProcessed([]uuid.UUID{e.OriginalEvent().EventId()})
 			}
 			if s.settings.VerboseLogging() {
-				log.Debugf("Persistent Subscription to %s: processed event (%s, %d, %s @ %s).",
+				log.Debugf("Persistent Subscription to %s: processed event (%s, %d, %s @ %d).",
 					s.streamId, e.OriginalEvent().EventStreamId(), e.OriginalEvent().EventNumber(),
 					e.OriginalEvent().EventType(), e.OriginalEventNumber())
 			}

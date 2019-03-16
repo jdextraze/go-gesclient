@@ -1,96 +1,59 @@
 package client
 
 import (
+	"bytes"
 	"github.com/jdextraze/go-gesclient/guid"
 	"github.com/jdextraze/go-gesclient/messages"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/satori/go.uuid"
+	"testing"
 	"time"
 )
 
-var _ = Describe("RecordedEvent", func() {
-	var (
-		evt                 *RecordedEvent
-		streamId                  = "Test"
-		id                        = uuid.Must(uuid.NewV4()).Bytes()
-		number              int32 = 123
-		typ                       = "Type"
-		data                      = []byte{1, 2, 3}
-		metadata                  = []byte{4, 5, 6}
-		dataContentType     int32 = 1
-		metadataContentType int32 = 0
-		now                       = time.Now()
-		created                   = now.UnixNano()/tick + ticksSinceEpoch
-		createdEpoch              = now.Round(time.Millisecond).UnixNano() / int64(time.Millisecond)
-	)
+func TestRecordedEvent(t *testing.T) {
+	streamId := "Test"
+	number := int32(123)
+	eventId := uuid.Must(uuid.NewV4()).Bytes()
+	eventType := "Tested"
+	dataContentType := int32(1)
+	metadataContentType := int32(0)
+	data := []byte{1,2,3}
+	metadata := []byte{4,5,6}
+	now := time.Now()
+	created := now.UnixNano()/tick + ticksSinceEpoch
+	createdEpoch := now.Round(time.Millisecond).UnixNano() / int64(time.Millisecond)
 
-	BeforeEach(func() {
-		evt = newRecordedEvent(&messages.EventRecord{
-			EventStreamId:       &streamId,
-			EventNumber:         &number,
-			EventId:             id,
-			EventType:           &typ,
-			DataContentType:     &dataContentType,
-			MetadataContentType: &metadataContentType,
-			Data:                data,
-			Metadata:            metadata,
-			Created:             &created,
-			CreatedEpoch:        &createdEpoch,
-		})
+	e := newRecordedEvent(&messages.EventRecord{
+		EventStreamId:       &streamId,
+		EventNumber:         &number,
+		EventId:             eventId,
+		EventType:           &eventType,
+		DataContentType:     &dataContentType,
+		MetadataContentType: &metadataContentType,
+		Data:                data,
+		Metadata:            metadata,
+		Created:             &created,
+		CreatedEpoch:        &createdEpoch,
 	})
 
-	Describe("getting event stream id", func() {
-		It("should return mapped value", func() {
-			Expect(evt.EventStreamId()).To(Equal(streamId))
-		})
-	})
-
-	Describe("getting event id", func() {
-		It("should return mapped value", func() {
-			Expect(evt.EventId()).To(Equal(guid.FromBytes(id)))
-		})
-	})
-
-	Describe("getting event number", func() {
-		It("should return mapped value", func() {
-			Expect(evt.EventNumber()).To(Equal(int(number)))
-		})
-	})
-
-	Describe("getting event type", func() {
-		It("should return mapped value", func() {
-			Expect(evt.EventType()).To(Equal(typ))
-		})
-	})
-
-	Describe("getting data", func() {
-		It("should return mapped value", func() {
-			Expect(evt.Data()).To(Equal(data))
-		})
-	})
-
-	Describe("getting metadata", func() {
-		It("should return mapped value", func() {
-			Expect(evt.Metadata()).To(Equal(metadata))
-		})
-	})
-
-	Describe("getting is json", func() {
-		It("should return mapped value", func() {
-			Expect(evt.IsJson()).To(BeTrue())
-		})
-	})
-
-	Describe("getting created", func() {
-		It("should return mapped value", func() {
-			Expect(evt.Created().String()).To(Equal(now.Round(time.Duration(tick)).String()))
-		})
-	})
-
-	Describe("getting created epoch", func() {
-		It("should return mapped value", func() {
-			Expect(evt.CreatedEpoch().String()).To(Equal(now.Round(time.Millisecond).String()))
-		})
-	})
-})
+	if e.EventStreamId() != streamId {
+		t.Error("EventStreamId")
+	}
+	if e.EventNumber() != int(number) {
+		t.Error("EventNumber")
+	}
+	if !bytes.Equal(e.EventId().Bytes(), guid.FromBytes(eventId).Bytes()) {
+		t.Error("EventId")
+	}
+	if e.EventType() != eventType {
+		t.Error("EventType")
+	}
+	if !e.IsJson() {
+		t.Error("IsJson")
+	}
+	if e.Created().String() != now.Round(time.Duration(tick)).String() {
+		t.Errorf("Created %s != %s", e.Created().String(), now.Round(time.Duration(tick)).String())
+	}
+	if e.CreatedEpoch().String() != now.Round(time.Millisecond).String() {
+		t.Error("CreatedEpoch")
+	}
+}

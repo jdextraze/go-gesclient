@@ -3,179 +3,114 @@ package tasks_test
 import (
 	"errors"
 	"github.com/jdextraze/go-gesclient/tasks"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"sync"
-	"sync/atomic"
+	"testing"
 	"time"
 )
 
-var taskError = errors.New("error")
-
-var _ = Describe("Task", func() {
+func TestNew(t *testing.T) {
 	var task *tasks.Task
+	task = tasks.New(func() (interface{}, error) { return nil, nil })
+	if task == nil {
+		t.Fail()
+	}
 
-	Describe("Result", func() {
-		It("should wait for task to complete", func() {
-			task = tasks.New(func() (interface{}, error) {
-				time.Sleep(100 * time.Millisecond)
-				return true, nil
-			})
-			start := time.Now()
-			task.Result()
-			Expect(time.Now().Sub(start) >= 100*time.Millisecond).To(BeTrue())
-		})
+	defer func() {
+		recover()
+	}()
+	task = tasks.New(nil)
+	t.Fail()
+}
 
-		It("should return result from callback", func() {
-			task = tasks.New(func() (interface{}, error) {
-				return true, nil
-			})
-			Expect(task.Result()).To(BeTrue())
-		})
+func TestNewStarted(t *testing.T) {
+	var task *tasks.Task
+	task = tasks.NewStarted(func() (interface{}, error) { return nil, nil })
+	if task == nil {
+		t.FailNow()
+	}
+	if task.Start() != tasks.AlreadyRunning {
+		t.Fail()
+	}
+
+	defer func() {
+		recover()
+	}()
+	task = tasks.NewStarted(nil)
+	t.Fail()
+}
+
+func TestTask_ContinueWith(t *testing.T) {
+	task := tasks.New(func() (interface{}, error) {
+		return 1, nil
+	}).ContinueWith(func(t *tasks.Task) (interface{}, error) {
+		return 2, nil
 	})
+	if task == nil {
+		t.FailNow()
+	}
+	if task.Result() != 2 {
+		t.Fail()
+	}
 
-	Describe("Error", func() {
-		It("should wait for task to complete", func() {
-			task = tasks.New(func() (interface{}, error) {
-				time.Sleep(100 * time.Millisecond)
-				return nil, nil
-			})
-			start := time.Now()
-			task.Error()
-			Expect(time.Now().Sub(start) >= 100*time.Millisecond).To(BeTrue())
-		})
-
-		It("should return error from callback", func() {
-			task = tasks.New(func() (interface{}, error) {
-				return nil, taskError
-			})
-			Expect(task.Error()).To(MatchError(taskError))
-		})
+	task = tasks.New(func() (interface{}, error) {
+		return nil, errors.New(":(")
+	}).ContinueWith(func(t *tasks.Task) (interface{}, error) {
+		return 2, nil
 	})
+	if task == nil {
+		t.FailNow()
+	}
+	if task.Result() != 2 {
+		t.Fail()
+	}
+}
 
-	Describe("IsCompleted", func() {
-		It("should return false before completion", func() {
-			wg := &sync.WaitGroup{}
-			wg.Add(1)
-			task = tasks.NewStarted(func() (interface{}, error) {
-				wg.Wait()
-				return nil, nil
-			})
-			Expect(task.IsCompleted()).To(BeFalse())
-			wg.Done()
-		})
+func TestTask_Error(t *testing.T) {
+	if tasks.New(func () (interface{}, error) { return nil, errors.New(":(") }).Error().Error() != ":(" {
+		t.Fail()
+	}
+}
 
-		It("should return true after completion", func() {
-			task = tasks.NewStarted(func() (interface{}, error) {
-				return nil, nil
-			})
-			task.Wait()
-			Expect(task.IsCompleted()).To(BeTrue())
-		})
-	})
+func TestTask_IsCompleted(t *testing.T) {
+	task := tasks.NewStarted(func() (interface{}, error) { return nil, nil })
+	if task.IsCompleted() {
+		t.Fail()
+	}
+	time.Sleep(10 * time.Millisecond)
+	if !task.IsCompleted() {
+		t.Fail()
+	}
+}
 
-	Describe("IsFaulted", func() {
-		It("should return false before completion", func() {
-			wg := &sync.WaitGroup{}
-			wg.Add(1)
-			task = tasks.NewStarted(func() (interface{}, error) {
-				wg.Wait()
-				return nil, nil
-			})
-			Expect(task.IsFaulted()).To(BeFalse())
-			wg.Done()
-		})
+func TestTask_IsFaulted(t *testing.T) {
+	task := tasks.NewStarted(func() (interface{}, error) { return nil, errors.New(":(") })
+	time.Sleep(10 * time.Millisecond)
+	if !task.IsFaulted() {
+		t.Fail()
+	}
+}
 
-		It("should return false after completion without error", func() {
-			task = tasks.NewStarted(func() (interface{}, error) {
-				return nil, nil
-			})
-			task.Wait()
-			Expect(task.IsFaulted()).To(BeFalse())
-		})
+func TestTask_Result(t *testing.T) {
+	if tasks.New(func() (interface{}, error) { return 1, nil }).Result() != 1 {
+		t.Fail()
+	}
+}
 
-		It("should return true after completion with error", func() {
-			task = tasks.NewStarted(func() (interface{}, error) {
-				return nil, taskError
-			})
-			task.Wait()
-			Expect(task.IsFaulted()).To(BeTrue())
-		})
-	})
+func TestTask_Start(t *testing.T) {
+	task := tasks.New(func() (interface{}, error) { return nil, nil })
+	if task.Start() != nil {
+		t.Fail()
+	}
+	if task.Start() == nil {
+		t.Fail()
+	}
+}
 
-	Describe("ContinueWith", func() {
-		It("should start source task", func() {
-			started := int32(0)
-			tasks.New(func() (interface{}, error) {
-				atomic.AddInt32(&started, 1)
-				return nil, nil
-			}).ContinueWith(func(t *tasks.Task) (interface{}, error) {
-				atomic.AddInt32(&started, 1)
-				return nil, nil
-			})
-			time.Sleep(10 * time.Millisecond)
-			Expect(started).To(Equal(int32(2)))
-		})
-
-		It("should receive original task", func() {
-			task = tasks.New(func() (interface{}, error) {
-				return true, nil
-			}).ContinueWith(func(t *tasks.Task) (interface{}, error) {
-				Expect(t.Result()).To(BeTrue())
-				return nil, nil
-			})
-			task.Wait()
-		})
-	})
-
-	Describe("Start", func() {
-		It("should start task", func() {
-			started := int32(0)
-			task = tasks.New(func() (interface{}, error) {
-				atomic.StoreInt32(&started, 1)
-				return nil, nil
-			})
-			task.Start()
-			time.Sleep(10 * time.Millisecond)
-			Expect(started).To(Equal(int32(1)))
-		})
-
-		It("should return error if already started", func() {
-			task = tasks.New(func() (interface{}, error) {
-				return nil, nil
-			})
-			task.Start()
-			Expect(task.Start()).To(MatchError(tasks.AlreadyRunning))
-		})
-	})
-
-	Describe("Wait", func() {
-		It("should wait for task to complete", func() {
-			task = tasks.New(func() (interface{}, error) {
-				time.Sleep(100 * time.Millisecond)
-				return nil, nil
-			})
-			start := time.Now()
-			task.Wait()
-			Expect(time.Now().Sub(start) >= 100*time.Millisecond).To(BeTrue())
-		})
-
-		It("should return callback error", func() {
-			task = tasks.New(func() (interface{}, error) {
-				return nil, taskError
-			})
-			Expect(task.Wait()).To(MatchError(taskError))
-		})
-
-		It("should return immediately if already completed", func() {
-			task = tasks.New(func() (interface{}, error) {
-				time.Sleep(100 * time.Millisecond)
-				return nil, nil
-			})
-			start := time.Now()
-			task.Wait()
-			task.Wait()
-			Expect(time.Now().Sub(start) >= 100*time.Millisecond).To(BeTrue())
-		})
-	})
-})
+func TestTask_Wait(t *testing.T) {
+	task := tasks.New(func() (interface{}, error) { return nil, nil })
+	if task.Wait() != nil {
+		t.Fail()
+	}
+	if task.Wait() != nil {
+		t.Fail()
+	}
+}
