@@ -70,7 +70,7 @@ func (s *connectToPersistentSubscription) inspectPackage(
 		if err = s.confirmSubscription(dto.GetLastCommitPosition(), &lastEventNumber); err != nil {
 			break
 		}
-		s.subscriptionId = *dto.SubscriptionId
+		s.subscriptionId = dto.GetSubscriptionId()
 		result = client.NewInspectionResult(client.InspectionDecision_Subscribed, "SubscriptionConfirmation", nil, nil)
 	case client.Command_PersistentSubscriptionStreamEventAppeared:
 		dto := &messages.PersistentSubscriptionStreamEventAppeared{}
@@ -101,7 +101,7 @@ func (s *connectToPersistentSubscription) inspectPackage(
 				errors.New("Max subscribers reached"), nil)
 		default:
 			conn, _ := s.getConnection()
-			err = s.DropSubscription(client.SubscriptionDropReason(*dto.Reason), nil, conn)
+			err = s.DropSubscription(client.SubscriptionDropReason(dto.GetReason()), nil, conn)
 		}
 		if err != nil {
 			break
