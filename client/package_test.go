@@ -20,7 +20,7 @@ func expectToPanic(t *testing.T, fn func(), v interface{}) {
 func TestNewTcpPackage(t *testing.T) {
 	cmd := client.Command_BadRequest
 	flags := client.FlagsNone
-	correlationId := uuid.Must(uuid.NewV4())
+	correlationId := uuid.NewV4()
 	data := []byte(`data`)
 	userCredentials := client.NewUserCredentials("1", "2")
 
@@ -92,8 +92,8 @@ func TestNewTcpPackage(t *testing.T) {
 }
 
 func TestTcpPacketFromBytes(t *testing.T) {
-	correlationId := uuid.Must(uuid.NewV4())
-	data := []byte{1,2,3}
+	correlationId := uuid.NewV4()
+	data := []byte{1, 2, 3}
 	b := make([]byte, 21)
 	b[client.PackageCommandOffset] = byte(client.Command_BadRequest)
 	b[client.PackageFlagsOffset] = byte(client.FlagsNone)

@@ -36,8 +36,8 @@ func NewOperationsManager(
 		activeOperations:       map[uuid.UUID]*operationItem{},
 		waitingOperations:      make(chan *operationItem, maxWaitingOperations),
 		retryPendingOperations: []*operationItem{},
-		lock:                &sync.Mutex{},
-		totalOperationCount: 0,
+		lock:                   &sync.Mutex{},
+		totalOperationCount:    0,
 	}
 }
 
@@ -110,7 +110,7 @@ func (m *OperationsManager) CheckTimeoutsAndRetry(c *client.PackageConnection) e
 		sort.Sort(BySeqNo(m.retryPendingOperations))
 		for _, s := range m.retryPendingOperations {
 			oldCorrId := s.CorrelationId
-			s.CorrelationId = uuid.Must(uuid.NewV4())
+			s.CorrelationId = uuid.NewV4()
 			s.RetryCount += 1
 			log.Debugf("retrying, old corrId: %s, operation %s.", oldCorrId, s)
 			if err := m.ScheduleOperation(s, c); err != nil {

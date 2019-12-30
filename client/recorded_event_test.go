@@ -12,12 +12,12 @@ import (
 func TestRecordedEvent(t *testing.T) {
 	streamId := "Test"
 	number := int32(123)
-	eventId := uuid.Must(uuid.NewV4()).Bytes()
+	eventId := uuid.NewV4().Bytes()
 	eventType := "Tested"
 	dataContentType := int32(1)
 	metadataContentType := int32(0)
-	data := []byte{1,2,3}
-	metadata := []byte{4,5,6}
+	data := []byte{1, 2, 3}
+	metadata := []byte{4, 5, 6}
 	now := time.Now()
 	created := now.UnixNano()/tick + ticksSinceEpoch
 	createdEpoch := now.Round(time.Millisecond).UnixNano() / int64(time.Millisecond)

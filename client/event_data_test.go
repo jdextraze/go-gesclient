@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewEventData(t *testing.T) {
-	eventId := uuid.Must(uuid.NewV4())
+	eventId := uuid.NewV4()
 	eventType := "type"
 	isJson := true
 	data := []byte(`{}`)
@@ -38,7 +38,7 @@ func TestNewEventData(t *testing.T) {
 }
 
 func TestEventData_ToNewEvent(t *testing.T) {
-	d := client.NewEventData(uuid.Must(uuid.NewV4()), "type", true, []byte(`{}`), []byte(`{}`))
+	d := client.NewEventData(uuid.NewV4(), "type", true, []byte(`{}`), []byte(`{}`))
 	m := d.ToNewEvent()
 
 	if !bytes.Equal(m.EventId, guid.ToBytes(d.EventId())) {
@@ -60,7 +60,7 @@ func TestEventData_ToNewEvent(t *testing.T) {
 		t.Errorf("Metadata doesn't match: %v != %v", m.Metadata, d.Metadata())
 	}
 
-	d = client.NewEventData(uuid.Must(uuid.NewV4()), "type", false, []byte(`{}`), []byte(`{}`))
+	d = client.NewEventData(uuid.NewV4(), "type", false, []byte(`{}`), []byte(`{}`))
 	m = d.ToNewEvent()
 
 	if !bytes.Equal(m.EventId, guid.ToBytes(d.EventId())) {
