@@ -96,12 +96,12 @@ func (m *Manager) ListAllAsync(userCredentials *cli.UserCredentials) *tasks.Task
 	return m.client.ListAll(m.httpEndpoint, userCredentials)
 }
 
-// Task.Result() returns []projections.ProjectionDetails
+// Task.Result() returns []*projections.ProjectionDetails
 func (m *Manager) ListOneTimeAsync(userCredentials *cli.UserCredentials) *tasks.Task {
 	return m.client.ListOneTime(m.httpEndpoint, userCredentials)
 }
 
-// Task.Result() returns []projections.ProjectionDetails
+// Task.Result() returns []*projections.ProjectionDetails
 func (m *Manager) ListContinuousAsync(userCredentials *cli.UserCredentials) *tasks.Task {
 	return m.client.ListContinuous(m.httpEndpoint, userCredentials)
 }
