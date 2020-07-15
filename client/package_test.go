@@ -2,10 +2,11 @@ package client_test
 
 import (
 	"bytes"
+	"testing"
+
+	"github.com/gofrs/uuid"
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/guid"
-	"github.com/satori/go.uuid"
-	"testing"
 )
 
 func expectToPanic(t *testing.T, fn func(), v interface{}) {
@@ -35,7 +36,7 @@ func TestNewTcpPackage(t *testing.T) {
 	if p.Flags() != client.FlagsNone {
 		t.Errorf("Package flags doesn't match: %v != %v", p.Flags(), client.FlagsNone)
 	}
-	if !uuid.Equal(p.CorrelationId(), correlationId) {
+	if p.CorrelationId() != correlationId {
 		t.Errorf("Package correlationId doesn't match: %s != %s", p.CorrelationId(), correlationId)
 	}
 	if p.Size() != 22 {
@@ -74,7 +75,7 @@ func TestNewTcpPackage(t *testing.T) {
 	if p.Flags() != client.FlagsAuthenticated {
 		t.Errorf("Package flags doesn't match: %v != %v", p.Flags(), client.FlagsAuthenticated)
 	}
-	if !uuid.Equal(p.CorrelationId(), correlationId) {
+	if p.CorrelationId() != correlationId {
 		t.Errorf("Package correlationId doesn't match: %s != %s", p.CorrelationId(), correlationId)
 	}
 	if p.Size() != 26 {
@@ -93,7 +94,7 @@ func TestNewTcpPackage(t *testing.T) {
 
 func TestTcpPacketFromBytes(t *testing.T) {
 	correlationId := uuid.Must(uuid.NewV4())
-	data := []byte{1,2,3}
+	data := []byte{1, 2, 3}
 	b := make([]byte, 21)
 	b[client.PackageCommandOffset] = byte(client.Command_BadRequest)
 	b[client.PackageFlagsOffset] = byte(client.FlagsNone)
@@ -110,7 +111,7 @@ func TestTcpPacketFromBytes(t *testing.T) {
 	if p.Flags() != client.FlagsNone {
 		t.Errorf("Package flags doesn't match: %v != %v", p.Flags(), client.FlagsNone)
 	}
-	if !uuid.Equal(p.CorrelationId(), guid.FromBytes(correlationId.Bytes())) {
+	if p.CorrelationId() != guid.FromBytes(correlationId.Bytes()) {
 		t.Errorf("Package correlationId doesn't match: %s != %s", p.CorrelationId(), correlationId)
 	}
 	if p.Size() != int32(len(b)) {

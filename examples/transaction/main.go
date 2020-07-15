@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"log"
+
+	"github.com/gofrs/uuid"
 	"github.com/jdextraze/go-gesclient"
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/flags"
-	"github.com/satori/go.uuid"
-	"log"
 )
 
 func main() {

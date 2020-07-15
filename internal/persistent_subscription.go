@@ -2,14 +2,15 @@ package internal
 
 import (
 	"errors"
-	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/log"
-	"github.com/jdextraze/go-gesclient/tasks"
-	"github.com/satori/go.uuid"
 	"sync"
 	"sync/atomic"
 	"time"
 	"unsafe"
+
+	"github.com/gofrs/uuid"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/log"
+	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 var dropSubscriptionEvent = client.NewResolvedEvent(nil)

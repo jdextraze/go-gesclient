@@ -3,15 +3,16 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/log"
-	"github.com/jdextraze/go-gesclient/subscriptions"
-	"github.com/jdextraze/go-gesclient/tasks"
-	"github.com/satori/go.uuid"
 	"net"
 	"reflect"
 	"sync/atomic"
 	"time"
+
+	"github.com/gofrs/uuid"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/log"
+	"github.com/jdextraze/go-gesclient/subscriptions"
+	"github.com/jdextraze/go-gesclient/tasks"
 )
 
 type ConnectionLogicHandler interface {

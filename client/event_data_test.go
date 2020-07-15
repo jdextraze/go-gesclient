@@ -2,10 +2,11 @@ package client_test
 
 import (
 	"bytes"
+	"testing"
+
+	"github.com/gofrs/uuid"
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/guid"
-	"github.com/satori/go.uuid"
-	"testing"
 )
 
 func TestNewEventData(t *testing.T) {
@@ -20,7 +21,7 @@ func TestNewEventData(t *testing.T) {
 	if d == nil {
 		t.Fatal("NewEventData returned nil")
 	}
-	if !uuid.Equal(d.EventId(), eventId) {
+	if d.EventId() != eventId {
 		t.Errorf("EventId doesn't match: %s != %s", d.EventId().String(), eventId.String())
 	}
 	if d.Type() != eventType {

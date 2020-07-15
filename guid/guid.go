@@ -1,8 +1,8 @@
 package guid
 
-import u "github.com/satori/go.uuid"
+import "github.com/gofrs/uuid"
 
-func ToBytes(uuid u.UUID) []byte {
+func ToBytes(uuid uuid.UUID) []byte {
 	bytes := uuid.Bytes()
 	guid := make([]byte, 16)
 	guid[3] = bytes[0]
@@ -17,7 +17,7 @@ func ToBytes(uuid u.UUID) []byte {
 	return guid
 }
 
-func FromBytes(guid []byte) u.UUID {
+func FromBytes(guid []byte) uuid.UUID {
 	var bytes [16]byte
 	bytes[0] = guid[3]
 	bytes[1] = guid[2]
@@ -28,5 +28,5 @@ func FromBytes(guid []byte) u.UUID {
 	bytes[6] = guid[7]
 	bytes[7] = guid[6]
 	copy(bytes[8:], guid[8:])
-	return u.UUID(bytes)
+	return uuid.UUID(bytes)
 }
