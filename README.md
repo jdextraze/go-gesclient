@@ -2,6 +2,10 @@
 
 A [Go](https://golang.org/) port of the .Net client for [Event Store](https://eventstore.org/).
 
+## Learning
+
+If you want to learn more about EventSourcing/CQRS/EventModeling, you can join the virtual workshop offered by my employer Adaptech Group, see info at [https://www.adaptechgroup.com/virtual-workshop/](https://www.adaptechgroup.com/virtual-workshop/).
+
 ## License
 
 Ported code is released under the [MIT](https://github.com/jdextraze/go-gesclient/blob/master/LICENSE) license.
