@@ -1,0 +1,2 @@
+# github.com/golang/protobuf v0.0.0-20190109072247-347cf4a86c1c
+github.com/golang/protobuf/proto

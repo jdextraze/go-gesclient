@@ -1,6 +1,6 @@
 package guid
 
-import u "github.com/satori/go.uuid"
+import u "github.com/jdextraze/go-gesclient/pkg/uuid"
 
 func ToBytes(uuid u.UUID) []byte {
 	bytes := uuid.Bytes()

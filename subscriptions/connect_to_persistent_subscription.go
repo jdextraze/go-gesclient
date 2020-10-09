@@ -7,7 +7,7 @@ import (
 	"github.com/jdextraze/go-gesclient/guid"
 	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
-	"github.com/satori/go.uuid"
+	"github.com/jdextraze/go-gesclient/pkg/uuid"
 )
 
 type connectToPersistentSubscription struct {

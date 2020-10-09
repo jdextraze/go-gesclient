@@ -1,6 +1,6 @@
 package client
 
-import "github.com/satori/go.uuid"
+import "github.com/jdextraze/go-gesclient/pkg/uuid"
 
 type ConnectToPersistentSubscriptions interface {
 	NotifyEventsProcessed(processedEvents []uuid.UUID) error

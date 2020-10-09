@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"github.com/jdextraze/go-gesclient/log"
-	"github.com/satori/go.uuid"
+	"github.com/jdextraze/go-gesclient/pkg/uuid"
 	"io"
 	"net"
 	"os"

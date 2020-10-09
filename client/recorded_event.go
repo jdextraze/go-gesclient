@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/jdextraze/go-gesclient/guid"
 	"github.com/jdextraze/go-gesclient/messages"
-	"github.com/satori/go.uuid"
+	"github.com/jdextraze/go-gesclient/pkg/uuid"
 	"time"
 )
 

@@ -5,7 +5,7 @@ import (
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/log"
 	"github.com/jdextraze/go-gesclient/tasks"
-	"github.com/satori/go.uuid"
+	"github.com/jdextraze/go-gesclient/pkg/uuid"
 	"sync"
 	"sync/atomic"
 	"time"

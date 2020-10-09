@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/satori/go.uuid"
+	"github.com/jdextraze/go-gesclient/pkg/uuid"
 )
 
 type Operation interface {

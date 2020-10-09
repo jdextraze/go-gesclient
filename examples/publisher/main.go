@@ -6,7 +6,7 @@ import (
 	"github.com/jdextraze/go-gesclient"
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/flags"
-	"github.com/satori/go.uuid"
+	"github.com/jdextraze/go-gesclient/pkg/uuid"
 	"log"
 	"os"
 	"os/signal"

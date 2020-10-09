@@ -57,9 +57,7 @@ This project is considered ready for production.
 
 ### Install
 
-1. Install using `go get -u github.com/jdextraze/go-gesclient`.
-2. Install [govendor](https://github.com/kardianos/govendor) with `go get -u github.com/kardianos/govendor`.
-3. Install vendor packages with `govendor sync`
+`go get github.com/jdextraze/go-gesclient`
 
 ### Optional Tools
 

@@ -2,7 +2,7 @@ package messages
 
 import (
 	"fmt"
-	"github.com/satori/go.uuid"
+	"github.com/jdextraze/go-gesclient/pkg/uuid"
 	"time"
 )
 
