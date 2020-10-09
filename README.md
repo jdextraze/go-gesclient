@@ -2,6 +2,8 @@
 
 A [Go](https://golang.org/) port of the .Net client for [Event Store](https://eventstore.org/).
 
+**This library is not compatible with the new gRPC protocol.**
+
 ## Learning
 
 If you want to learn more about EventSourcing/CQRS/EventModeling, you can join the virtual workshop offered by my employer Adaptech Group, see info at [https://www.adaptechgroup.com/virtual-workshop/](https://www.adaptechgroup.com/virtual-workshop/).
@@ -68,18 +70,18 @@ This project is considered ready for production.
 
 ### Running EventStore on local machine
 
-See https://eventstore.org/docs/introduction/4.1.0/
+See https://developers.eventstore.com/server/5.0.9/server/installation/
 
 ### Running EventStore with docker
 
-`docker run --rm --name eventstore -d -p 1113:1113 -p 2113:2113 eventstore/eventstore:release-4.1.0`
+`docker run --rm --name eventstore -d -p 1113:1113 -p 2113:2113 eventstore/eventstore:release-5.0.8`
 
 or if you installed robo
 
-* Start a node: `robo start_es 4.1.0`
-* Start a node with SSL: `robo start_es 3.9.3 ssl`
+* Start a node: `robo start_es 5.0.8`
+* Start a node with SSL: `robo start_es 5.0.8 ssl`
 * Stop the node: `robo stop_es`
-* Start a cluster: `robo start_es_cluster 3.9.3`
+* Start a cluster: `robo start_es_cluster 5.0.8`
 * Stop the cluster: `robo stop_es_cluster`
 
 ### Examples
