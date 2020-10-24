@@ -2,6 +2,7 @@ package operations
 
 import (
 	"fmt"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/messages"

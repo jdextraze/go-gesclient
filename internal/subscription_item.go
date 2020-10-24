@@ -2,9 +2,10 @@ package internal
 
 import (
 	"fmt"
-	"github.com/jdextraze/go-gesclient/subscriptions"
-	"github.com/satori/go.uuid"
 	"time"
+
+	"github.com/gofrs/uuid"
+	"github.com/jdextraze/go-gesclient/subscriptions"
 )
 
 type SubscriptionItem struct {

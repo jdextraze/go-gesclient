@@ -2,13 +2,14 @@ package internal
 
 import (
 	"fmt"
-	"github.com/jdextraze/go-gesclient/client"
-	"github.com/jdextraze/go-gesclient/log"
-	"github.com/satori/go.uuid"
 	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/gofrs/uuid"
+	"github.com/jdextraze/go-gesclient/client"
+	"github.com/jdextraze/go-gesclient/log"
 )
 
 const maxWaitingOperations = 65536
@@ -36,8 +37,8 @@ func NewOperationsManager(
 		activeOperations:       map[uuid.UUID]*operationItem{},
 		waitingOperations:      make(chan *operationItem, maxWaitingOperations),
 		retryPendingOperations: []*operationItem{},
-		lock:                &sync.Mutex{},
-		totalOperationCount: 0,
+		lock:                   &sync.Mutex{},
+		totalOperationCount:    0,
 	}
 }
 

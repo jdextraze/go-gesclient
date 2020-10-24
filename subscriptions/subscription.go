@@ -3,14 +3,15 @@ package subscriptions
 import (
 	"errors"
 	"fmt"
+	"net"
+	"sync/atomic"
+
+	"github.com/gofrs/uuid"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/log"
 	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
-	"github.com/satori/go.uuid"
-	"net"
-	"sync/atomic"
 )
 
 type Subscription interface {

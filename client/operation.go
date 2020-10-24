@@ -1,8 +1,6 @@
 package client
 
-import (
-	"github.com/satori/go.uuid"
-)
+import "github.com/gofrs/uuid"
 
 type Operation interface {
 	CreateNetworkPackage(correlationId uuid.UUID) (*Package, error)

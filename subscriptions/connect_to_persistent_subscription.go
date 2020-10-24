@@ -2,12 +2,13 @@ package subscriptions
 
 import (
 	"errors"
+
+	"github.com/gofrs/uuid"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdextraze/go-gesclient/client"
 	"github.com/jdextraze/go-gesclient/guid"
 	"github.com/jdextraze/go-gesclient/messages"
 	"github.com/jdextraze/go-gesclient/tasks"
-	"github.com/satori/go.uuid"
 )
 
 type connectToPersistentSubscription struct {

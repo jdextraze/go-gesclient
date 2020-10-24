@@ -2,11 +2,12 @@ package client
 
 import (
 	"bytes"
-	"github.com/jdextraze/go-gesclient/guid"
-	"github.com/jdextraze/go-gesclient/messages"
-	"github.com/satori/go.uuid"
 	"testing"
 	"time"
+
+	"github.com/gofrs/uuid"
+	"github.com/jdextraze/go-gesclient/guid"
+	"github.com/jdextraze/go-gesclient/messages"
 )
 
 func TestRecordedEvent(t *testing.T) {
@@ -16,8 +17,8 @@ func TestRecordedEvent(t *testing.T) {
 	eventType := "Tested"
 	dataContentType := int32(1)
 	metadataContentType := int32(0)
-	data := []byte{1,2,3}
-	metadata := []byte{4,5,6}
+	data := []byte{1, 2, 3}
+	metadata := []byte{4, 5, 6}
 	now := time.Now()
 	created := now.UnixNano()/tick + ticksSinceEpoch
 	createdEpoch := now.Round(time.Millisecond).UnixNano() / int64(time.Millisecond)

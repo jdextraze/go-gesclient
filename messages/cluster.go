@@ -2,8 +2,9 @@ package messages
 
 import (
 	"fmt"
-	"github.com/satori/go.uuid"
 	"time"
+
+	"github.com/gofrs/uuid"
 )
 
 type ClusterInfoDto struct {

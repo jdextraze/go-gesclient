@@ -1,19 +1,19 @@
 {
-	"comment": "",
-	"ignore": "test",
-	"package": [
-		{
-			"checksumSHA1": "Wp97rIwFg54dNwuCeR9Vslaehtw=",
-			"path": "github.com/golang/protobuf/proto",
-			"revision": "347cf4a86c1cb8d262994d8ef5924d4576c5b331",
-			"revisionTime": "2019-01-09T07:22:47Z"
-		},
-		{
-			"checksumSHA1": "3JBPxvZn52LORHX9F382xpkt1sA=",
-			"path": "github.com/satori/go.uuid",
-			"revision": "b2ce2384e17bbe0c6d34077efa39dbab3e09123b",
-			"revisionTime": "2018-10-28T12:50:25Z"
-		}
-	],
-	"rootPath": "github.com/jdextraze/go-gesclient"
+  "comment": "",
+  "ignore": "test",
+  "package": [
+    {
+      "checksumSHA1": "Wp97rIwFg54dNwuCeR9Vslaehtw=",
+      "path": "github.com/golang/protobuf/proto",
+      "revision": "347cf4a86c1cb8d262994d8ef5924d4576c5b331",
+      "revisionTime": "2019-01-09T07:22:47Z"
+    },
+    {
+      "checksumSHA1": "3JBPxvZn52LORHX9F382xpkt1sA=",
+      "path": "github.com/gofrs/go.uuid",
+      "revision": "b2ce2384e17bbe0c6d34077efa39dbab3e09123b",
+      "revisionTime": "2018-10-28T12:50:25Z"
+    }
+  ],
+  "rootPath": "github.com/jdextraze/go-gesclient"
 }
