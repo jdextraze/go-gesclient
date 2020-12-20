@@ -6,7 +6,7 @@ A [Go](https://golang.org/) port of the .Net client for [Event Store](https://ev
 
 ## Learning
 
-If you want to learn more about EventSourcing/CQRS/EventModeling, you can join the virtual workshop offered by my employer Adaptech Group, see info at [https://www.adaptechgroup.com/virtual-workshop/](https://www.adaptechgroup.com/virtual-workshop/).
+If you want to learn more about EventSourcing/CQRS/EventModeling, you can join virtual workshop offered by my employer Adaptech Group, see info at [https://www.adaptechgroup.com/#workshop](https://www.adaptechgroup.com/#workshop).
 
 ## License
 
