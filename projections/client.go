@@ -259,11 +259,11 @@ func (c *client) sendPut(
 }
 
 func toHttpUrl(addr *net.TCPAddr, pathFormat string, args ...interface{}) *url.URL {
-	return &url.URL{
-		Scheme: "http",
-		Host:   addr.String(),
-		Path:   fmt.Sprintf(pathFormat, args...),
+	u, err := url.Parse(fmt.Sprintf("http://%s%s", addr.String(), fmt.Sprintf(pathFormat, args...)))
+	if err != nil {
+		panic(err)
 	}
+	return u
 }
 
 func getProjectionDetails(t *tasks.Task) (interface{}, error) {
